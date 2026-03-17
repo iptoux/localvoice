@@ -55,22 +55,25 @@ pub fn resolve_binary(app: &AppHandle) -> CmdResult<PathBuf> {
         }
     }
 
-    // 3. Tauri resource dir → binaries/ flat (Tauri sidecar convention).
-    // 4. Recursive scan of binaries/ subdirectories (unpacked release zip layout).
+    // 3. Tauri resource dir → binaries/ subdirectory scan first (prefers release
+    //    zip layout like whisper-bin-x64/whisper-cli.exe where DLLs are co-located),
+    //    then flat lookup (Tauri sidecar stub, which has no DLLs alongside on Windows).
     if let Ok(res_dir) = app.path().resource_dir() {
         let binaries_dir = res_dir.join("binaries");
 
-        // 3. Flat lookup first.
+        // 3a. Recursive scan — finds whisper-cli.exe inside a release zip subdir where
+        //     DLLs are co-located (preferred on Windows for DLL resolution).
+        if let Some(found) = scan_dir_for_whisper(&binaries_dir) {
+            return Ok(found);
+        }
+
+        // 3b. Flat lookup — Tauri sidecar stub (whisper-cli-{triple}.exe).
+        //     Only reached if no binary was found in subdirectories above.
         for name in WHISPER_EXE_NAMES {
             let p = binaries_dir.join(name);
             if p.exists() {
                 return Ok(p);
             }
-        }
-
-        // 4. Recursive scan — walks all subdirs, returns first match.
-        if let Some(found) = scan_dir_for_whisper(&binaries_dir) {
-            return Ok(found);
         }
     }
 
@@ -91,35 +94,65 @@ pub fn resolve_binary(app: &AppHandle) -> CmdResult<PathBuf> {
     )
 }
 
-/// Walks `dir` recursively and returns the first path whose filename matches
-/// a known whisper CLI executable name.
+/// Walks `dir` recursively and returns the best whisper CLI executable found.
+///
+/// "Best" means: prefers a binary whose parent directory also contains DLL files
+/// (so Windows can find co-located DLLs via the executable's own directory).
+/// If no DLL-accompanied binary is found, returns any name-matching binary.
 fn scan_dir_for_whisper(dir: &Path) -> Option<PathBuf> {
     let entries = std::fs::read_dir(dir).ok()?;
     let mut subdirs: Vec<PathBuf> = Vec::new();
+    let mut candidate: Option<PathBuf> = None; // fallback if no DLL-accompanied one found
 
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_dir() {
             subdirs.push(path);
         } else if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-            // Check against all known names (case-insensitive on Windows).
             let name_lower = name.to_lowercase();
-            for known in WHISPER_EXE_NAMES {
-                if name_lower == known.to_lowercase() {
-                    return Some(path);
+            let is_whisper = WHISPER_EXE_NAMES
+                .iter()
+                .any(|known| name_lower == known.to_lowercase());
+            if is_whisper {
+                // Prefer this binary if the directory also contains DLLs.
+                let dir_has_dlls = dir_contains_dll(dir);
+                if dir_has_dlls {
+                    return Some(path); // ideal: co-located DLLs → return immediately
                 }
+                candidate.get_or_insert(path);
             }
         }
     }
 
-    // Recurse into subdirectories after checking this level.
+    // Recurse into subdirectories — a subdir result with DLLs wins over our candidate.
     for sub in subdirs {
         if let Some(found) = scan_dir_for_whisper(&sub) {
-            return Some(found);
+            // If the found binary is in a dir with DLLs, prefer it unconditionally.
+            let found_dir = found.parent().unwrap_or(Path::new("."));
+            if dir_contains_dll(found_dir) {
+                return Some(found);
+            }
+            // Otherwise keep as fallback only if we have nothing better yet.
+            candidate.get_or_insert(found);
         }
     }
 
-    None
+    candidate
+}
+
+/// Returns true if `dir` contains at least one `.dll` file (non-recursive).
+fn dir_contains_dll(dir: &Path) -> bool {
+    std::fs::read_dir(dir)
+        .map(|entries| {
+            entries.flatten().any(|e| {
+                e.path()
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .map(|ext| ext.eq_ignore_ascii_case("dll"))
+                    .unwrap_or(false)
+            })
+        })
+        .unwrap_or(false)
 }
 
 /// Locates the whisper model file.
