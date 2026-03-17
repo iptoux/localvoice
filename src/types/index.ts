@@ -52,6 +52,15 @@ export interface TranscriptSegment {
   confidence?: number;
 }
 
+export interface OutputResult {
+  /** Effective output mode used: "clipboard" or "insert". */
+  mode: string;
+  /** Whether the output step completed successfully. */
+  success: boolean;
+  /** Error description when success is false. */
+  error?: string;
+}
+
 export interface TranscriptionResult {
   rawText: string;
   cleanedText: string;
@@ -59,6 +68,8 @@ export interface TranscriptionResult {
   language: string;
   modelId: string;
   durationMs: number;
+  /** Result of the output step (clipboard write or auto-insert). */
+  output?: OutputResult;
 }
 
 export interface DeviceInfo {
@@ -69,5 +80,11 @@ export interface DeviceInfo {
 
 export interface RecordingStatePayload {
   state: RecordingState;
+  error?: string;
+}
+
+export interface OutputResultPayload {
+  mode: string;
+  success: boolean;
   error?: string;
 }

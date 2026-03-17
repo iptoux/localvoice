@@ -1,5 +1,10 @@
 import { create } from "zustand";
-import type { DeviceInfo, RecordingState, TranscriptionResult } from "../types";
+import type {
+  DeviceInfo,
+  OutputResult,
+  RecordingState,
+  TranscriptionResult,
+} from "../types";
 
 interface AppStore {
   recordingState: RecordingState;
@@ -20,6 +25,10 @@ interface AppStore {
   /** Most recent completed transcription result. */
   lastTranscription: TranscriptionResult | null;
   setLastTranscription: (result: TranscriptionResult | null) => void;
+
+  /** Result of the most recent output step (clipboard / insert). */
+  lastOutputResult: OutputResult | null;
+  setLastOutputResult: (result: OutputResult | null) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -37,4 +46,7 @@ export const useAppStore = create<AppStore>((set) => ({
 
   lastTranscription: null,
   setLastTranscription: (lastTranscription) => set({ lastTranscription }),
+
+  lastOutputResult: null,
+  setLastOutputResult: (lastOutputResult) => set({ lastOutputResult }),
 }));

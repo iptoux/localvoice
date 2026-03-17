@@ -3,14 +3,6 @@ import { useAppStore } from "../../stores/app-store";
 import { openMainWindow } from "../../lib/tauri";
 import type { RecordingState } from "../../types";
 
-const STATE_LABEL: Record<RecordingState, string> = {
-  idle: "Ready",
-  listening: "Listening…",
-  processing: "Transcribing…",
-  success: "Done",
-  error: "Error",
-};
-
 const STATE_COLOR: Record<RecordingState, string> = {
   idle: "bg-neutral-800",
   listening: "bg-red-600",
@@ -36,14 +28,62 @@ export function Pill() {
     >
       <StateIcon state={recordingState} />
       <span data-tauri-drag-region className="flex-1 truncate">
-        {recordingState === "error" && recordingError
-          ? recordingError
-          : recordingState === "success"
-          ? <TranscriptPreview />
-          : STATE_LABEL[recordingState]}
+        {recordingState === "error" && recordingError ? (
+          recordingError
+        ) : recordingState === "success" ? (
+          <SuccessContent />
+        ) : recordingState === "listening" ? (
+          "Listening…"
+        ) : recordingState === "processing" ? (
+          "Transcribing…"
+        ) : (
+          "Ready"
+        )}
       </span>
       {recordingState === "listening" && <ElapsedTimer />}
     </div>
+  );
+}
+
+// ── Success content (TASK-059, TASK-061) ─────────────────────────────────────
+
+function SuccessContent() {
+  const lastTranscription = useAppStore((s) => s.lastTranscription);
+  const lastOutputResult = useAppStore((s) => s.lastOutputResult);
+
+  const text = lastTranscription?.cleanedText ?? "Done";
+  const preview = text.length > 32 ? text.slice(0, 30) + "…" : text;
+
+  const modeLabel =
+    lastOutputResult?.mode === "insert" ? "Inserted" : "Copied";
+
+  return (
+    <span data-tauri-drag-region className="flex items-center gap-2 min-w-0">
+      <OutputBadge label={modeLabel} success={lastOutputResult?.success ?? true} />
+      <span data-tauri-drag-region className="truncate" title={text}>
+        {preview}
+      </span>
+    </span>
+  );
+}
+
+function OutputBadge({
+  label,
+  success,
+}: {
+  label: string;
+  success: boolean;
+}) {
+  return (
+    <span
+      data-tauri-drag-region
+      className={`
+        flex-shrink-0 text-xs px-1.5 py-0.5 rounded font-semibold
+        ${success ? "bg-white/20 text-white" : "bg-rose-900/60 text-rose-200"}
+      `}
+    >
+      {success ? label : "Failed"}
+    </span>
   );
 }
 
@@ -96,7 +136,7 @@ function StateIcon({ state }: { state: RecordingState }) {
         </svg>
       );
     default:
-      // idle — mic icon
+      // idle — mic circle
       return (
         <div
           data-tauri-drag-region
@@ -104,16 +144,6 @@ function StateIcon({ state }: { state: RecordingState }) {
         />
       );
   }
-}
-
-// ── Transcript preview (shown in Success state) ───────────────────────────────
-
-function TranscriptPreview() {
-  const lastTranscription = useAppStore((s) => s.lastTranscription);
-  const text = lastTranscription?.cleanedText ?? "Done";
-  // Truncate to ~40 chars so it fits the pill
-  const preview = text.length > 40 ? text.slice(0, 38) + "…" : text;
-  return <span data-tauri-drag-region title={text}>{preview}</span>;
 }
 
 // ── Elapsed timer (shown only in Listening state) ─────────────────────────────
