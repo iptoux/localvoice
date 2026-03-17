@@ -62,13 +62,15 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": {
-      "binaries/whisper-cli.exe": "binaries/",
-      "binaries/ggml.dll": "binaries/",
-      "binaries/ggml-base.dll": "binaries/",
-      "binaries/ggml-cpu.dll": "binaries/",
-      "binaries/whisper.dll": "binaries/",
-      "binaries/SDL2.dll": "binaries/"
-    }
+    "externalBin": [
+      "binaries/whisper-cli"
+    ],
+    "resources": [
+      "ggml.dll",
+      "ggml-base.dll",
+      "ggml-cpu.dll",
+      "whisper.dll",
+      "SDL2.dll"
+    ]
   }
 }

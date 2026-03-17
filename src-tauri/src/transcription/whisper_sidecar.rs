@@ -1,7 +1,14 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
 use tauri::{AppHandle, Manager};
+
+/// Windows: CREATE_NO_WINDOW — prevents a console window from appearing.
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 use crate::errors::CmdResult;
 
@@ -74,10 +81,20 @@ pub fn resolve_binary(app: &AppHandle) -> CmdResult<PathBuf> {
         }
     }
 
-    // 4. Tauri resource dir → binaries/ (production installer layout).
+    // 4. Tauri resource dir — check root first (DLLs co-located with exe via
+    //    resources map "": ""), then binaries/ subdir as fallback.
     if let Ok(res_dir) = app.path().resource_dir() {
-        let binaries_dir = res_dir.join("binaries");
+        // 4a. Root of resource dir (production: whisper-cli.exe + DLLs mapped to "").
+        for name in WHISPER_EXE_NAMES {
+            let p = res_dir.join(name);
+            searched.push(p.display().to_string());
+            if p.exists() {
+                return Ok(p);
+            }
+        }
 
+        // 4b. binaries/ subdir (legacy layout).
+        let binaries_dir = res_dir.join("binaries");
         for name in WHISPER_EXE_NAMES {
             let p = binaries_dir.join(name);
             searched.push(p.display().to_string());
@@ -241,24 +258,27 @@ pub fn invoke(
     // DLL search (step: current directory) can find co-located DLLs.
     let binary_dir = binary.parent().unwrap_or(Path::new("."));
 
-    // Additionally prepend every DLL-containing directory under the binaries/ tree
-    // to PATH. This handles the case where the resolved binary (e.g. the
-    // Tauri-named stub) is not in the same directory as its DLLs (which may live
-    // in a Release/ subdirectory alongside the un-renamed binary).
+    // Prepend the binary's own directory AND every DLL-containing directory
+    // under any `binaries/` ancestor to PATH. This covers both the flat layout
+    // (DLLs next to exe) and the legacy subdir layout.
     let extended_path = build_extended_path(binary);
 
     // ── Full invocation (JSON output + confidence data) ────────────────────────
-    let full_out = Command::new(binary)
+    #[allow(unused_mut)]
+    let mut full_cmd = Command::new(binary);
+    full_cmd
         .args([
             "-m", &model_str,
             "-f", &wav_str,
             "-l", language,
-            "-ojf",          // full JSON with per-token confidence
+            "-ojf",
             "-of", &prefix_str,
         ])
         .current_dir(binary_dir)
-        .env("PATH", &extended_path)
-        .output()
+        .env("PATH", &extended_path);
+    #[cfg(target_os = "windows")]
+    full_cmd.creation_flags(CREATE_NO_WINDOW);
+    let full_out = full_cmd.output()
         .map_err(|e| format!("Failed to spawn whisper-cli: {e}"))?;
 
     if full_out.status.success() {
@@ -278,15 +298,19 @@ pub fn invoke(
     );
 
     // ── Minimal fallback (plain stdout — older binaries) ───────────────────────
-    let min_out = Command::new(binary)
+    #[allow(unused_mut)]
+    let mut min_cmd = Command::new(binary);
+    min_cmd
         .args([
             "-m", &model_str,
             "-f", &wav_str,
             "-l", language,
         ])
         .current_dir(binary_dir)
-        .env("PATH", &extended_path)
-        .output()
+        .env("PATH", &extended_path);
+    #[cfg(target_os = "windows")]
+    min_cmd.creation_flags(CREATE_NO_WINDOW);
+    let min_out = min_cmd.output()
         .map_err(|e| format!("Failed to spawn whisper-cli (fallback): {e}"))?;
 
     if min_out.status.success() {
@@ -303,48 +327,46 @@ pub fn invoke(
     .into())
 }
 
-/// Returns a PATH value with all DLL-containing directories under the `binaries/`
-/// ancestor of `binary` prepended to the current system PATH.
+/// Returns a PATH value with the binary's own directory and all DLL-containing
+/// directories under any `binaries/` ancestor prepended to the current system PATH.
 ///
 /// On Windows this ensures that `ggml.dll`, `whisper.dll`, and any other co-located
 /// DLLs are found even when the resolved binary lives in a different directory from
-/// its DLLs (e.g. a Tauri-named stub in `binaries/` vs the full release in
-/// `binaries/whisper-bin-x64/Release/`).
+/// its DLLs.
 ///
 /// On non-Windows platforms the current PATH is returned unchanged.
 fn build_extended_path(binary: &Path) -> std::ffi::OsString {
     let current = std::env::var_os("PATH").unwrap_or_default();
 
     #[cfg(target_os = "windows")]
-    if let Some(mut prefix) = dll_path_prefix(binary) {
-        if !current.is_empty() {
-            prefix.push(";");
-            prefix.push(&current);
+    {
+        let binary_dir = binary.parent().unwrap_or(Path::new("."));
+        let mut extra_dirs: Vec<PathBuf> = vec![binary_dir.to_path_buf()];
+
+        // Also collect DLL dirs from any binaries/ ancestor tree.
+        if let Some(binaries_root) = binary
+            .ancestors()
+            .find(|p| p.file_name().and_then(|n| n.to_str()) == Some("binaries"))
+        {
+            collect_dll_dirs(binaries_root, &mut extra_dirs);
         }
-        return prefix;
+
+        // Deduplicate while preserving order.
+        extra_dirs.dedup();
+
+        if !extra_dirs.is_empty() {
+            if let Ok(mut prefix) = std::env::join_paths(&extra_dirs) {
+                if !current.is_empty() {
+                    prefix.push(";");
+                    prefix.push(&current);
+                }
+                return prefix.to_os_string();
+            }
+        }
     }
 
-    let _ = binary; // only used on Windows
+    let _ = binary;
     current
-}
-
-/// Walks up from `binary` to find the `binaries/` ancestor, then recursively
-/// collects every subdirectory that contains at least one `.dll` file and
-/// returns them joined as a semicolon-separated PATH segment.
-#[cfg(target_os = "windows")]
-fn dll_path_prefix(binary: &Path) -> Option<std::ffi::OsString> {
-    let binaries_root = binary
-        .ancestors()
-        .find(|p| p.file_name().and_then(|n| n.to_str()) == Some("binaries"))?;
-
-    let mut dirs: Vec<PathBuf> = Vec::new();
-    collect_dll_dirs(binaries_root, &mut dirs);
-
-    if dirs.is_empty() {
-        return None;
-    }
-
-    std::env::join_paths(&dirs).ok().map(|s| s.to_os_string())
 }
 
 /// Recursively collects directories under `dir` that contain at least one `.dll` file.
