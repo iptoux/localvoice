@@ -20,6 +20,11 @@
 - [ ] TASK-156: React: Global error boundary — catch unexpected frontend errors and show a non-crashing error message
 - [ ] TASK-157: Write smoke test checklist in `plan/smoke_test.md` covering: launch → onboarding → download model → record clip → transcribe → view in history → dashboard updates → add correction rule → verify rule fires → check pill positions remembered after restart
 - [ ] TASK-158: Execute smoke test checklist end-to-end; open issues for any blocking failures; fix all P0 issues before tagging v0.1
+- [ ] TASK-165: Implement in-app log tracking — `db/repositories/logs_repo.rs` inserts rows into `app_logs` table (id, level, area, message, created_at); add migration; implement a custom `log::Log` subscriber in `logging/mod.rs` that writes warn/error entries to SQLite; register in `lib.rs` setup
+- [ ] TASK-166: Implement `commands/logs.rs` — Tauri commands: `list_logs(level_filter, limit)` returning `Vec<LogEntry>`; `export_logs()` opens a save-file dialog (rfd) and writes JSON or plain text; `clear_logs()` truncates the table
+- [ ] TASK-167: React: Logs page — filterable list (All / Warn / Error) sorted newest-first; each row shows timestamp, level badge, area tag, and message; "Export" button and "Clear" button; add "Logs" entry to sidebar nav
+- [ ] TASK-168: Replace pill in-line error text with `tauri-plugin-notification` native OS toast — on Error state emit a native notification with title "LocalVoice" and the actionable error message; keep the pill Error state for visual feedback but shorten the displayed text to "Error – see notification"
+- [ ] TASK-169: Emit native OS notification on transcription Success too (opt-in setting `notifications.on_success`, default false) — body shows word count and first ~80 chars of cleaned text
 
 ## Product/UX Tasks
 
@@ -50,3 +55,6 @@
 - Debounce window position saving to avoid excessive SQLite writes during dragging
 - Autostart on Windows via registry is the most reliable method; document the key path for future macOS/Linux support
 - Platform-specific quirks for autostart, tray, and text insertion should be documented in `plan/` for future platform ports
+- Log tracking: only persist warn/error/fatal — debug-level logs stay ephemeral to avoid DB bloat; cap the table at a rolling 1000 rows (delete oldest on insert when over limit)
+- Native notifications: use `tauri-plugin-notification`; requires `"notification"` capability in `tauri.conf.json`; on Windows shows Windows toast notifications
+- Logs export format: JSON preferred (structured, machine-readable for support triage); plain text as secondary option
