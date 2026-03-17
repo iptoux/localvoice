@@ -169,3 +169,17 @@ export interface DateRange {
   start?: string;
   end?: string;
 }
+
+export interface AmbiguousTerm {
+  id: string;
+  phrase: string;
+  normalizedPhrase: string;
+  language?: string;
+  occurrences: number;
+  avgConfidence?: number;
+  lastSeenAt: string;
+  suggestedTarget?: string;
+  dismissed: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

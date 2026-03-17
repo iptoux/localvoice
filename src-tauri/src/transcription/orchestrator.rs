@@ -4,7 +4,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use uuid::Uuid;
 
 use crate::db::models::Session;
-use crate::db::repositories::{dictionary_repo, models_repo, sessions_repo, settings_repo};
+use crate::db::repositories::{ambiguous_terms_repo, dictionary_repo, models_repo, sessions_repo, settings_repo};
 use crate::dictionary::service as dict_service;
 use crate::errors::CmdResult;
 use crate::os::{clipboard, text_insertion};
@@ -206,6 +206,29 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                 log::error!("Failed to persist session segments: {e}");
             } else {
                 log::info!("Session {} persisted ({} segments)", session.id, result.segments.len());
+            }
+
+            // ── Ambiguity detection ───────────────────────────────────────────
+            let conf_threshold: f32 = settings
+                .get("ambiguity.confidence_threshold")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0.6);
+            let candidates =
+                crate::postprocess::ambiguity::detect(&result.segments, conf_threshold);
+            for c in &candidates {
+                if let Err(e) = ambiguous_terms_repo::upsert(
+                    &state.db,
+                    &c.phrase,
+                    Some(&result.language),
+                    c.confidence,
+                ) {
+                    log::warn!("Failed to upsert ambiguous term '{}': {e}", c.phrase);
+                }
+            }
+            if !candidates.is_empty() {
+                if let Err(e) = crate::dictionary::suggestions::apply_suggestions(&state.db) {
+                    log::warn!("Failed to apply ambiguity suggestions: {e}");
+                }
             }
 
             // Store for `get_last_transcription` command.

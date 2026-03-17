@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  AmbiguousTerm,
   CorrectionRule,
   DashboardStats,
   DateRange,
@@ -160,3 +161,17 @@ export const updateCorrectionRule = (
 
 export const deleteCorrectionRule = (id: string): Promise<void> =>
   invoke<void>("delete_correction_rule", { id });
+
+// ── Ambiguity ──────────────────────────────────────────────────────────────────
+
+export const listAmbiguousTerms = (): Promise<AmbiguousTerm[]> =>
+  invoke<AmbiguousTerm[]>("list_ambiguous_terms");
+
+export const acceptAmbiguitySuggestion = (
+  id: string,
+  targetPhrase: string
+): Promise<void> =>
+  invoke<void>("accept_ambiguity_suggestion", { id, targetPhrase });
+
+export const dismissAmbiguitySuggestion = (id: string): Promise<void> =>
+  invoke<void>("dismiss_ambiguity_suggestion", { id });

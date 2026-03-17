@@ -88,6 +88,10 @@ pub fn run() {
             cmd_dictionary::create_correction_rule,
             cmd_dictionary::update_correction_rule,
             cmd_dictionary::delete_correction_rule,
+            // Ambiguity
+            cmd_dictionary::list_ambiguous_terms,
+            cmd_dictionary::accept_ambiguity_suggestion,
+            cmd_dictionary::dismiss_ambiguity_suggestion,
         ])
         // Prevent the app from exiting when the last window is closed —
         // the tray keeps the app alive.

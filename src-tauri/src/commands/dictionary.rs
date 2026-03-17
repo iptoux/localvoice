@@ -1,7 +1,9 @@
 use serde::Deserialize;
 use tauri::State;
 
+use crate::db::repositories::ambiguous_terms_repo::AmbiguousTerm;
 use crate::db::repositories::dictionary_repo::{CorrectionRule, DictionaryEntry};
+use crate::db::repositories::settings_repo;
 use crate::dictionary::service;
 use crate::errors::CmdResult;
 use crate::state::AppState;
@@ -123,4 +125,30 @@ pub fn update_correction_rule(
 #[tauri::command]
 pub fn delete_correction_rule(state: State<AppState>, id: String) -> CmdResult<()> {
     service::delete_rule(&state.db, &id).map_err(Into::into)
+}
+
+// ── Ambiguity commands ────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub fn list_ambiguous_terms(state: State<AppState>) -> CmdResult<Vec<AmbiguousTerm>> {
+    let settings = settings_repo::get_all(&state.db).unwrap_or_default();
+    let min_occ: i64 = settings
+        .get("ambiguity.min_occurrences")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(3);
+    service::list_ambiguous_terms(&state.db, min_occ).map_err(Into::into)
+}
+
+#[tauri::command]
+pub fn accept_ambiguity_suggestion(
+    state: State<AppState>,
+    id: String,
+    target_phrase: String,
+) -> CmdResult<()> {
+    service::accept_ambiguity_suggestion(&state.db, &id, &target_phrase).map_err(Into::into)
+}
+
+#[tauri::command]
+pub fn dismiss_ambiguity_suggestion(state: State<AppState>, id: String) -> CmdResult<()> {
+    service::dismiss_ambiguity_suggestion(&state.db, &id).map_err(Into::into)
 }

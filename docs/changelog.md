@@ -1,5 +1,15 @@
 # Changelog
 
+## MS-09 — Ambiguity v1 (2026-03-17)
+
+- New **Suggestions** tab in the Dictionary page — shows low-confidence phrases that whisper repeatedly struggles with
+- Phrases are automatically tracked after each transcription; they surface once ≥ 3 occurrences with average confidence below 60%
+- If a matching correction rule already exists, a suggested replacement is shown instantly
+- **Accept**: one click creates a correction rule (mode: suggested, auto-apply: on) and removes the suggestion
+- **Edit**: inline input to type a custom replacement before accepting
+- **Dismiss**: hides the suggestion; it reappears automatically if whisper continues to struggle (+5 new occurrences)
+- DB migration v2 adds `dismissed_at_occurrences` column to `ambiguous_terms` for the re-surface logic
+
 ## MS-08 — Dictionary v1 (2026-03-17)
 
 - New **Dictionary** page with Rules tab (default) and Terms tab
