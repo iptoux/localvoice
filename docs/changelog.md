@@ -1,5 +1,17 @@
 # Changelog
 
+## MS-10 — Polish (2026-03-17)
+
+- **Onboarding**: first-time users with no model installed see a welcome overlay guiding them to the Models page
+- **Autostart**: Settings → System toggle registers/removes LocalVoice from Windows startup (registry)
+- **Window persistence**: pill position and main window size/position are saved automatically and restored on next launch
+- **Native notifications**: errors during transcription emit an OS toast notification with a plain-language message (opt-out); success notifications are opt-in (Settings → Notifications)
+- **Friendly error messages**: raw Rust errors are mapped to user-readable text before display in the pill and notifications
+- **In-app Logs page**: shows all warn/error entries captured in the current session; filterable by level; exportable as JSON
+- **Error boundary**: uncaught React errors show a "Try again" screen instead of a blank window
+- **Settings**: autostart toggle, error notification toggle, success notification toggle; `Reset to defaults` button now functional
+- **Loading states**: Models page shows loading indicator on initial fetch; shared Spinner component added
+
 ## MS-09 — Ambiguity v1 (2026-03-17)
 
 - New **Suggestions** tab in the Dictionary page — shows low-confidence phrases that whisper repeatedly struggles with

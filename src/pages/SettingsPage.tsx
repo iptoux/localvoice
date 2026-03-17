@@ -1,11 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAppStore } from "../stores/app-store";
 import { useSettingsStore } from "../stores/settings-store";
-import { listInputDevices, updateSetting } from "../lib/tauri";
+import {
+  getAutostart,
+  listInputDevices,
+  setAutostart,
+  updateSetting,
+} from "../lib/tauri";
 
 export default function SettingsPage() {
   const { settings, loading, load } = useSettingsStore();
   const { audioDevices, setAudioDevices } = useAppStore();
+  const [autostart, setAutostartState] = useState(false);
 
   useEffect(() => {
     load();
@@ -16,6 +22,19 @@ export default function SettingsPage() {
       .then(setAudioDevices)
       .catch((e) => console.error("Failed to load audio devices:", e));
   }, [setAudioDevices]);
+
+  useEffect(() => {
+    getAutostart().then(setAutostartState).catch(() => {});
+  }, []);
+
+  const handleAutostartToggle = async (enabled: boolean) => {
+    try {
+      await setAutostart(enabled);
+      setAutostartState(enabled);
+    } catch (e) {
+      console.error("Failed to set autostart:", e);
+    }
+  };
 
   const selectedDeviceId = settings["recording.device_id"] ?? "";
   const shortcut = settings["recording.shortcut"] ?? "CommandOrControl+Shift+Space";
@@ -161,6 +180,42 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* System section */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">
+          System
+        </h2>
+        <Toggle
+          label="Launch at login"
+          description="Start LocalVoice automatically when you log in to Windows."
+          checked={autostart}
+          onChange={handleAutostartToggle}
+        />
+      </section>
+
+      {/* Notifications section */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">
+          Notifications
+        </h2>
+        <Toggle
+          label="Error notifications"
+          description="Show a native OS notification when transcription fails."
+          checked={settings["notifications.on_error"] === "true"}
+          onChange={(v) =>
+            updateSetting("notifications.on_error", v ? "true" : "false").then(load)
+          }
+        />
+        <Toggle
+          label="Success notifications"
+          description="Show a notification after each successful transcription (includes word count and preview)."
+          checked={settings["notifications.on_success"] === "true"}
+          onChange={(v) =>
+            updateSetting("notifications.on_success", v ? "true" : "false").then(load)
+          }
+        />
+      </section>
+
       {/* All settings dump — useful during development */}
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">
@@ -178,6 +233,47 @@ export default function SettingsPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+function Toggle({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex items-start gap-4 cursor-pointer group">
+      <div className="relative mt-0.5 shrink-0">
+        <input
+          type="checkbox"
+          className="sr-only"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+        />
+        <div
+          className={`w-10 h-5 rounded-full transition-colors ${
+            checked ? "bg-blue-600" : "bg-neutral-600"
+          }`}
+        />
+        <div
+          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+            checked ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </div>
+      <span>
+        <span className="text-sm text-neutral-200 block">{label}</span>
+        {description && (
+          <span className="text-xs text-neutral-500">{description}</span>
+        )}
+      </span>
+    </label>
   );
 }
 

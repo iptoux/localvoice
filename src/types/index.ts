@@ -170,6 +170,14 @@ export interface DateRange {
   end?: string;
 }
 
+export interface LogEntry {
+  id: string;
+  level: string;
+  area: string;
+  message: string;
+  createdAt: string;
+}
+
 export interface AmbiguousTerm {
   id: string;
   phrase: string;

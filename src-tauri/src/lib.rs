@@ -4,6 +4,7 @@ mod db;
 mod dictionary;
 mod errors;
 mod history;
+mod logging;
 mod models;
 mod os;
 mod postprocess;
@@ -11,8 +12,12 @@ mod state;
 mod stats;
 mod transcription;
 
-use commands::{dictionary as cmd_dictionary, history as cmd_history, models as cmd_models, recording, settings, stats as cmd_stats, window};
-use commands::transcription as cmd_transcription;
+use commands::{
+    dictionary as cmd_dictionary, history as cmd_history, logs as cmd_logs,
+    models as cmd_models, recording, settings, stats as cmd_stats, system as cmd_system,
+    transcription as cmd_transcription, window,
+};
+use db::repositories::settings_repo;
 use state::AppState;
 use tauri::Manager;
 
@@ -20,9 +25,8 @@ use tauri::Manager;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(
-            // The with_handler callback is the single dispatch point for all
-            // registered global shortcuts. os::hotkeys::handle routes by state.
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
                     os::hotkeys::handle(app, shortcut, event);
@@ -30,9 +34,15 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
+            // Initialise in-memory log buffer and set global logger.
+            logging::init();
+
             // Open / create SQLite database and run migrations.
             let db = db::open(app.handle())
                 .map_err(|e| Box::<dyn std::error::Error>::from(e))?;
+
+            // Read persisted settings before moving the DB into AppState.
+            let settings = settings_repo::get_all(&db).unwrap_or_default();
 
             // Register shared state.
             app.manage(AppState::new(db));
@@ -41,9 +51,47 @@ pub fn run() {
             os::tray::setup(app.handle())
                 .map_err(|e| Box::<dyn std::error::Error>::from(e.to_string()))?;
 
-            // Register the global recording shortcut (reads shortcut from DB settings).
+            // Register the global recording shortcut.
             os::hotkeys::setup(app.handle())
                 .map_err(|e| Box::<dyn std::error::Error>::from(e))?;
+
+            // ── Restore pill position ─────────────────────────────────────────
+            if let (Some(x), Some(y)) = (
+                settings
+                    .get("ui.pill.position_x")
+                    .and_then(|v| v.parse::<i32>().ok()),
+                settings
+                    .get("ui.pill.position_y")
+                    .and_then(|v| v.parse::<i32>().ok()),
+            ) {
+                if let Some(pill) = app.get_webview_window("pill") {
+                    let _ = pill.set_position(tauri::PhysicalPosition::new(x, y));
+                }
+            }
+
+            // ── Restore main window geometry ──────────────────────────────────
+            if let Some(main_win) = app.get_webview_window("main") {
+                if let (Some(w), Some(h)) = (
+                    settings
+                        .get("ui.main_window.width")
+                        .and_then(|v| v.parse::<u32>().ok()),
+                    settings
+                        .get("ui.main_window.height")
+                        .and_then(|v| v.parse::<u32>().ok()),
+                ) {
+                    let _ = main_win.set_size(tauri::PhysicalSize::new(w, h));
+                }
+                if let (Some(x), Some(y)) = (
+                    settings
+                        .get("ui.main_window.x")
+                        .and_then(|v| v.parse::<i32>().ok()),
+                    settings
+                        .get("ui.main_window.y")
+                        .and_then(|v| v.parse::<i32>().ok()),
+                ) {
+                    let _ = main_win.set_position(tauri::PhysicalPosition::new(x, y));
+                }
+            }
 
             Ok(())
         })
@@ -92,14 +140,58 @@ pub fn run() {
             cmd_dictionary::list_ambiguous_terms,
             cmd_dictionary::accept_ambiguity_suggestion,
             cmd_dictionary::dismiss_ambiguity_suggestion,
+            // System
+            cmd_system::check_first_run,
+            cmd_system::set_autostart,
+            cmd_system::get_autostart,
+            // Logs
+            cmd_logs::list_logs,
+            cmd_logs::export_logs,
+            cmd_logs::clear_logs,
         ])
-        // Prevent the app from exiting when the last window is closed —
-        // the tray keeps the app alive.
         .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                // Hide instead of closing for both windows.
-                window.hide().unwrap_or_default();
-                api.prevent_close();
+            match event {
+                tauri::WindowEvent::CloseRequested { api, .. } => {
+                    // Hide instead of closing — tray keeps the app alive.
+                    window.hide().unwrap_or_default();
+                    api.prevent_close();
+                }
+                tauri::WindowEvent::Moved(pos) => {
+                    let app = window.app_handle();
+                    let state = app.state::<AppState>();
+                    let x = pos.x.to_string();
+                    let y = pos.y.to_string();
+                    match window.label() {
+                        "pill" => {
+                            settings_repo::upsert(&state.db, "ui.pill.position_x", &x).ok();
+                            settings_repo::upsert(&state.db, "ui.pill.position_y", &y).ok();
+                        }
+                        "main" => {
+                            settings_repo::upsert(&state.db, "ui.main_window.x", &x).ok();
+                            settings_repo::upsert(&state.db, "ui.main_window.y", &y).ok();
+                        }
+                        _ => {}
+                    }
+                }
+                tauri::WindowEvent::Resized(size) => {
+                    if window.label() == "main" {
+                        let app = window.app_handle();
+                        let state = app.state::<AppState>();
+                        settings_repo::upsert(
+                            &state.db,
+                            "ui.main_window.width",
+                            &size.width.to_string(),
+                        )
+                        .ok();
+                        settings_repo::upsert(
+                            &state.db,
+                            "ui.main_window.height",
+                            &size.height.to_string(),
+                        )
+                        .ok();
+                    }
+                }
+                _ => {}
             }
         })
         .run(tauri::generate_context!())

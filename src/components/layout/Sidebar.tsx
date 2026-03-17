@@ -5,6 +5,7 @@ const LINKS = [
   { to: "/history", label: "History" },
   { to: "/dictionary", label: "Dictionary" },
   { to: "/models", label: "Models" },
+  { to: "/logs", label: "Logs" },
   { to: "/settings", label: "Settings" },
 ];
 

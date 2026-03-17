@@ -15,7 +15,7 @@ Technical reference for contributors and maintainers.
 | [ms07-models.md](ms07-models.md) | MS-07 Models | done |
 | [ms08-dictionary.md](ms08-dictionary.md) | MS-08 Dictionary v1 | done |
 | [ms09-ambiguity.md](ms09-ambiguity.md) | MS-09 Ambiguity v1 | done |
-| ms10-polish.md | MS-10 Polish | todo |
+| [ms10-polish.md](ms10-polish.md) | MS-10 Polish | done |
 
 ## Reference
 

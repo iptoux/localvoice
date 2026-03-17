@@ -1,0 +1,136 @@
+import { useEffect, useState } from "react";
+import { listLogs, exportLogs, clearLogs } from "../lib/tauri";
+import type { LogEntry } from "../types";
+
+type LevelFilter = "all" | "warn" | "error";
+
+const LEVEL_COLORS: Record<string, string> = {
+  warn: "text-yellow-400 bg-yellow-900/30 border-yellow-700/50",
+  error: "text-red-400 bg-red-900/30 border-red-700/50",
+};
+
+export default function Logs() {
+  const [entries, setEntries] = useState<LogEntry[]>([]);
+  const [filter, setFilter] = useState<LevelFilter>("all");
+  const [loading, setLoading] = useState(false);
+
+  const load = async (f: LevelFilter = filter) => {
+    setLoading(true);
+    try {
+      const data = await listLogs(f === "all" ? undefined : f);
+      setEntries(data);
+    } catch (e) {
+      console.error("Failed to load logs:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, [filter]);
+
+  const handleExport = async () => {
+    try {
+      await exportLogs();
+    } catch (e) {
+      console.error("Export failed:", e);
+    }
+  };
+
+  const handleClear = async () => {
+    if (!confirm("Clear all log entries?")) return;
+    try {
+      await clearLogs();
+      setEntries([]);
+    } catch (e) {
+      console.error("Clear failed:", e);
+    }
+  };
+
+  return (
+    <div className="p-8 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-semibold text-white mb-1">Logs</h1>
+      <p className="text-neutral-400 text-sm mb-6">
+        Warnings and errors captured during this session. Useful for diagnosing
+        transcription or output issues.
+      </p>
+
+      {/* Controls */}
+      <div className="flex items-center gap-3 mb-5 flex-wrap">
+        {(["all", "warn", "error"] as LevelFilter[]).map((level) => (
+          <button
+            key={level}
+            onClick={() => setFilter(level)}
+            className={`px-3 py-1.5 text-xs rounded-full border transition-colors capitalize ${
+              filter === level
+                ? "bg-neutral-700 border-neutral-500 text-white"
+                : "border-neutral-700 text-neutral-400 hover:text-white"
+            }`}
+          >
+            {level === "all" ? "All" : level}
+          </button>
+        ))}
+        <div className="flex-1" />
+        <button
+          onClick={() => load()}
+          className="text-xs text-neutral-400 hover:text-white transition-colors"
+        >
+          Refresh
+        </button>
+        <button
+          onClick={handleExport}
+          className="text-xs px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+        >
+          Export JSON
+        </button>
+        <button
+          onClick={handleClear}
+          className="text-xs px-3 py-1.5 text-red-500 hover:text-red-400 border border-red-800 hover:border-red-600 rounded transition-colors"
+        >
+          Clear
+        </button>
+      </div>
+
+      {/* Count */}
+      <p className="text-xs text-neutral-500 mb-3">
+        {entries.length} {entries.length === 1 ? "entry" : "entries"}
+      </p>
+
+      {/* List */}
+      {loading ? (
+        <p className="text-neutral-500 text-sm">Loading…</p>
+      ) : entries.length === 0 ? (
+        <div className="text-center py-12 text-neutral-500 text-sm">
+          No log entries. Warnings and errors will appear here as they occur.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {entries.map((entry) => (
+            <div
+              key={entry.id}
+              className={`px-4 py-2.5 rounded-lg border text-sm ${
+                LEVEL_COLORS[entry.level] ?? "text-neutral-300 bg-neutral-800 border-neutral-700"
+              }`}
+            >
+              <div className="flex items-start gap-3 flex-wrap">
+                <span className="text-xs font-mono uppercase shrink-0 font-semibold">
+                  {entry.level}
+                </span>
+                <span className="text-xs text-neutral-500 shrink-0">
+                  {new Date(entry.createdAt).toLocaleTimeString()}
+                </span>
+                {entry.area && (
+                  <span className="text-xs text-neutral-500 shrink-0 font-mono">
+                    {entry.area}
+                  </span>
+                )}
+                <span className="flex-1 break-words">{entry.message}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
