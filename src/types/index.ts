@@ -81,13 +81,18 @@ export interface CorrectionRule {
 export interface ModelInfo {
   key: string;
   displayName: string;
-  languageScope: "multilingual" | "en";
+  languageScope: "multilingual" | "en-only";
   fileSizeBytes: number;
   installed: boolean;
   isDefaultForDe: boolean;
   isDefaultForEn: boolean;
   localPath?: string;
   installedAt?: string;
+  description: string;
+  speed: "fastest" | "fast" | "balanced" | "slow" | "slowest";
+  accuracy: "low" | "medium" | "good" | "great" | "best";
+  category: "standard" | "quantized" | "turbo" | "large";
+  recommendedFor: string;
 }
 
 export interface DownloadProgress {
@@ -150,12 +155,19 @@ export interface LanguageCount {
   count: number;
 }
 
+export interface ModelUsage {
+  modelId: string;
+  sessionCount: number;
+  wordCount: number;
+}
+
 export interface DashboardStats {
   totalWordCount: number;
   totalSessionCount: number;
   avgWpm: number;
   totalDurationMs: number;
   languageCounts: LanguageCount[];
+  topModels: ModelUsage[];
 }
 
 export interface TimeseriesPoint {

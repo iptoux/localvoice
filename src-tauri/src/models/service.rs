@@ -21,6 +21,12 @@ pub struct ModelInfo {
     pub is_default_for_en: bool,
     pub local_path: Option<String>,
     pub installed_at: Option<String>,
+    // Extended metadata from registry
+    pub description: String,
+    pub speed: String,
+    pub accuracy: String,
+    pub category: String,
+    pub recommended_for: String,
 }
 
 /// Returns the models storage directory: `{app_data_dir}/models/`.
@@ -51,6 +57,11 @@ pub fn list_available(app: &AppHandle) -> Result<Vec<ModelInfo>, AppError> {
                 is_default_for_en: inst.map(|i| i.is_default_for_en).unwrap_or(false),
                 local_path: inst.map(|i| i.local_path.clone()),
                 installed_at: inst.and_then(|i| i.installed_at.clone()),
+                description: def.description.to_string(),
+                speed: def.speed.to_string(),
+                accuracy: def.accuracy.to_string(),
+                category: def.category.to_string(),
+                recommended_for: def.recommended_for.to_string(),
             }
         })
         .collect();
