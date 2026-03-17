@@ -23,12 +23,14 @@ const WHISPER_EXE_NAMES: &[&str] = &["whisper-cli", "main"];
 ///
 /// Search order:
 /// 1. `WHISPER_BIN_PATH` environment variable (explicit override, highest priority).
-/// 2. Alongside the running executable (installed/bundled app).
-/// 3. Tauri resource dir → `binaries/` flat lookup (Tauri sidecar convention).
-/// 4. Recursive scan of `binaries/` subdirectories — handles unpacked release zips
-///    like `binaries/whisper-bin-x64/Release/whisper-cli.exe`.
-/// 5. `whisper-cli` / `main` on the system PATH.
+/// 2. Alongside the running executable (installed/bundled app, production).
+/// 3. `src-tauri/binaries/` via compile-time CARGO_MANIFEST_DIR (dev mode only).
+/// 4. Tauri resource dir → `binaries/` flat, then recursive scan (production
+///    resource layout and unpacked zip fallback).
+/// 5. `whisper-cli` on the system PATH.
 pub fn resolve_binary(app: &AppHandle) -> CmdResult<PathBuf> {
+    let mut searched: Vec<String> = Vec::new();
+
     // 1. Explicit override.
     if let Ok(env_path) = std::env::var("WHISPER_BIN_PATH") {
         let p = PathBuf::from(&env_path);
@@ -40,34 +42,50 @@ pub fn resolve_binary(app: &AppHandle) -> CmdResult<PathBuf> {
         );
     }
 
-    // 2. Alongside the running executable (production bundle).
+    // 2. Alongside the running executable (production bundle — binary is in exe dir).
     if let Ok(exe) = std::env::current_exe() {
         let exe_dir = exe.parent().unwrap_or(Path::new("."));
         for name in WHISPER_EXE_NAMES {
             let p = exe_dir.join(name);
+            searched.push(p.display().to_string());
             if p.exists() {
                 return Ok(p);
             }
         }
     }
 
-    // 3. Tauri resource dir → binaries/.
-    //    In installed builds all files land here flat (whisper-cli.exe + DLLs bundled
-    //    together via tauri.conf.json resources). Flat lookup comes first so the
-    //    co-located layout is preferred; recursive scan is a fallback for developer
-    //    setups where a release zip has been unpacked into a subdirectory.
-    if let Ok(res_dir) = app.path().resource_dir() {
-        let binaries_dir = res_dir.join("binaries");
+    // 3. CARGO_MANIFEST_DIR/binaries/ — compile-time constant, always points to
+    //    src-tauri/. Reliable in dev mode where resource_dir() may differ.
+    {
+        let manifest_binaries = Path::new(env!("CARGO_MANIFEST_DIR")).join("binaries");
 
-        // 3a. Flat lookup — production layout (whisper-cli.exe + DLLs all flat).
+        // 3a. Flat lookup (whisper-cli.exe + DLLs co-located).
         for name in WHISPER_EXE_NAMES {
-            let p = binaries_dir.join(name);
+            let p = manifest_binaries.join(name);
+            searched.push(p.display().to_string());
             if p.exists() {
                 return Ok(p);
             }
         }
 
-        // 3b. Recursive scan — dev fallback (e.g. release zip unpacked as a subdir).
+        // 3b. Recursive scan (release zip unpacked as a subdir, e.g. whisper-bin-x64/).
+        if let Some(found) = scan_dir_for_whisper(&manifest_binaries) {
+            return Ok(found);
+        }
+    }
+
+    // 4. Tauri resource dir → binaries/ (production installer layout).
+    if let Ok(res_dir) = app.path().resource_dir() {
+        let binaries_dir = res_dir.join("binaries");
+
+        for name in WHISPER_EXE_NAMES {
+            let p = binaries_dir.join(name);
+            searched.push(p.display().to_string());
+            if p.exists() {
+                return Ok(p);
+            }
+        }
+
         if let Some(found) = scan_dir_for_whisper(&binaries_dir) {
             return Ok(found);
         }
@@ -80,14 +98,16 @@ pub fn resolve_binary(app: &AppHandle) -> CmdResult<PathBuf> {
         }
     }
 
-    Err(
+    Err(format!(
         "whisper-cli binary not found.\n\
+         Searched:\n{}\n\
          Options:\n\
-         • Unzip a whisper.cpp release into src-tauri/binaries/ (any subdirectory layout).\n\
+         • Place whisper-cli.exe and its DLLs into src-tauri/binaries/\n\
          • Set WHISPER_BIN_PATH=/full/path/to/whisper-cli.exe\n\
-         • Download from https://github.com/ggerganov/whisper.cpp/releases"
-            .into(),
+         • Download from https://github.com/ggerganov/whisper.cpp/releases",
+        searched.iter().map(|p| format!("  • {p}")).collect::<Vec<_>>().join("\n")
     )
+    .into())
 }
 
 /// Walks `dir` recursively and returns the best whisper CLI executable found.
