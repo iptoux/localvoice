@@ -1,12 +1,33 @@
 import { create } from "zustand";
-import type { RecordingState } from "../types";
+import type { DeviceInfo, RecordingState } from "../types";
 
 interface AppStore {
   recordingState: RecordingState;
   setRecordingState: (state: RecordingState) => void;
+
+  /** Last emitted audio level from Rust (0–1 RMS). */
+  audioLevel: number;
+  setAudioLevel: (level: number) => void;
+
+  /** Last error message from the Error state, if any. */
+  recordingError: string | null;
+  setRecordingError: (error: string | null) => void;
+
+  /** Available input devices, populated by SettingsPage. */
+  audioDevices: DeviceInfo[];
+  setAudioDevices: (devices: DeviceInfo[]) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
   recordingState: "idle",
   setRecordingState: (recordingState) => set({ recordingState }),
+
+  audioLevel: 0,
+  setAudioLevel: (audioLevel) => set({ audioLevel }),
+
+  recordingError: null,
+  setRecordingError: (recordingError) => set({ recordingError }),
+
+  audioDevices: [],
+  setAudioDevices: (audioDevices) => set({ audioDevices }),
 }));

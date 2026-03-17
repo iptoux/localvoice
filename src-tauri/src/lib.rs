@@ -8,7 +8,7 @@ mod postprocess;
 mod state;
 mod transcription;
 
-use commands::{settings, window};
+use commands::{recording, settings, window};
 use state::AppState;
 use tauri::Manager;
 
@@ -16,6 +16,15 @@ use tauri::Manager;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(
+            // The with_handler callback is the single dispatch point for all
+            // registered global shortcuts. os::hotkeys::handle routes by state.
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, shortcut, event| {
+                    os::hotkeys::handle(app, shortcut, event);
+                })
+                .build(),
+        )
         .setup(|app| {
             // Open / create SQLite database and run migrations.
             let db = db::open(app.handle())
@@ -27,6 +36,10 @@ pub fn run() {
             // Build system tray.
             os::tray::setup(app.handle())
                 .map_err(|e| Box::<dyn std::error::Error>::from(e.to_string()))?;
+
+            // Register the global recording shortcut (reads shortcut from DB settings).
+            os::hotkeys::setup(app.handle())
+                .map_err(|e| Box::<dyn std::error::Error>::from(e))?;
 
             Ok(())
         })
@@ -40,6 +53,12 @@ pub fn run() {
             window::hide_pill,
             window::open_main_window,
             window::set_pill_position,
+            // Recording
+            recording::start_recording,
+            recording::stop_recording,
+            recording::cancel_recording,
+            recording::get_recording_state,
+            recording::list_input_devices,
         ])
         // Prevent the app from exiting when the last window is closed —
         // the tray keeps the app alive.
