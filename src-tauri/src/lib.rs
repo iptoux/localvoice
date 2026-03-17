@@ -9,6 +9,7 @@ mod state;
 mod transcription;
 
 use commands::{recording, settings, window};
+use commands::transcription as cmd_transcription;
 use state::AppState;
 use tauri::Manager;
 
@@ -59,6 +60,9 @@ pub fn run() {
             recording::cancel_recording,
             recording::get_recording_state,
             recording::list_input_devices,
+            // Transcription
+            cmd_transcription::transcribe_last_recording,
+            cmd_transcription::get_last_transcription,
         ])
         // Prevent the app from exiting when the last window is closed —
         // the tray keeps the app alive.

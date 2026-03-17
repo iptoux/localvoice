@@ -3,12 +3,13 @@ import { listen } from "@tauri-apps/api/event";
 import "./index.css";
 import { Pill } from "./components/pill/Pill";
 import { useAppStore } from "./stores/app-store";
-import type { RecordingStatePayload } from "./types";
+import type { RecordingStatePayload, TranscriptionResult } from "./types";
 
 export function PillApp() {
   const setRecordingState = useAppStore((s) => s.setRecordingState);
   const setAudioLevel = useAppStore((s) => s.setAudioLevel);
   const setRecordingError = useAppStore((s) => s.setRecordingError);
+  const setLastTranscription = useAppStore((s) => s.setLastTranscription);
 
   useEffect(() => {
     const unlistenState = listen<RecordingStatePayload>(
@@ -23,11 +24,19 @@ export function PillApp() {
       setAudioLevel(event.payload);
     });
 
+    const unlistenTranscription = listen<TranscriptionResult>(
+      "transcription-completed",
+      (event) => {
+        setLastTranscription(event.payload);
+      }
+    );
+
     return () => {
       unlistenState.then((fn) => fn());
       unlistenLevel.then((fn) => fn());
+      unlistenTranscription.then((fn) => fn());
     };
-  }, [setRecordingState, setAudioLevel, setRecordingError]);
+  }, [setRecordingState, setAudioLevel, setRecordingError, setLastTranscription]);
 
   return (
     <div className="w-full h-full flex items-center justify-center p-1">

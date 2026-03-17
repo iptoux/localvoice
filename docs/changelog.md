@@ -1,5 +1,15 @@
 # Changelog
 
+## MS-03 — Local Transcription (2026-03-17)
+
+- Automatic offline transcription via whisper.cpp CLI sidecar after every recording
+- German and English language selection in Settings (all whisper.cpp languages supported)
+- Pill shows transcript preview text in Success state
+- Transcription errors shown clearly in the pill Error state
+- Whitespace normalisation and automatic sentence capitalisation post-processing
+- Model and binary paths configurable via Settings, environment variables, or auto-discovery
+- `transcribe_last_recording` command allows manual re-transcription from the frontend
+
 ## MS-02 — Recording Core (2026-03-17)
 
 - Global shortcut (`Ctrl+Shift+Space` by default) starts and stops recording from anywhere

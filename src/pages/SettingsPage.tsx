@@ -19,9 +19,14 @@ export default function SettingsPage() {
 
   const selectedDeviceId = settings["recording.device_id"] ?? "";
   const shortcut = settings["recording.shortcut"] ?? "CommandOrControl+Shift+Space";
+  const selectedLanguage = settings["transcription.default_language"] ?? "de";
 
   function handleDeviceChange(deviceId: string) {
     updateSetting("recording.device_id", deviceId).then(load);
+  }
+
+  function handleLanguageChange(lang: string) {
+    updateSetting("transcription.default_language", lang).then(load);
   }
 
   if (loading) {
@@ -56,6 +61,33 @@ export default function SettingsPage() {
           </select>
           <p className="text-xs text-neutral-500">
             Audio is captured in mono at 16 kHz for local transcription.
+          </p>
+        </div>
+
+        {/* Transcription language */}
+        <div className="space-y-1">
+          <label className="text-sm text-neutral-300">Transcription Language</label>
+          <select
+            value={selectedLanguage}
+            onChange={(e) => handleLanguageChange(e.target.value)}
+            className="w-full max-w-sm bg-neutral-800 border border-neutral-700 text-white text-sm rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-neutral-500"
+          >
+            <option value="auto">Auto-detect</option>
+            <option value="de">German (de)</option>
+            <option value="en">English (en)</option>
+            <option value="fr">French (fr)</option>
+            <option value="es">Spanish (es)</option>
+            <option value="it">Italian (it)</option>
+            <option value="pt">Portuguese (pt)</option>
+            <option value="nl">Dutch (nl)</option>
+            <option value="pl">Polish (pl)</option>
+            <option value="ru">Russian (ru)</option>
+            <option value="ja">Japanese (ja)</option>
+            <option value="zh">Chinese (zh)</option>
+          </select>
+          <p className="text-xs text-neutral-500">
+            Passed to whisper.cpp via <code className="text-neutral-400">-l</code>.
+            Auto-detect is slower but language-agnostic.
           </p>
         </div>
 

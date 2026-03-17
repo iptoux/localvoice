@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { DeviceInfo, RecordingState } from "../types";
+import type { DeviceInfo, RecordingState, TranscriptionResult } from "../types";
 
 interface AppStore {
   recordingState: RecordingState;
@@ -16,6 +16,10 @@ interface AppStore {
   /** Available input devices, populated by SettingsPage. */
   audioDevices: DeviceInfo[];
   setAudioDevices: (devices: DeviceInfo[]) => void;
+
+  /** Most recent completed transcription result. */
+  lastTranscription: TranscriptionResult | null;
+  setLastTranscription: (result: TranscriptionResult | null) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -30,4 +34,7 @@ export const useAppStore = create<AppStore>((set) => ({
 
   audioDevices: [],
   setAudioDevices: (audioDevices) => set({ audioDevices }),
+
+  lastTranscription: null,
+  setLastTranscription: (lastTranscription) => set({ lastTranscription }),
 }));

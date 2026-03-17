@@ -1,28 +1,12 @@
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, State};
 
 use crate::audio::{capture, devices};
 use crate::errors::CmdResult;
-use crate::state::recording_state::{RecordingState, RecordingStatePayload};
+use crate::state::app_state::emit_recording_state;
+use crate::state::recording_state::RecordingState;
 use crate::state::AppState;
 
 // ── Internal helpers (shared with hotkeys) ────────────────────────────────────
-
-/// Transitions state, persists it in AppState, and emits the event to all windows.
-pub(crate) fn emit_state(
-    app: &AppHandle,
-    state: &State<AppState>,
-    new_state: RecordingState,
-    error: Option<String>,
-) {
-    *state.recording_state.lock().unwrap() = new_state.clone();
-    let payload = RecordingStatePayload {
-        state: new_state,
-        error,
-    };
-    if let Err(e) = app.emit("recording-state-changed", &payload) {
-        log::error!("Failed to emit recording-state-changed: {e}");
-    }
-}
 
 /// Core start logic — called from both the Tauri command and the hotkey handler.
 pub fn start_recording_internal(app: &AppHandle, state: &State<AppState>) -> CmdResult<()> {
@@ -37,25 +21,24 @@ pub fn start_recording_internal(app: &AppHandle, state: &State<AppState>) -> Cmd
     let device_id: Option<String> = {
         let settings =
             crate::db::repositories::settings_repo::get_all(&state.db).unwrap_or_default();
-        let id = settings
+        settings
             .get("recording.device_id")
             .cloned()
-            .filter(|s| !s.is_empty());
-        id
+            .filter(|s| !s.is_empty())
     };
 
     let device = devices::get_input_device(device_id.as_deref())?;
-
     let recording = capture::start_capture(&device, app)?;
 
     *state.active_recording.lock().unwrap() = Some(recording);
-    emit_state(app, state, RecordingState::Listening, None);
+    emit_recording_state(app, RecordingState::Listening, None);
 
     log::info!("Recording started");
     Ok(())
 }
 
-/// Core stop logic — returns the WAV file path.
+/// Core stop logic — stops audio capture, writes WAV, then fires the transcription
+/// pipeline in a background task. Returns the WAV file path for the caller.
 pub fn stop_recording_internal(app: &AppHandle, state: &State<AppState>) -> CmdResult<String> {
     let recording = state
         .active_recording
@@ -64,23 +47,33 @@ pub fn stop_recording_internal(app: &AppHandle, state: &State<AppState>) -> CmdR
         .take()
         .ok_or("No active recording")?;
 
-    emit_state(app, state, RecordingState::Processing, None);
+    emit_recording_state(app, RecordingState::Processing, None);
 
-    match capture::stop_capture(recording) {
-        Ok(path) => {
-            log::info!("Recording saved to {path}");
-            Ok(path)
-        }
+    let wav_path = match capture::stop_capture(recording) {
+        Ok(path) => path,
         Err(e) => {
-            emit_state(
-                app,
-                state,
-                RecordingState::Error,
-                Some(e.to_string()),
-            );
-            Err(e)
+            emit_recording_state(app, RecordingState::Error, Some(e.to_string()));
+            return Err(e);
         }
-    }
+    };
+
+    // Persist WAV path so transcribe_last_recording can find it.
+    *state.last_wav_path.lock().unwrap() = Some(wav_path.clone());
+
+    log::info!("Recording saved to {wav_path}");
+
+    // Kick off transcription in a background thread so the command returns immediately.
+    let app_for_task = app.clone();
+    let wav_for_task = wav_path.clone();
+    tokio::spawn(async move {
+        tokio::task::spawn_blocking(move || {
+            crate::transcription::orchestrator::transcribe_and_emit(app_for_task, wav_for_task);
+        })
+        .await
+        .unwrap_or_else(|e| log::error!("Transcription task panicked: {e}"));
+    });
+
+    Ok(wav_path)
 }
 
 /// Core cancel logic — discards the buffer, returns to Idle.
@@ -88,7 +81,7 @@ pub fn cancel_recording_internal(app: &AppHandle, state: &State<AppState>) {
     if let Some(recording) = state.active_recording.lock().unwrap().take() {
         capture::cancel_capture(recording);
     }
-    emit_state(app, state, RecordingState::Idle, None);
+    emit_recording_state(app, RecordingState::Idle, None);
     log::info!("Recording cancelled");
 }
 
@@ -100,9 +93,8 @@ pub fn start_recording(app: AppHandle, state: State<AppState>) -> CmdResult<()> 
     start_recording_internal(&app, &state)
 }
 
-/// Stops the current recording, writes a WAV file, and returns its path.
-/// Transitions the pill to Processing and then stays there until
-/// the transcription step (MS-03) sets Success or Error.
+/// Stops the current recording and triggers background transcription.
+/// The pill transitions to Processing; Success/Error is emitted by the orchestrator.
 #[tauri::command]
 pub fn stop_recording(app: AppHandle, state: State<AppState>) -> CmdResult<String> {
     stop_recording_internal(&app, &state)

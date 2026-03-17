@@ -45,6 +45,22 @@ export interface ModelInstallation {
 
 export type Settings = Record<string, string>;
 
+export interface TranscriptSegment {
+  startMs: number;
+  endMs: number;
+  text: string;
+  confidence?: number;
+}
+
+export interface TranscriptionResult {
+  rawText: string;
+  cleanedText: string;
+  segments: TranscriptSegment[];
+  language: string;
+  modelId: string;
+  durationMs: number;
+}
+
 export interface DeviceInfo {
   id: string;
   name: string;
