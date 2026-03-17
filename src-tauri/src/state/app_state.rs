@@ -27,6 +27,9 @@ pub struct AppState {
 
     /// Most recently completed transcription result; set by the orchestrator.
     pub last_transcription: Mutex<Option<TranscriptionResult>>,
+
+    /// Timestamp captured when recording starts; used to compute session duration.
+    pub recording_started_at: Mutex<Option<chrono::DateTime<chrono::Utc>>>,
 }
 
 impl AppState {
@@ -38,6 +41,7 @@ impl AppState {
             active_recording: Mutex::new(None),
             last_wav_path: Mutex::new(None),
             last_transcription: Mutex::new(None),
+            recording_started_at: Mutex::new(None),
         }
     }
 }

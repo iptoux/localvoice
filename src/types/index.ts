@@ -7,17 +7,46 @@ export interface Session {
   startedAt: string;
   endedAt: string;
   durationMs: number;
-  language: Language;
+  language: string;
   modelId?: string;
+  triggerType: string;
+  inputDeviceId?: string;
   rawText: string;
   cleanedText: string;
   wordCount: number;
   charCount: number;
   avgConfidence?: number;
   estimatedWpm?: number;
-  outputMode: OutputMode;
+  outputMode: string;
+  outputTargetApp?: string;
   insertedSuccessfully: boolean;
   errorMessage?: string;
+  createdAt: string;
+}
+
+export interface SessionSegment {
+  id: string;
+  sessionId: string;
+  startMs: number;
+  endMs: number;
+  text: string;
+  confidence?: number;
+  segmentIndex: number;
+}
+
+export interface SessionWithSegments {
+  session: Session;
+  segments: SessionSegment[];
+}
+
+export interface SessionFilter {
+  query?: string;
+  language?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  modelId?: string;
+  limit?: number;
+  offset?: number;
 }
 
 export interface CorrectionRule {

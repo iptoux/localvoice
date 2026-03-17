@@ -31,6 +31,7 @@ pub fn start_recording_internal(app: &AppHandle, state: &State<AppState>) -> Cmd
     let recording = capture::start_capture(&device, app)?;
 
     *state.active_recording.lock().unwrap() = Some(recording);
+    *state.recording_started_at.lock().unwrap() = Some(chrono::Utc::now());
     emit_recording_state(app, RecordingState::Listening, None);
 
     log::info!("Recording started");
@@ -81,6 +82,7 @@ pub fn cancel_recording_internal(app: &AppHandle, state: &State<AppState>) {
     if let Some(recording) = state.active_recording.lock().unwrap().take() {
         capture::cancel_capture(recording);
     }
+    *state.recording_started_at.lock().unwrap() = None;
     emit_recording_state(app, RecordingState::Idle, None);
     log::info!("Recording cancelled");
 }

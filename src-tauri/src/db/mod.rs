@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
 pub mod migrations;
+pub mod models;
 pub mod repositories;
 
 pub type DbConn = Arc<Mutex<Connection>>;

@@ -1,5 +1,17 @@
 # Changelog
 
+## MS-05 — History (2026-03-17)
+
+- All transcription sessions are now persisted to SQLite automatically
+- New **History** page: browsable list of past sessions with date, language, word count, and text preview
+- Debounced full-text search across transcript content
+- Filter by language and date range
+- Session detail drawer: cleaned vs raw transcript tabs, optional segment list with timestamps and confidence scores
+- Copy cleaned/raw text to clipboard directly from the detail drawer
+- Delete individual sessions (with confirmation step)
+- Export sessions to plain text or JSON via native save-file dialog
+- Pagination (50 sessions per page) with Previous / Next controls
+
 ## MS-04 — Output Workflow (2026-03-17)
 
 - Transcription text is automatically copied to the clipboard after every successful recording

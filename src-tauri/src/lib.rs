@@ -2,13 +2,14 @@ mod audio;
 mod commands;
 mod db;
 mod errors;
+mod history;
 mod models;
 mod os;
 mod postprocess;
 mod state;
 mod transcription;
 
-use commands::{recording, settings, window};
+use commands::{history as cmd_history, recording, settings, window};
 use commands::transcription as cmd_transcription;
 use state::AppState;
 use tauri::Manager;
@@ -63,6 +64,11 @@ pub fn run() {
             // Transcription
             cmd_transcription::transcribe_last_recording,
             cmd_transcription::get_last_transcription,
+            // History
+            cmd_history::list_sessions,
+            cmd_history::get_session,
+            cmd_history::delete_session,
+            cmd_history::export_sessions,
         ])
         // Prevent the app from exiting when the last window is closed —
         // the tray keeps the app alive.

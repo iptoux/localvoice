@@ -1,8 +1,10 @@
 use std::time::{Duration, Instant};
 
 use tauri::{AppHandle, Emitter, Manager};
+use uuid::Uuid;
 
-use crate::db::repositories::settings_repo;
+use crate::db::models::Session;
+use crate::db::repositories::{sessions_repo, settings_repo};
 use crate::errors::CmdResult;
 use crate::os::{clipboard, text_insertion};
 use crate::state::app_state::emit_recording_state;
@@ -122,7 +124,66 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                 log::error!("Failed to emit output-result: {e}");
             }
 
-            result.output = Some(output_result);
+            result.output = Some(output_result.clone());
+
+            // ── Persist session to DB ─────────────────────────────────────────
+            let now = chrono::Utc::now();
+            let started_at = state
+                .recording_started_at
+                .lock()
+                .unwrap()
+                .take()
+                .unwrap_or(now);
+            let duration_ms = (now - started_at).num_milliseconds();
+            let word_count = result.cleaned_text.split_whitespace().count() as i64;
+            let char_count = result.cleaned_text.chars().count() as i64;
+            let avg_confidence = {
+                let conf_vals: Vec<f64> = result
+                    .segments
+                    .iter()
+                    .filter_map(|s| s.confidence.map(|c| c as f64))
+                    .collect();
+                if conf_vals.is_empty() {
+                    None
+                } else {
+                    Some(conf_vals.iter().sum::<f64>() / conf_vals.len() as f64)
+                }
+            };
+            let estimated_wpm = if duration_ms > 0 {
+                Some(word_count as f64 / (duration_ms as f64 / 60_000.0))
+            } else {
+                None
+            };
+            let session = Session {
+                id: Uuid::new_v4().to_string(),
+                started_at: started_at.to_rfc3339(),
+                ended_at: now.to_rfc3339(),
+                duration_ms,
+                language: result.language.clone(),
+                model_id: Some(result.model_id.clone()),
+                trigger_type: "shortcut".to_string(),
+                input_device_id: settings.get("recording.device_id").cloned(),
+                raw_text: result.raw_text.clone(),
+                cleaned_text: result.cleaned_text.clone(),
+                word_count,
+                char_count,
+                avg_confidence,
+                estimated_wpm,
+                output_mode: output_mode.clone(),
+                output_target_app: None,
+                inserted_successfully: output_result.success,
+                error_message: output_result.error.clone(),
+                created_at: now.to_rfc3339(),
+            };
+            if let Err(e) = sessions_repo::insert_session(&state.db, &session) {
+                log::error!("Failed to persist session: {e}");
+            } else if let Err(e) =
+                sessions_repo::insert_segments(&state.db, &session.id, &result.segments)
+            {
+                log::error!("Failed to persist session segments: {e}");
+            } else {
+                log::info!("Session {} persisted ({} segments)", session.id, result.segments.len());
+            }
 
             // Store for `get_last_transcription` command.
             *state.last_transcription.lock().unwrap() = Some(result.clone());

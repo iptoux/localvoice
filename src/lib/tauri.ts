@@ -2,6 +2,9 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   DeviceInfo,
   RecordingState,
+  Session,
+  SessionFilter,
+  SessionWithSegments,
   Settings,
   TranscriptionResult,
 } from "../types";
@@ -59,3 +62,22 @@ export const transcribeLastRecording = (
 
 export const getLastTranscription = (): Promise<TranscriptionResult | null> =>
   invoke<TranscriptionResult | null>("get_last_transcription");
+
+// ── History ───────────────────────────────────────────────────────────────────
+
+export const listSessions = (filter: SessionFilter = {}): Promise<Session[]> =>
+  invoke<Session[]>("list_sessions", { filter });
+
+export const getSessionDetail = (
+  sessionId: string
+): Promise<SessionWithSegments> =>
+  invoke<SessionWithSegments>("get_session", { sessionId });
+
+export const deleteSession = (sessionId: string): Promise<void> =>
+  invoke<void>("delete_session", { sessionId });
+
+export const exportSessions = (
+  sessionIds: string[],
+  format: "txt" | "json"
+): Promise<string> =>
+  invoke<string>("export_sessions", { sessionIds, format });

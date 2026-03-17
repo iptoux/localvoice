@@ -11,7 +11,7 @@
 | [MS-02](tasks/ms02_recording.md) | Recording Core | MS-01 | `done` |
 | [MS-03](tasks/ms03_transcription.md) | Local Transcription | MS-02 | `done` |
 | [MS-04](tasks/ms04_output.md) | Output Workflow | MS-03 | `done` |
-| [MS-05](tasks/ms05_history.md) | History | MS-04 | `todo` |
+| [MS-05](tasks/ms05_history.md) | History | MS-04 | `done` |
 | [MS-06](tasks/ms06_dashboard.md) | Dashboard | MS-05 | `todo` |
 | [MS-07](tasks/ms07_models.md) | Models | MS-03 | `todo` |
 | [MS-08](tasks/ms08_dictionary.md) | Dictionary v1 | MS-04 | `todo` |
