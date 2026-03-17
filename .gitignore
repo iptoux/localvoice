@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# whisper.cpp release zips / extracted binary folders — too large for git
+# Place whisper-cli binaries in src-tauri/binaries/ without committing them.
+src-tauri/binaries/whisper-bin-*/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

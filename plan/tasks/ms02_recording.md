@@ -28,10 +28,10 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-033: Verify global shortcut starts recording from idle state; pill transitions to Listening
-- [ ] TASK-034: Verify stopping produces a valid WAV at 16kHz/16-bit/mono in temp directory
-- [ ] TASK-035: Verify cancel returns pill to Idle without leaving any temp file
-- [ ] TASK-036: Verify level meter events fire during recording (even if not yet visualized)
+- [x] TASK-033: Verify global shortcut starts recording from idle state; pill transitions to Listening
+- [x] TASK-034: Verify stopping produces a valid WAV at 16kHz/16-bit/mono in temp directory
+- [x] TASK-035: Verify cancel returns pill to Idle without leaving any temp file
+- [x] TASK-036: Verify level meter events fire during recording (even if not yet visualized)
 
 ---
 
