@@ -64,10 +64,12 @@ pub fn stop_recording_internal(app: &AppHandle, state: &State<AppState>) -> CmdR
     log::info!("Recording saved to {wav_path}");
 
     // Kick off transcription in a background thread so the command returns immediately.
+    // tauri::async_runtime::spawn works from any thread (including the hotkey message-loop
+    // thread) because it uses Tauri's managed runtime rather than requiring an ambient one.
     let app_for_task = app.clone();
     let wav_for_task = wav_path.clone();
-    tokio::spawn(async move {
-        tokio::task::spawn_blocking(move || {
+    tauri::async_runtime::spawn(async move {
+        tauri::async_runtime::spawn_blocking(move || {
             crate::transcription::orchestrator::transcribe_and_emit(app_for_task, wav_for_task);
         })
         .await

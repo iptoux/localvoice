@@ -60,16 +60,24 @@ export interface CorrectionRule {
   usageCount: number;
 }
 
-export interface ModelInstallation {
-  id: string;
-  modelKey: string;
+/** Merged view of registry metadata + DB install state returned by list_available_models. */
+export interface ModelInfo {
+  key: string;
   displayName: string;
-  languageScope: "multilingual" | Language;
-  localPath: string;
+  languageScope: "multilingual" | "en";
+  fileSizeBytes: number;
   installed: boolean;
-  version?: string;
   isDefaultForDe: boolean;
   isDefaultForEn: boolean;
+  localPath?: string;
+  installedAt?: string;
+}
+
+export interface DownloadProgress {
+  key: string;
+  percent: number;
+  bytesDownloaded: number;
+  totalBytes: number;
 }
 
 export type Settings = Record<string, string>;

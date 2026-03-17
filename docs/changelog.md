@@ -1,5 +1,15 @@
 # Changelog
 
+## MS-07 — Models (2026-03-17)
+
+- New **Models** page: browse all available whisper.cpp models with name, size, and language scope
+- Download button per model with live progress bar (percent + bytes transferred)
+- SHA-256 checksum verification after download — partial/corrupt files are rejected and removed
+- Delete installed models from disk with a confirmation prompt
+- Separate default model selectors for German (DE) and English (EN)
+- Transcription now resolves the model from the DB default for the active language, falling back to the legacy settings path and then auto-scan
+- Models stored at `{app_data_dir}/models/` — survives app restarts via DB install record
+
 ## MS-06 — Dashboard (2026-03-17)
 
 - Dashboard page now shows live metrics: Total Words, Sessions, Avg WPM, Recording Time

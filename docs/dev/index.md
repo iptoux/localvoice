@@ -12,7 +12,7 @@ Technical reference for contributors and maintainers.
 | [ms04-output.md](ms04-output.md) | MS-04 Output Workflow | done |
 | [ms05-history.md](ms05-history.md) | MS-05 History | done |
 | [ms06-dashboard.md](ms06-dashboard.md) | MS-06 Dashboard | done |
-| ms07-models.md | MS-07 Models | todo |
+| [ms07-models.md](ms07-models.md) | MS-07 Models | done |
 | ms08-dictionary.md | MS-08 Dictionary v1 | todo |
 | ms09-ambiguity.md | MS-09 Ambiguity v1 | todo |
 | ms10-polish.md | MS-10 Polish | todo |

@@ -4,7 +4,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use uuid::Uuid;
 
 use crate::db::models::Session;
-use crate::db::repositories::{sessions_repo, settings_repo};
+use crate::db::repositories::{models_repo, sessions_repo, settings_repo};
 use crate::errors::CmdResult;
 use crate::os::{clipboard, text_insertion};
 use crate::state::app_state::emit_recording_state;
@@ -36,10 +36,20 @@ pub fn transcribe(
         .unwrap_or_else(|| "auto".to_string());
     let whisper_lang = language::to_whisper_lang(&lang_code).to_string();
 
-    let stored_model_path = settings.get("transcription.model_path").cloned();
-    let effective_model_override = model_path_override
-        .map(|s| s.to_string())
-        .or(stored_model_path);
+    // Resolve model path: explicit override → DB default for language → settings path → auto-scan.
+    let effective_model_override = if let Some(p) = model_path_override {
+        Some(p.to_string())
+    } else {
+        // Try the DB-registered default for this language first.
+        let db_default = models_repo::get_default_path(&state.db, &lang_code)
+            .unwrap_or(None);
+        if db_default.is_some() {
+            db_default
+        } else {
+            // Fall back to the legacy settings key.
+            settings.get("transcription.model_path").cloned()
+        }
+    };
 
     let binary = whisper_sidecar::resolve_binary(app)?;
     let model = whisper_sidecar::resolve_model(app, effective_model_override.as_deref())?;

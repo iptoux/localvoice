@@ -1,1 +1,4 @@
-// Model manager — implemented in MS-07
+pub mod downloader;
+pub mod registry;
+pub mod service;
+pub mod verify;
