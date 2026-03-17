@@ -3,6 +3,7 @@ import type {
   DashboardStats,
   DateRange,
   DeviceInfo,
+  ModelInfo,
   RecordingState,
   Session,
   SessionFilter,
@@ -95,3 +96,17 @@ export const getUsageTimeseries = (
   bucket: "day" | "week" = "day"
 ): Promise<TimeseriesPoint[]> =>
   invoke<TimeseriesPoint[]>("get_usage_timeseries", { range, bucket });
+
+// ── Models ────────────────────────────────────────────────────────────────────
+
+export const listAvailableModels = (): Promise<ModelInfo[]> =>
+  invoke<ModelInfo[]>("list_available_models");
+
+export const downloadModel = (key: string): Promise<void> =>
+  invoke<void>("download_model", { key });
+
+export const deleteModel = (key: string): Promise<void> =>
+  invoke<void>("delete_model", { key });
+
+export const setDefaultModel = (language: "de" | "en", key: string): Promise<void> =>
+  invoke<void>("set_default_model", { language, key });

@@ -10,7 +10,7 @@ mod state;
 mod stats;
 mod transcription;
 
-use commands::{history as cmd_history, recording, settings, stats as cmd_stats, window};
+use commands::{history as cmd_history, models as cmd_models, recording, settings, stats as cmd_stats, window};
 use commands::transcription as cmd_transcription;
 use state::AppState;
 use tauri::Manager;
@@ -73,6 +73,11 @@ pub fn run() {
             // Stats
             cmd_stats::get_dashboard_stats,
             cmd_stats::get_usage_timeseries,
+            // Models
+            cmd_models::list_available_models,
+            cmd_models::download_model,
+            cmd_models::delete_model,
+            cmd_models::set_default_model,
         ])
         // Prevent the app from exiting when the last window is closed —
         // the tray keeps the app alive.
