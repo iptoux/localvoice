@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   AmbiguousTerm,
   CorrectionRule,
+  LogEntry,
   DashboardStats,
   DateRange,
   DeviceInfo,
@@ -175,3 +176,28 @@ export const acceptAmbiguitySuggestion = (
 
 export const dismissAmbiguitySuggestion = (id: string): Promise<void> =>
   invoke<void>("dismiss_ambiguity_suggestion", { id });
+
+// ── System ─────────────────────────────────────────────────────────────────────
+
+export const checkFirstRun = (): Promise<boolean> =>
+  invoke<boolean>("check_first_run");
+
+export const setAutostart = (enabled: boolean): Promise<void> =>
+  invoke<void>("set_autostart", { enabled });
+
+export const getAutostart = (): Promise<boolean> =>
+  invoke<boolean>("get_autostart");
+
+// ── Logs ───────────────────────────────────────────────────────────────────────
+
+export const listLogs = (levelFilter?: string, limit?: number): Promise<LogEntry[]> =>
+  invoke<LogEntry[]>("list_logs", {
+    levelFilter: levelFilter ?? null,
+    limit: limit ?? null,
+  });
+
+export const exportLogs = (): Promise<void> =>
+  invoke<void>("export_logs");
+
+export const clearLogs = (): Promise<void> =>
+  invoke<void>("clear_logs");

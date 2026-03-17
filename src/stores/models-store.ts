@@ -15,6 +15,7 @@ interface DownloadState {
 
 interface ModelsStore {
   models: ModelInfo[];
+  loading: boolean;
   /** Map of model key → current download progress (only present while downloading). */
   downloading: Record<string, DownloadState>;
   error: string | null;
@@ -28,15 +29,17 @@ interface ModelsStore {
 
 export const useModelsStore = create<ModelsStore>((set, get) => ({
   models: [],
+  loading: false,
   downloading: {},
   error: null,
 
   fetch: async () => {
+    set({ loading: true, error: null });
     try {
       const models = await listAvailableModels();
-      set({ models, error: null });
+      set({ models, loading: false });
     } catch (e) {
-      set({ error: String(e) });
+      set({ error: String(e), loading: false });
     }
   },
 

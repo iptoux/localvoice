@@ -137,7 +137,7 @@ function ModelRow({ model, downloadState, onDownload, onDelete }: ModelRowProps)
 // ── page ──────────────────────────────────────────────────────────────────────
 
 export default function Models() {
-  const { models, downloading, error, fetch, startDownload, removeModel, setDefault, setDownloadProgress } =
+  const { models, loading, downloading, error, fetch, startDownload, removeModel, setDefault, setDownloadProgress } =
     useModelsStore();
 
   // Fetch model list on mount.
@@ -164,6 +164,15 @@ export default function Models() {
       removeModel(key);
     }
   };
+
+  if (loading && models.length === 0) {
+    return (
+      <div className="p-8 max-w-3xl mx-auto">
+        <h1 className="text-2xl font-semibold text-white mb-1">Models</h1>
+        <p className="text-neutral-500 text-sm mt-8">Loading models…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-3xl mx-auto">

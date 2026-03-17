@@ -1,8 +1,10 @@
 pub mod dictionary;
 pub mod history;
+pub mod logs;
 pub mod models;
 pub mod recording;
 pub mod settings;
 pub mod stats;
+pub mod system;
 pub mod transcription;
 pub mod window;

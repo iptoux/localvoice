@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 
 use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_notification::NotificationExt;
 use uuid::Uuid;
 
 use crate::db::models::Session;
@@ -236,6 +237,24 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
 
             emit_recording_state(&app, RecordingState::Success, None);
 
+            // Optional success notification.
+            let notify_success = settings
+                .get("notifications.on_success")
+                .map(|v| v == "true")
+                .unwrap_or(false);
+            if notify_success {
+                let word_count = result.cleaned_text.split_whitespace().count();
+                let preview: String = result.cleaned_text.chars().take(80).collect();
+                let body = format!(
+                    "{} word{} — {}{}",
+                    word_count,
+                    if word_count == 1 { "" } else { "s" },
+                    preview,
+                    if result.cleaned_text.len() > 80 { "…" } else { "" }
+                );
+                let _ = app.notification().builder().title("LocalVoice").body(&body).show();
+            }
+
             if let Err(e) = app.emit("transcription-completed", &result) {
                 log::error!("Failed to emit transcription-completed: {e}");
             }
@@ -257,7 +276,26 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
         }
         Err(e) => {
             log::error!("Transcription failed: {e}");
-            emit_recording_state(&app, RecordingState::Error, Some(e.to_string()));
+            let friendly = crate::errors::user_friendly_message(&e.to_string());
+
+            // Error notification (opt-out via settings).
+            let state = app.state::<AppState>();
+            let settings = crate::db::repositories::settings_repo::get_all(&state.db)
+                .unwrap_or_default();
+            let notify_error = settings
+                .get("notifications.on_error")
+                .map(|v| v == "true")
+                .unwrap_or(true);
+            if notify_error {
+                let _ = app
+                    .notification()
+                    .builder()
+                    .title("LocalVoice — Error")
+                    .body(&friendly)
+                    .show();
+            }
+
+            emit_recording_state(&app, RecordingState::Error, Some(friendly));
 
             // Auto-reset pill to Idle after 3 s.
             schedule_idle_reset(app, Duration::from_millis(3000));

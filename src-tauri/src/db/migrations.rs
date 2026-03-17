@@ -163,4 +163,20 @@ static MIGRATIONS: &[(i64, &str)] = &[(
     -- after they accumulate 5+ new occurrences post-dismissal.
     ALTER TABLE ambiguous_terms ADD COLUMN dismissed_at_occurrences INTEGER NOT NULL DEFAULT 0;
     ",
+),
+(
+    3,
+    "
+    CREATE TABLE IF NOT EXISTS app_logs (
+        id          TEXT PRIMARY KEY,
+        level       TEXT NOT NULL,
+        area        TEXT NOT NULL DEFAULT '',
+        message     TEXT NOT NULL,
+        created_at  TEXT NOT NULL
+    );
+
+    INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES
+        ('notifications.on_error',   'true',  datetime('now')),
+        ('notifications.on_success', 'false', datetime('now'));
+    ",
 )];

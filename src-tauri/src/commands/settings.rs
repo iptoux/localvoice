@@ -16,9 +16,8 @@ pub fn update_setting(key: String, value: String, state: State<AppState>) -> Cmd
     settings_repo::upsert(&state.db, &key, &value).map_err(Into::into)
 }
 
-/// Resets all settings to defaults by deleting all rows and re-seeding via migration defaults.
-/// For now this is a no-op stub — full reset will run the seed SQL again in MS-10.
+/// Resets all settings to factory defaults.
 #[tauri::command]
-pub fn reset_settings(_state: State<AppState>) -> CmdResult<()> {
-    Ok(())
+pub fn reset_settings(state: State<AppState>) -> CmdResult<()> {
+    settings_repo::reset_to_defaults(&state.db).map_err(|e| crate::errors::AppError(e.to_string()))
 }
