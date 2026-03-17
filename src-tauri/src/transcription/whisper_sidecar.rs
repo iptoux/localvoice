@@ -173,8 +173,9 @@ pub fn resolve_model(
 
 /// Invokes `whisper-cli` and returns the combined output.
 ///
-/// Writes a JSON sidecar file alongside `output_prefix.json` when `--output-json` is
-/// supported. Falls back gracefully if the flag is not understood.
+/// First attempts the full flag set (`-ojf -of <prefix>`). If that exits non-zero,
+/// retries without optional flags (`-np`, `-ojf`, `-of`) to support older binaries
+/// that do not recognise all flags — falling back to plain stdout parsing.
 pub fn invoke(
     binary: &Path,
     model: &Path,
@@ -182,39 +183,61 @@ pub fn invoke(
     language: &str,
     output_prefix: &Path,
 ) -> CmdResult<SidecarOutput> {
-    let output = Command::new(binary)
+    // Build owned strings for args that come from borrowed paths.
+    let model_str = model.to_string_lossy().into_owned();
+    let wav_str = wav.to_string_lossy().into_owned();
+    let prefix_str = output_prefix.to_string_lossy().into_owned();
+
+    // ── Full invocation (JSON output + confidence data) ────────────────────────
+    let full_out = Command::new(binary)
         .args([
-            "-m",
-            &model.to_string_lossy(),
-            "-f",
-            &wav.to_string_lossy(),
-            "-l",
-            language,
-            "-ojf",                                 // full JSON (includes token confidence)
-            "-of",
-            &output_prefix.to_string_lossy(),
-            "-np",                                  // suppress info banners (--no-prints)
+            "-m", &model_str,
+            "-f", &wav_str,
+            "-l", language,
+            "-ojf",          // full JSON with per-token confidence
+            "-of", &prefix_str,
         ])
         .output()
         .map_err(|e| format!("Failed to spawn whisper-cli: {e}"))?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("whisper-cli exited with status {}: {stderr}", output.status).into());
+    if full_out.status.success() {
+        let stdout = String::from_utf8_lossy(&full_out.stdout).into_owned();
+        let json_path = {
+            let candidate = output_prefix.with_extension("json");
+            if candidate.exists() { Some(candidate) } else { None }
+        };
+        return Ok(SidecarOutput { stdout, json_path });
     }
 
-    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+    let full_stderr = String::from_utf8_lossy(&full_out.stderr).into_owned();
+    let full_stdout = String::from_utf8_lossy(&full_out.stdout).into_owned();
+    log::warn!(
+        "whisper-cli full invocation failed ({}); retrying with minimal flags.\nstderr: {full_stderr}\nstdout: {full_stdout}",
+        full_out.status
+    );
 
-    let json_path = {
-        let candidate = output_prefix.with_extension("json");
-        if candidate.exists() {
-            Some(candidate)
-        } else {
-            None
-        }
-    };
+    // ── Minimal fallback (plain stdout — older binaries) ───────────────────────
+    let min_out = Command::new(binary)
+        .args([
+            "-m", &model_str,
+            "-f", &wav_str,
+            "-l", language,
+        ])
+        .output()
+        .map_err(|e| format!("Failed to spawn whisper-cli (fallback): {e}"))?;
 
-    Ok(SidecarOutput { stdout, json_path })
+    if min_out.status.success() {
+        let stdout = String::from_utf8_lossy(&min_out.stdout).into_owned();
+        return Ok(SidecarOutput { stdout, json_path: None });
+    }
+
+    let min_stderr = String::from_utf8_lossy(&min_out.stderr).into_owned();
+    let min_stdout = String::from_utf8_lossy(&min_out.stdout).into_owned();
+    Err(format!(
+        "whisper-cli failed ({}).\nstderr: {min_stderr}\nstdout: {min_stdout}",
+        min_out.status
+    )
+    .into())
 }
 
 fn which_in_path(bin: &str) -> bool {
