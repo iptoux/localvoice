@@ -1,113 +1,24 @@
-# ─── Rust / Cargo ────────────────────────────────────────────────────────────
-target/
-Cargo.lock          # remove this line if publishing a library (keep for binaries)
-**/*.rs.bk
-
-# ─── Node / Frontend ─────────────────────────────────────────────────────────
-node_modules/
-dist/
-.vite/
-.next/
-.nuxt/
-.output/
-*.tsbuildinfo
-
-# ─── Package manager locks (keep only the one used in the project) ───────────
-# Uncomment the locks you do NOT use:
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
-# bun.lockb
-
-# ─── Tauri ───────────────────────────────────────────────────────────────────
-src-tauri/target/
-src-tauri/WixTools/
-src-tauri/gen/
-*.app
-*.dmg
-*.deb
-*.rpm
-*.AppImage
-*.msi
-*.exe                # built installers — NOT the sidecar binary in binaries/
-!src-tauri/binaries/ # keep committed pre-built sidecar binaries
-
-# ─── whisper.cpp models ──────────────────────────────────────────────────────
-# Models are downloaded at runtime via the model manager — never committed
-models/
-*.bin
-*.gguf
-*.ggml
-*.pt
-*.onnx
-*.tmp               # partial / in-progress downloads
-
-# ─── SQLite databases ────────────────────────────────────────────────────────
-*.sqlite
-*.sqlite3
-*.db
-*.db-shm
-*.db-wal
-
-# ─── Temporary audio artifacts ───────────────────────────────────────────────
-# Recordings are created in the OS temp dir but guard against local paths
-*.wav
-*.pcm
-*.mp3
-*.ogg
-tmp-audio/
-temp-audio/
-
-# ─── Environment & secrets ───────────────────────────────────────────────────
-.env
-.env.*
-!.env.example
-!.env.*.example
-
-# ─── OS ──────────────────────────────────────────────────────────────────────
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-*.lnk
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-._*
-
-# Linux
-*~
-
-# ─── Editors & IDEs ──────────────────────────────────────────────────────────
-.vscode/
-!.vscode/extensions.json   # keep recommended extensions list if present
-.idea/
-*.suo
-*.user
-*.userosscache
-*.sln.docview
-nbproject/
-.project
-.classpath
-
-# ─── Logs ────────────────────────────────────────────────────────────────────
-logs/
+# Logs
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# ─── Test output ─────────────────────────────────────────────────────────────
-coverage/
-*.lcov
-.nyc_output/
+node_modules
+dist
+dist-ssr
+*.local
 
-# ─── Misc ────────────────────────────────────────────────────────────────────
-*.bak
-*.swp
-*.orig
-.cache/
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

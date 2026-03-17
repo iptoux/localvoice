@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+:root {
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+}

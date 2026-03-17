@@ -1,0 +1,66 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LocalVoice",
+  "version": "0.1.0",
+  "identifier": "com.localvoice.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "pill",
+        "title": "LocalVoice",
+        "width": 300,
+        "height": 64,
+        "minWidth": 300,
+        "minHeight": 64,
+        "maxWidth": 300,
+        "maxHeight": 64,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": true,
+        "center": false,
+        "x": 60,
+        "y": 60,
+        "shadow": false
+      },
+      {
+        "label": "main",
+        "title": "LocalVoice",
+        "width": 1100,
+        "height": 720,
+        "minWidth": 800,
+        "minHeight": 500,
+        "decorations": true,
+        "visible": false,
+        "center": true
+      }
+    ],
+    "trayIcon": {
+      "iconPath": "icons/32x32.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": false
+    },
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
