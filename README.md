@@ -8,7 +8,7 @@ Offline-first desktop voice dictation. Record with a global shortcut, transcribe
 | --- | --- | --- |
 | MS-01 | Foundation & Shell | ✅ done |
 | MS-02 | Recording Core | ✅ done |
-| MS-03 | Local Transcription | todo |
+| MS-03 | Local Transcription | ✅ done |
 | MS-04 | Output Workflow | todo |
 | MS-05 | History | todo |
 | MS-06 | Dashboard | todo |

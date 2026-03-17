@@ -1,5 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { DeviceInfo, RecordingState, Settings } from "../types";
+import type {
+  DeviceInfo,
+  RecordingState,
+  Settings,
+  TranscriptionResult,
+} from "../types";
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 
@@ -40,3 +45,17 @@ export const getRecordingState = (): Promise<RecordingState> =>
 
 export const listInputDevices = (): Promise<DeviceInfo[]> =>
   invoke<DeviceInfo[]>("list_input_devices");
+
+// ── Transcription ─────────────────────────────────────────────────────────────
+
+export const transcribeLastRecording = (
+  language?: string,
+  modelId?: string
+): Promise<TranscriptionResult> =>
+  invoke<TranscriptionResult>("transcribe_last_recording", {
+    language: language ?? null,
+    modelId: modelId ?? null,
+  });
+
+export const getLastTranscription = (): Promise<TranscriptionResult | null> =>
+  invoke<TranscriptionResult | null>("get_last_transcription");

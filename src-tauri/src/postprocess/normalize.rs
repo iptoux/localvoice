@@ -1,0 +1,60 @@
+/// Trims leading/trailing whitespace and collapses internal runs of whitespace
+/// to a single space.
+pub fn collapse_whitespace(text: &str) -> String {
+    text.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// Ensures the first alphabetic character of the string is uppercase.
+#[allow(dead_code)]
+pub fn capitalize_first(text: &str) -> String {
+    let mut chars = text.chars();
+    match chars.next() {
+        None => String::new(),
+        Some(first) => {
+            let upper: String = first.to_uppercase().collect();
+            upper + chars.as_str()
+        }
+    }
+}
+
+/// Capitalises the first letter of each sentence.
+///
+/// A sentence boundary is detected after `.`, `!`, or `?` followed by whitespace.
+pub fn capitalize_sentences(text: &str) -> String {
+    if text.is_empty() {
+        return String::new();
+    }
+
+    let mut result = String::with_capacity(text.len());
+    let mut capitalize_next = true;
+
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        if capitalize_next && c.is_alphabetic() {
+            result.extend(c.to_uppercase());
+            capitalize_next = false;
+        } else {
+            result.push(c);
+            if matches!(c, '.' | '!' | '?') {
+                // Capitalise after punctuation + whitespace.
+                if chars.peek().map(|n| n.is_whitespace()).unwrap_or(false) {
+                    capitalize_next = true;
+                }
+            }
+        }
+    }
+
+    result
+}
+
+/// Full normalisation pipeline applied in order:
+/// 1. Collapse whitespace
+/// 2. Capitalise sentences (if `auto_capitalization` is enabled)
+pub fn normalize(text: &str, auto_capitalization: bool) -> String {
+    let text = collapse_whitespace(text);
+    if auto_capitalization {
+        capitalize_sentences(&text)
+    } else {
+        text
+    }
+}

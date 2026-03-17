@@ -38,6 +38,8 @@ export function Pill() {
       <span data-tauri-drag-region className="flex-1 truncate">
         {recordingState === "error" && recordingError
           ? recordingError
+          : recordingState === "success"
+          ? <TranscriptPreview />
           : STATE_LABEL[recordingState]}
       </span>
       {recordingState === "listening" && <ElapsedTimer />}
@@ -102,6 +104,16 @@ function StateIcon({ state }: { state: RecordingState }) {
         />
       );
   }
+}
+
+// ── Transcript preview (shown in Success state) ───────────────────────────────
+
+function TranscriptPreview() {
+  const lastTranscription = useAppStore((s) => s.lastTranscription);
+  const text = lastTranscription?.cleanedText ?? "Done";
+  // Truncate to ~40 chars so it fits the pill
+  const preview = text.length > 40 ? text.slice(0, 38) + "…" : text;
+  return <span data-tauri-drag-region title={text}>{preview}</span>;
 }
 
 // ── Elapsed timer (shown only in Listening state) ─────────────────────────────
