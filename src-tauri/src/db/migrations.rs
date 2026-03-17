@@ -151,6 +151,16 @@ static MIGRATIONS: &[(i64, &str)] = &[(
         ('transcription.remove_fillers', 'false',     datetime('now')),
         ('output.mode',                  'clipboard', datetime('now')),
         ('output.auto_paste',            'false',     datetime('now')),
-        ('dictionary.auto_apply_rules',  'true',      datetime('now'));
+        ('dictionary.auto_apply_rules',  'true',      datetime('now')),
+        ('ambiguity.confidence_threshold','0.6',      datetime('now')),
+        ('ambiguity.min_occurrences',    '3',         datetime('now'));
+    ",
+),
+(
+    2,
+    "
+    -- Add dismissed_at_occurrences to ambiguous_terms so we can re-surface terms
+    -- after they accumulate 5+ new occurrences post-dismissal.
+    ALTER TABLE ambiguous_terms ADD COLUMN dismissed_at_occurrences INTEGER NOT NULL DEFAULT 0;
     ",
 )];

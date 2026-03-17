@@ -1,3 +1,4 @@
+pub mod ambiguous_terms_repo;
 pub mod dictionary_repo;
 pub mod models_repo;
 pub mod sessions_repo;

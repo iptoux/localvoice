@@ -1,6 +1,5 @@
-use crate::db::repositories::dictionary_repo::{
-    self, CorrectionRule, DictionaryEntry,
-};
+use crate::db::repositories::ambiguous_terms_repo::{self, AmbiguousTerm};
+use crate::db::repositories::dictionary_repo::{self, CorrectionRule, DictionaryEntry};
 use crate::db::DbConn;
 use crate::errors::AppError;
 
@@ -96,4 +95,36 @@ pub fn record_rule_usage(db: &DbConn, fired_ids: &[String]) -> Result<(), AppErr
         dictionary_repo::increment_rule_usage(db, id)?;
     }
     Ok(())
+}
+
+// ── Ambiguity ─────────────────────────────────────────────────────────────────
+
+pub fn list_ambiguous_terms(db: &DbConn, min_occurrences: i64) -> Result<Vec<AmbiguousTerm>, AppError> {
+    ambiguous_terms_repo::list_active(db, min_occurrences)
+}
+
+/// Accepts a suggestion: creates a "suggested" correction rule for the term,
+/// then marks the term as resolved (dismissed).
+pub fn accept_ambiguity_suggestion(
+    db: &DbConn,
+    id: &str,
+    target_phrase: &str,
+) -> Result<(), AppError> {
+    let term = ambiguous_terms_repo::get(db, id)?
+        .ok_or_else(|| AppError(format!("Ambiguous term '{}' not found", id)))?;
+
+    dictionary_repo::create_rule(
+        db,
+        &term.phrase,
+        target_phrase.trim(),
+        term.language.as_deref(),
+        "suggested",
+        true,
+    )?;
+
+    ambiguous_terms_repo::mark_resolved(db, id)
+}
+
+pub fn dismiss_ambiguity_suggestion(db: &DbConn, id: &str) -> Result<(), AppError> {
+    ambiguous_terms_repo::dismiss(db, id)
 }

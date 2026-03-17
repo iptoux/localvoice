@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { CorrectionRule, DictionaryEntry } from "../types";
+import type { AmbiguousTerm, CorrectionRule, DictionaryEntry } from "../types";
+import { useAmbiguityStore } from "../stores/ambiguity-store";
 import { useDictionaryStore } from "../stores/dictionary-store";
 
 // ── shared ────────────────────────────────────────────────────────────────────
@@ -444,9 +445,185 @@ function RulesTab() {
   );
 }
 
+// ── Suggestions tab ───────────────────────────────────────────────────────────
+
+function SuggestionsTab() {
+  const { terms, loading, error, fetch, accept, dismiss } = useAmbiguityStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [customTarget, setCustomTarget] = useState("");
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  const handleAccept = async (term: AmbiguousTerm) => {
+    const target =
+      editingId === term.id ? customTarget.trim() : term.suggestedTarget ?? "";
+    if (!target) return;
+    await accept(term.id, target);
+    setEditingId(null);
+    setCustomTarget("");
+  };
+
+  const openCustom = (term: AmbiguousTerm) => {
+    setEditingId(term.id);
+    setCustomTarget(term.suggestedTarget ?? "");
+  };
+
+  const confidenceColor = (conf?: number) => {
+    if (conf === undefined) return "text-neutral-500";
+    if (conf < 0.4) return "text-red-400";
+    if (conf < 0.55) return "text-orange-400";
+    return "text-yellow-400";
+  };
+
+  if (loading) {
+    return <p className="text-neutral-500 text-sm">Loading…</p>;
+  }
+
+  return (
+    <>
+      {error && (
+        <div className="mb-3 p-3 rounded bg-red-900/40 border border-red-700 text-sm text-red-300">
+          {error}
+        </div>
+      )}
+
+      <div className="flex justify-between items-center mb-3">
+        <span className="text-xs text-neutral-500">{terms.length} suggestions</span>
+        <button
+          onClick={() => fetch()}
+          className="text-xs text-neutral-400 hover:text-white transition-colors"
+        >
+          Refresh
+        </button>
+      </div>
+
+      {terms.length === 0 ? (
+        <p className="text-neutral-500 text-sm">
+          No suggestions yet. Ambiguous terms are detected automatically when
+          whisper transcribes segments with low confidence (≥ 3 occurrences by
+          default).
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {terms.map((term) => (
+            <div
+              key={term.id}
+              className="px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700"
+            >
+              {/* Header row */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-white text-sm font-mono font-medium">
+                  {term.phrase}
+                </span>
+                <span className="text-xs text-neutral-500">
+                  {term.occurrences}×
+                </span>
+                {term.avgConfidence !== undefined && (
+                  <span
+                    className={`text-xs font-mono ${confidenceColor(term.avgConfidence)}`}
+                  >
+                    conf {(term.avgConfidence * 100).toFixed(0)}%
+                  </span>
+                )}
+                {term.language && (
+                  <span className="text-xs text-neutral-500 uppercase">
+                    {term.language}
+                  </span>
+                )}
+              </div>
+
+              {/* Suggestion / edit row */}
+              <div className="mt-2">
+                {editingId === term.id ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-neutral-500 text-xs shrink-0">
+                      Replace with:
+                    </span>
+                    <input
+                      className="flex-1 bg-neutral-700 border border-neutral-600 text-white text-sm rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      value={customTarget}
+                      onChange={(e) => setCustomTarget(e.target.value)}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleAccept(term);
+                        if (e.key === "Escape") {
+                          setEditingId(null);
+                          setCustomTarget("");
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => handleAccept(term)}
+                      disabled={!customTarget.trim()}
+                      className="text-xs px-3 py-1 bg-green-700 hover:bg-green-600 disabled:opacity-40 text-white rounded transition-colors"
+                    >
+                      Create Rule
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingId(null);
+                        setCustomTarget("");
+                      }}
+                      className="text-xs text-neutral-400 hover:text-white transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : term.suggestedTarget ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-neutral-500 text-xs">→</span>
+                    <span className="text-green-400 text-sm font-mono">
+                      {term.suggestedTarget}
+                    </span>
+                    <button
+                      onClick={() => handleAccept(term)}
+                      className="text-xs px-3 py-1 bg-green-700 hover:bg-green-600 text-white rounded transition-colors"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => openCustom(term)}
+                      className="text-xs text-neutral-400 hover:text-white transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => dismiss(term.id)}
+                      className="text-xs text-neutral-500 hover:text-red-400 transition-colors"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openCustom(term)}
+                      className="text-xs px-3 py-1 bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+                    >
+                      Create Rule…
+                    </button>
+                    <button
+                      onClick={() => dismiss(term.id)}
+                      className="text-xs text-neutral-500 hover:text-red-400 transition-colors"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 // ── page ──────────────────────────────────────────────────────────────────────
 
-type Tab = "terms" | "rules";
+type Tab = "terms" | "rules" | "suggestions";
 
 export default function Dictionary() {
   const [activeTab, setActiveTab] = useState<Tab>("rules");
@@ -460,7 +637,7 @@ export default function Dictionary() {
     <div className="p-8 max-w-3xl mx-auto">
       <h1 className="text-2xl font-semibold text-white mb-1">Dictionary</h1>
       <p className="text-neutral-400 text-sm mb-6">
-        Correction rules are applied automatically to every transcript. Terms are reference entries for future features.
+        Correction rules are applied automatically to every transcript. Terms are reference entries. Suggestions surface low-confidence phrases for review.
       </p>
 
       {error && (
@@ -474,12 +651,17 @@ export default function Dictionary() {
         <TabButton active={activeTab === "rules"} onClick={() => setActiveTab("rules")}>
           Rules
         </TabButton>
+        <TabButton active={activeTab === "suggestions"} onClick={() => setActiveTab("suggestions")}>
+          Suggestions
+        </TabButton>
         <TabButton active={activeTab === "terms"} onClick={() => setActiveTab("terms")}>
           Terms
         </TabButton>
       </div>
 
-      {activeTab === "rules" ? <RulesTab /> : <TermsTab />}
+      {activeTab === "rules" && <RulesTab />}
+      {activeTab === "suggestions" && <SuggestionsTab />}
+      {activeTab === "terms" && <TermsTab />}
     </div>
   );
 }
