@@ -15,11 +15,7 @@ pub struct SidecarOutput {
 
 /// Known whisper CLI executable names (checked in order, both in dirs and on PATH).
 #[cfg(target_os = "windows")]
-const WHISPER_EXE_NAMES: &[&str] = &[
-    "whisper-cli-x86_64-pc-windows-msvc.exe",
-    "whisper-cli.exe",
-    "main.exe",
-];
+const WHISPER_EXE_NAMES: &[&str] = &["whisper-cli.exe", "main.exe"];
 #[cfg(not(target_os = "windows"))]
 const WHISPER_EXE_NAMES: &[&str] = &["whisper-cli", "main"];
 
@@ -55,25 +51,25 @@ pub fn resolve_binary(app: &AppHandle) -> CmdResult<PathBuf> {
         }
     }
 
-    // 3. Tauri resource dir → binaries/ subdirectory scan first (prefers release
-    //    zip layout like whisper-bin-x64/whisper-cli.exe where DLLs are co-located),
-    //    then flat lookup (Tauri sidecar stub, which has no DLLs alongside on Windows).
+    // 3. Tauri resource dir → binaries/.
+    //    In installed builds all files land here flat (whisper-cli.exe + DLLs bundled
+    //    together via tauri.conf.json resources). Flat lookup comes first so the
+    //    co-located layout is preferred; recursive scan is a fallback for developer
+    //    setups where a release zip has been unpacked into a subdirectory.
     if let Ok(res_dir) = app.path().resource_dir() {
         let binaries_dir = res_dir.join("binaries");
 
-        // 3a. Recursive scan — finds whisper-cli.exe inside a release zip subdir where
-        //     DLLs are co-located (preferred on Windows for DLL resolution).
-        if let Some(found) = scan_dir_for_whisper(&binaries_dir) {
-            return Ok(found);
-        }
-
-        // 3b. Flat lookup — Tauri sidecar stub (whisper-cli-{triple}.exe).
-        //     Only reached if no binary was found in subdirectories above.
+        // 3a. Flat lookup — production layout (whisper-cli.exe + DLLs all flat).
         for name in WHISPER_EXE_NAMES {
             let p = binaries_dir.join(name);
             if p.exists() {
                 return Ok(p);
             }
+        }
+
+        // 3b. Recursive scan — dev fallback (e.g. release zip unpacked as a subdir).
+        if let Some(found) = scan_dir_for_whisper(&binaries_dir) {
+            return Ok(found);
         }
     }
 

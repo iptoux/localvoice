@@ -61,6 +61,14 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": {
+      "binaries/whisper-cli.exe": "binaries/",
+      "binaries/ggml.dll": "binaries/",
+      "binaries/ggml-base.dll": "binaries/",
+      "binaries/ggml-cpu.dll": "binaries/",
+      "binaries/whisper.dll": "binaries/",
+      "binaries/SDL2.dll": "binaries/"
+    }
   }
 }
