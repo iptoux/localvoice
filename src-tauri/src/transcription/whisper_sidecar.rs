@@ -188,6 +188,10 @@ pub fn invoke(
     let wav_str = wav.to_string_lossy().into_owned();
     let prefix_str = output_prefix.to_string_lossy().into_owned();
 
+    // Run the process with its own directory as the working directory so that
+    // Windows can find co-located DLLs (ggml.dll, whisper.dll, etc.).
+    let binary_dir = binary.parent().unwrap_or(Path::new("."));
+
     // ── Full invocation (JSON output + confidence data) ────────────────────────
     let full_out = Command::new(binary)
         .args([
@@ -197,6 +201,7 @@ pub fn invoke(
             "-ojf",          // full JSON with per-token confidence
             "-of", &prefix_str,
         ])
+        .current_dir(binary_dir)
         .output()
         .map_err(|e| format!("Failed to spawn whisper-cli: {e}"))?;
 
@@ -223,6 +228,7 @@ pub fn invoke(
             "-f", &wav_str,
             "-l", language,
         ])
+        .current_dir(binary_dir)
         .output()
         .map_err(|e| format!("Failed to spawn whisper-cli (fallback): {e}"))?;
 
