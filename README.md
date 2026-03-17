@@ -11,7 +11,7 @@ Offline-first desktop voice dictation. Record with a global shortcut, transcribe
 | MS-03 | Local Transcription | ✅ done |
 | MS-04 | Output Workflow | ✅ done |
 | MS-05 | History | ✅ done |
-| MS-06 | Dashboard | todo |
+| MS-06 | Dashboard | ✅ done |
 | MS-07 | Models | todo |
 | MS-08 | Dictionary v1 | todo |
 | MS-09 | Ambiguity v1 | todo |

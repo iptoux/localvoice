@@ -117,3 +117,30 @@ export interface OutputResultPayload {
   success: boolean;
   error?: string;
 }
+
+// ── Dashboard / Stats ─────────────────────────────────────────────────────────
+
+export interface LanguageCount {
+  language: string;
+  count: number;
+}
+
+export interface DashboardStats {
+  totalWordCount: number;
+  totalSessionCount: number;
+  avgWpm: number;
+  totalDurationMs: number;
+  languageCounts: LanguageCount[];
+}
+
+export interface TimeseriesPoint {
+  /** ISO date string, e.g. "2026-03-17" */
+  date: string;
+  wordCount: number;
+  sessionCount: number;
+}
+
+export interface DateRange {
+  start?: string;
+  end?: string;
+}

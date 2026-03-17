@@ -1,11 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  DashboardStats,
+  DateRange,
   DeviceInfo,
   RecordingState,
   Session,
   SessionFilter,
   SessionWithSegments,
   Settings,
+  TimeseriesPoint,
   TranscriptionResult,
 } from "../types";
 
@@ -81,3 +84,14 @@ export const exportSessions = (
   format: "txt" | "json"
 ): Promise<string> =>
   invoke<string>("export_sessions", { sessionIds, format });
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+export const getDashboardStats = (range: DateRange = {}): Promise<DashboardStats> =>
+  invoke<DashboardStats>("get_dashboard_stats", { range });
+
+export const getUsageTimeseries = (
+  range: DateRange = {},
+  bucket: "day" | "week" = "day"
+): Promise<TimeseriesPoint[]> =>
+  invoke<TimeseriesPoint[]>("get_usage_timeseries", { range, bucket });
