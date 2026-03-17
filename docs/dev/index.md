@@ -11,7 +11,7 @@ Technical reference for contributors and maintainers.
 | [ms03-transcription.md](ms03-transcription.md) | MS-03 Local Transcription | done |
 | [ms04-output.md](ms04-output.md) | MS-04 Output Workflow | done |
 | [ms05-history.md](ms05-history.md) | MS-05 History | done |
-| ms06-dashboard.md | MS-06 Dashboard | todo |
+| [ms06-dashboard.md](ms06-dashboard.md) | MS-06 Dashboard | done |
 | ms07-models.md | MS-07 Models | todo |
 | ms08-dictionary.md | MS-08 Dictionary v1 | todo |
 | ms09-ambiguity.md | MS-09 Ambiguity v1 | todo |

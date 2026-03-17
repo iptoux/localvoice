@@ -1,5 +1,13 @@
 # Changelog
 
+## MS-06 — Dashboard (2026-03-17)
+
+- Dashboard page now shows live metrics: Total Words, Sessions, Avg WPM, Recording Time
+- Words-over-time line chart (daily buckets for 7d/30d, weekly for all time)
+- Language breakdown horizontal bar chart with per-language colour coding
+- Date range selector: Last 7 days / Last 30 days / All time — updates all metrics and charts instantly
+- All aggregations computed via pre-aggregated SQL queries (no in-memory loading of sessions)
+
 ## MS-05 — History (2026-03-17)
 
 - All transcription sessions are now persisted to SQLite automatically
