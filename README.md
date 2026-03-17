@@ -9,7 +9,7 @@ Offline-first desktop voice dictation. Record with a global shortcut, transcribe
 | MS-01 | Foundation & Shell | ✅ done |
 | MS-02 | Recording Core | ✅ done |
 | MS-03 | Local Transcription | ✅ done |
-| MS-04 | Output Workflow | todo |
+| MS-04 | Output Workflow | ✅ done |
 | MS-05 | History | todo |
 | MS-06 | Dashboard | todo |
 | MS-07 | Models | todo |
@@ -50,7 +50,7 @@ src-tauri/            Rust backend (Tauri v2)
     commands/         Tauri #[tauri::command] handlers
     db/               SQLite layer (migrations, repositories)
     state/            AppState shared across commands
-    os/               tray, hotkeys, clipboard (future)
+    os/               tray, hotkeys, clipboard, text_insertion
     errors/           AppError / CmdResult types
 plan/                 PRD, milestones, task lists, learnings
 docs/

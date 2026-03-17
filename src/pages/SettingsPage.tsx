@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const selectedDeviceId = settings["recording.device_id"] ?? "";
   const shortcut = settings["recording.shortcut"] ?? "CommandOrControl+Shift+Space";
   const selectedLanguage = settings["transcription.default_language"] ?? "de";
+  const outputMode = settings["output.mode"] ?? "clipboard";
 
   function handleDeviceChange(deviceId: string) {
     updateSetting("recording.device_id", deviceId).then(load);
@@ -27,6 +28,10 @@ export default function SettingsPage() {
 
   function handleLanguageChange(lang: string) {
     updateSetting("transcription.default_language", lang).then(load);
+  }
+
+  function handleOutputModeChange(mode: string) {
+    updateSetting("output.mode", mode).then(load);
   }
 
   if (loading) {
@@ -103,6 +108,56 @@ export default function SettingsPage() {
             setting directly in the database (shortcut editor coming in a later
             milestone).
           </p>
+        </div>
+      </section>
+
+      {/* Output section */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wider">
+          Output
+        </h2>
+
+        <div className="space-y-3">
+          <label className="text-sm text-neutral-300">Output Mode</label>
+          <div className="flex flex-col gap-2">
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="radio"
+                name="output-mode"
+                value="clipboard"
+                checked={outputMode === "clipboard"}
+                onChange={() => handleOutputModeChange("clipboard")}
+                className="mt-0.5 accent-neutral-400"
+              />
+              <span>
+                <span className="text-sm text-neutral-200 block">Clipboard</span>
+                <span className="text-xs text-neutral-500">
+                  Transcription is copied to the clipboard. Paste it manually
+                  wherever you need it.
+                </span>
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="radio"
+                name="output-mode"
+                value="insert"
+                checked={outputMode === "insert"}
+                onChange={() => handleOutputModeChange("insert")}
+                className="mt-0.5 accent-neutral-400"
+              />
+              <span>
+                <span className="text-sm text-neutral-200 block">Auto-insert</span>
+                <span className="text-xs text-neutral-500">
+                  Transcription is copied to the clipboard and immediately pasted
+                  into the focused application via Ctrl+V. Your previous clipboard
+                  content is restored afterwards. Best-effort — some apps may not
+                  support this.
+                </span>
+              </span>
+            </label>
+          </div>
         </div>
       </section>
 

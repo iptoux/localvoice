@@ -15,6 +15,8 @@ dist-ssr
 # whisper.cpp release zips / extracted binary folders — too large for git
 # Place whisper-cli binaries in src-tauri/binaries/ without committing them.
 src-tauri/binaries/whisper-bin-*/
+# Triple-suffixed binary copies required by tauri-build (generated locally).
+src-tauri/binaries/whisper-cli-*.exe
 
 # Editor directories and files
 .vscode/*

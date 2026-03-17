@@ -1,5 +1,14 @@
 # Changelog
 
+## MS-04 — Output Workflow (2026-03-17)
+
+- Transcription text is automatically copied to the clipboard after every successful recording
+- New **Auto-insert** output mode: text is pasted into the focused application via Ctrl+V immediately after transcription; previous clipboard content is restored afterwards
+- Output mode toggle added to Settings (Clipboard / Auto-insert)
+- Pill Success state now shows a **"Copied"** or **"Inserted"** badge alongside the transcript preview
+- Pill auto-returns to Idle after ~2 s (success) or ~3 s (error) — no manual dismiss needed
+- `output-result` event emitted after each output step with mode, success flag, and optional error
+
 ## MS-03 — Local Transcription (2026-03-17)
 
 - Automatic offline transcription via whisper.cpp CLI sidecar after every recording

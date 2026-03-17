@@ -14,6 +14,18 @@ pub struct TranscriptSegment {
     pub confidence: Option<f32>,
 }
 
+/// Outcome of the output step (clipboard write or auto-insert).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OutputResult {
+    /// Effective output mode used: "clipboard" or "insert".
+    pub mode: String,
+    /// Whether the output step completed successfully.
+    pub success: bool,
+    /// Error description when `success` is false.
+    pub error: Option<String>,
+}
+
 /// Full result returned after a successful transcription.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -30,6 +42,8 @@ pub struct TranscriptionResult {
     pub model_id: String,
     /// Wall-clock transcription time in milliseconds.
     pub duration_ms: u64,
+    /// Result of the output step (set by the orchestrator after transcription).
+    pub output: Option<OutputResult>,
 }
 
 // ── Whisper JSON deserialization helpers ──────────────────────────────────────

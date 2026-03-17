@@ -3,13 +3,18 @@ import { listen } from "@tauri-apps/api/event";
 import "./index.css";
 import { Pill } from "./components/pill/Pill";
 import { useAppStore } from "./stores/app-store";
-import type { RecordingStatePayload, TranscriptionResult } from "./types";
+import type {
+  OutputResultPayload,
+  RecordingStatePayload,
+  TranscriptionResult,
+} from "./types";
 
 export function PillApp() {
   const setRecordingState = useAppStore((s) => s.setRecordingState);
   const setAudioLevel = useAppStore((s) => s.setAudioLevel);
   const setRecordingError = useAppStore((s) => s.setRecordingError);
   const setLastTranscription = useAppStore((s) => s.setLastTranscription);
+  const setLastOutputResult = useAppStore((s) => s.setLastOutputResult);
 
   useEffect(() => {
     const unlistenState = listen<RecordingStatePayload>(
@@ -31,12 +36,26 @@ export function PillApp() {
       }
     );
 
+    const unlistenOutput = listen<OutputResultPayload>(
+      "output-result",
+      (event) => {
+        setLastOutputResult(event.payload);
+      }
+    );
+
     return () => {
       unlistenState.then((fn) => fn());
       unlistenLevel.then((fn) => fn());
       unlistenTranscription.then((fn) => fn());
+      unlistenOutput.then((fn) => fn());
     };
-  }, [setRecordingState, setAudioLevel, setRecordingError, setLastTranscription]);
+  }, [
+    setRecordingState,
+    setAudioLevel,
+    setRecordingError,
+    setLastTranscription,
+    setLastOutputResult,
+  ]);
 
   return (
     <div className="w-full h-full flex items-center justify-center p-1">

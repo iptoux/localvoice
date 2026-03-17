@@ -9,7 +9,7 @@ Technical reference for contributors and maintainers.
 | [ms01-foundation.md](ms01-foundation.md) | MS-01 Foundation & Shell | done |
 | [ms02-recording.md](ms02-recording.md) | MS-02 Recording Core | done |
 | [ms03-transcription.md](ms03-transcription.md) | MS-03 Local Transcription | done |
-| ms04-output.md | MS-04 Output Workflow | todo |
+| [ms04-output.md](ms04-output.md) | MS-04 Output Workflow | done |
 | ms05-history.md | MS-05 History | todo |
 | ms06-dashboard.md | MS-06 Dashboard | todo |
 | ms07-models.md | MS-07 Models | todo |

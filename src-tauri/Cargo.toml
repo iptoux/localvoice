@@ -25,3 +25,5 @@ chrono = { version = "0.4", features = ["serde"] }
 log = "0.4"
 cpal = "0.15"
 hound = "3.5"
+arboard = "3"
+enigo = "0.1"
