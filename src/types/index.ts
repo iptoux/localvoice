@@ -49,15 +49,32 @@ export interface SessionFilter {
   offset?: number;
 }
 
+export interface DictionaryEntry {
+  id: string;
+  phrase: string;
+  normalizedPhrase: string;
+  language?: string;
+  /** "term" | "name" | "acronym" | "product" | "custom" */
+  entryType: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CorrectionRule {
   id: string;
   sourcePhrase: string;
+  normalizedSourcePhrase: string;
   targetPhrase: string;
-  language?: Language;
-  ruleMode: "manual" | "suggested" | "learned";
+  language?: string;
+  /** "manual" | "suggested" | "learned" */
+  ruleMode: string;
   isActive: boolean;
   autoApply: boolean;
   usageCount: number;
+  lastUsedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** Merged view of registry metadata + DB install state returned by list_available_models. */
