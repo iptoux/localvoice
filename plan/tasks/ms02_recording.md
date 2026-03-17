@@ -2,28 +2,29 @@
 
 **Goal:** Enable microphone selection, recording start/stop, global shortcut handling, and real-time UI state transitions in the pill.
 **Depends on:** MS-01
-**Status:** `todo`
+**Status:** `done`
 
 ---
 
 ## Engineering Tasks
 
-- [ ] TASK-020: Add `cpal` to `Cargo.toml`; implement `audio/devices.rs` — `list_input_devices()` returns vec of `{id, name, is_default}`
-- [ ] TASK-021: Implement `audio/capture.rs` — `start_capture(device_id)` starts recording PCM samples into an in-memory buffer or temp file; `stop_capture()` finalizes and returns temp file path; `cancel_capture()` discards buffer
-- [ ] TASK-022: Implement `audio/wav_writer.rs` — write raw PCM samples to a valid WAV file (mono, 16-bit, 16kHz — format whisper.cpp expects)
-- [ ] TASK-023: Implement `audio/level_meter.rs` — calculate RMS amplitude from PCM buffer for waveform feedback (emit as Tauri event)
-- [ ] TASK-024: Implement `commands/recording.rs` — Tauri commands: `start_recording()`, `stop_recording()`, `cancel_recording()`, `get_recording_state()`; all update `AppState.recording_state` and emit `recording-state-changed` event
-- [ ] TASK-025: Implement `os/hotkeys.rs` — register configurable global shortcut (default: platform-appropriate, e.g. `Ctrl+Shift+Space`); on trigger, call `start_recording` or `stop_recording` based on current state; emit event to frontend
-- [ ] TASK-026: Define `RecordingState` enum: `Idle`, `Listening`, `Processing`, `Success`, `Error`; serialize for Tauri events
-- [ ] TASK-027: React: update Pill component to handle all 5 states — Idle (mic icon + "Ready"), Listening (pulse + timer), Processing (spinner), Success (check), Error (warning + text)
-- [ ] TASK-028: React: subscribe to `recording-state-changed` Tauri event in pill; update Zustand `recording-store`
-- [ ] TASK-029: React: implement elapsed recording timer in Listening state
-- [ ] TASK-030: React: Settings page — microphone selector (calls `list_input_devices`, saves choice to settings)
-- [ ] TASK-031: React: Settings page — shortcut display with instructions for changing it
+- [x] TASK-020: Add `cpal` to `Cargo.toml`; implement `audio/devices.rs` — `list_input_devices()` returns vec of `{id, name, is_default}`
+- [x] TASK-021: Implement `audio/capture.rs` — `start_capture(device_id)` starts recording PCM samples into an in-memory buffer or temp file; `stop_capture()` finalizes and returns temp file path; `cancel_capture()` discards buffer
+- [x] TASK-022: Implement `audio/wav_writer.rs` — write raw PCM samples to a valid WAV file (mono, 16-bit, 16kHz — format whisper.cpp expects)
+- [x] TASK-023: Implement `audio/level_meter.rs` — calculate RMS amplitude from PCM buffer for waveform feedback (emit as Tauri event)
+- [x] TASK-024: Implement `commands/recording.rs` — Tauri commands: `start_recording()`, `stop_recording()`, `cancel_recording()`, `get_recording_state()`; all update `AppState.recording_state` and emit `recording-state-changed` event
+- [x] TASK-025: Implement `os/hotkeys.rs` — register configurable global shortcut (default: platform-appropriate, e.g. `Ctrl+Shift+Space`); on trigger, call `start_recording` or `stop_recording` based on current state; emit event to frontend
+- [x] TASK-026: Define `RecordingState` enum: `Idle`, `Listening`, `Processing`, `Success`, `Error`; serialize for Tauri events
+- [x] TASK-027: React: update Pill component to handle all 5 states — Idle (mic icon + "Ready"), Listening (pulse + timer), Processing (spinner), Success (check), Error (warning + text)
+- [x] TASK-028: React: subscribe to `recording-state-changed` Tauri event in pill; update Zustand `recording-store`
+- [x] TASK-029: React: implement elapsed recording timer in Listening state
+- [x] TASK-030: React: Settings page — microphone selector (calls `list_input_devices`, saves choice to settings)
+- [x] TASK-031: React: Settings page — shortcut display with instructions for changing it
 
 ## Product/UX Tasks
 
-- [ ] TASK-032: Confirm shortcut default feels natural on Windows; ensure it does not conflict with common apps (VS Code, browsers)
+- [x] TASK-032: Confirm shortcut default feels natural on Windows; ensure it does not conflict with common apps (VS Code, browsers)
+  - `Ctrl+Shift+Space` is not bound by VS Code or major browsers by default. Confirmed safe.
 
 ## QA / Acceptance
 

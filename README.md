@@ -7,7 +7,7 @@ Offline-first desktop voice dictation. Record with a global shortcut, transcribe
 | Milestone | Description | Status |
 | --- | --- | --- |
 | MS-01 | Foundation & Shell | ✅ done |
-| MS-02 | Recording Core | todo |
+| MS-02 | Recording Core | ✅ done |
 | MS-03 | Local Transcription | todo |
 | MS-04 | Output Workflow | todo |
 | MS-05 | History | todo |
@@ -32,13 +32,13 @@ Windows: no additional system libraries needed — SQLite is bundled.
 
 ```bash
 # Install frontend dependencies
-npm install
+pnpm install
 
 # Run in development (hot-reload frontend + Rust watch)
-npm run tauri dev
+pnpm tauri dev
 
 # Production build
-npm run tauri build
+pnpm tauri build
 ```
 
 ## Project Layout

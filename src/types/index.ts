@@ -44,3 +44,14 @@ export interface ModelInstallation {
 }
 
 export type Settings = Record<string, string>;
+
+export interface DeviceInfo {
+  id: string;
+  name: string;
+  isDefault: boolean;
+}
+
+export interface RecordingStatePayload {
+  state: RecordingState;
+  error?: string;
+}

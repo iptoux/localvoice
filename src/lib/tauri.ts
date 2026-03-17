@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Settings } from "../types";
+import type { DeviceInfo, RecordingState, Settings } from "../types";
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 
@@ -23,3 +23,20 @@ export const openMainWindow = (): Promise<void> =>
 
 export const setPillPosition = (x: number, y: number): Promise<void> =>
   invoke<void>("set_pill_position", { x, y });
+
+// ── Recording ─────────────────────────────────────────────────────────────────
+
+export const startRecording = (): Promise<void> =>
+  invoke<void>("start_recording");
+
+export const stopRecording = (): Promise<string> =>
+  invoke<string>("stop_recording");
+
+export const cancelRecording = (): Promise<void> =>
+  invoke<void>("cancel_recording");
+
+export const getRecordingState = (): Promise<RecordingState> =>
+  invoke<RecordingState>("get_recording_state");
+
+export const listInputDevices = (): Promise<DeviceInfo[]> =>
+  invoke<DeviceInfo[]>("list_input_devices");
