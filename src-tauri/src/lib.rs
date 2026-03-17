@@ -1,6 +1,7 @@
 mod audio;
 mod commands;
 mod db;
+mod dictionary;
 mod errors;
 mod history;
 mod models;
@@ -10,7 +11,7 @@ mod state;
 mod stats;
 mod transcription;
 
-use commands::{history as cmd_history, models as cmd_models, recording, settings, stats as cmd_stats, window};
+use commands::{dictionary as cmd_dictionary, history as cmd_history, models as cmd_models, recording, settings, stats as cmd_stats, window};
 use commands::transcription as cmd_transcription;
 use state::AppState;
 use tauri::Manager;
@@ -78,6 +79,15 @@ pub fn run() {
             cmd_models::download_model,
             cmd_models::delete_model,
             cmd_models::set_default_model,
+            // Dictionary
+            cmd_dictionary::list_dictionary_entries,
+            cmd_dictionary::create_dictionary_entry,
+            cmd_dictionary::update_dictionary_entry,
+            cmd_dictionary::delete_dictionary_entry,
+            cmd_dictionary::list_correction_rules,
+            cmd_dictionary::create_correction_rule,
+            cmd_dictionary::update_correction_rule,
+            cmd_dictionary::delete_correction_rule,
         ])
         // Prevent the app from exiting when the last window is closed —
         // the tray keeps the app alive.

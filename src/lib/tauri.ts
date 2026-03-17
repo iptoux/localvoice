@@ -1,8 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
+  CorrectionRule,
   DashboardStats,
   DateRange,
   DeviceInfo,
+  DictionaryEntry,
   ModelInfo,
   RecordingState,
   Session,
@@ -110,3 +112,51 @@ export const deleteModel = (key: string): Promise<void> =>
 
 export const setDefaultModel = (language: "de" | "en", key: string): Promise<void> =>
   invoke<void>("set_default_model", { language, key });
+
+// ── Dictionary ────────────────────────────────────────────────────────────────
+
+export const listDictionaryEntries = (): Promise<DictionaryEntry[]> =>
+  invoke<DictionaryEntry[]>("list_dictionary_entries");
+
+export const createDictionaryEntry = (payload: {
+  phrase: string;
+  language?: string;
+  entryType: string;
+  notes?: string;
+}): Promise<DictionaryEntry> =>
+  invoke<DictionaryEntry>("create_dictionary_entry", { payload });
+
+export const updateDictionaryEntry = (
+  id: string,
+  payload: { phrase: string; language?: string; entryType: string; notes?: string }
+): Promise<void> =>
+  invoke<void>("update_dictionary_entry", { id, payload });
+
+export const deleteDictionaryEntry = (id: string): Promise<void> =>
+  invoke<void>("delete_dictionary_entry", { id });
+
+export const listCorrectionRules = (): Promise<CorrectionRule[]> =>
+  invoke<CorrectionRule[]>("list_correction_rules");
+
+export const createCorrectionRule = (payload: {
+  sourcePhrase: string;
+  targetPhrase: string;
+  language?: string;
+  autoApply: boolean;
+}): Promise<CorrectionRule> =>
+  invoke<CorrectionRule>("create_correction_rule", { payload });
+
+export const updateCorrectionRule = (
+  id: string,
+  payload: {
+    sourcePhrase: string;
+    targetPhrase: string;
+    language?: string;
+    isActive: boolean;
+    autoApply: boolean;
+  }
+): Promise<void> =>
+  invoke<void>("update_correction_rule", { id, payload });
+
+export const deleteCorrectionRule = (id: string): Promise<void> =>
+  invoke<void>("delete_correction_rule", { id });

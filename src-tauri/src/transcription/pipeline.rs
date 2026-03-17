@@ -1,21 +1,24 @@
 use std::collections::HashMap;
 
+use crate::db::repositories::dictionary_repo::CorrectionRule;
+use crate::dictionary::rules as dict_rules;
 use crate::postprocess::normalize;
 use crate::transcription::types::TranscriptSegment;
 
 /// Runs the full post-processing pipeline on raw transcript data.
 ///
-/// Returns `(cleaned_text, cleaned_segments)`.
+/// Returns `(cleaned_text, cleaned_segments, fired_rule_ids)`.
 ///
-/// Current stages:
+/// Stages:
 /// 1. Normalise whitespace in all segment texts.
-/// 2. Join segments → full raw text.
-/// 3. Apply `normalize::normalize()` (collapse spaces + optional sentence capitalisation).
+/// 2. Apply `normalize::normalize()` (collapse spaces + optional sentence capitalisation).
+/// 3. Apply active correction rules (case-insensitive substring replacement).
 pub fn run(
     raw_text: &str,
     segments: Vec<TranscriptSegment>,
     settings: &HashMap<String, String>,
-) -> (String, Vec<TranscriptSegment>) {
+    active_rules: &[CorrectionRule],
+) -> (String, Vec<TranscriptSegment>, Vec<String>) {
     let auto_cap = settings
         .get("transcription.auto_capitalization")
         .map(|v| v == "true")
@@ -30,7 +33,10 @@ pub fn run(
         })
         .collect();
 
-    let cleaned_text = normalize::normalize(raw_text, auto_cap);
+    let normalized = normalize::normalize(raw_text, auto_cap);
 
-    (cleaned_text, cleaned_segments)
+    // Apply correction rules after normalization.
+    let (cleaned_text, fired_ids) = dict_rules::apply_rules(&normalized, active_rules);
+
+    (cleaned_text, cleaned_segments, fired_ids)
 }

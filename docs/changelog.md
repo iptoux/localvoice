@@ -1,5 +1,15 @@
 # Changelog
 
+## MS-08 — Dictionary v1 (2026-03-17)
+
+- New **Dictionary** page with Rules tab (default) and Terms tab
+- Correction rules replace misheard words automatically during every transcription (case-insensitive, global match)
+- Rules can be enabled/disabled individually with a toggle — no deletion required
+- Usage counter increments each time a rule fires; rules sorted by usage count
+- Language-specific rules (DE / EN) apply alongside universal (all-language) rules
+- Term entries (name, acronym, product, custom) available for reference and future features
+- Add/Edit/Delete via modal forms; active toggle inline on rule rows
+
 ## MS-07 — Models (2026-03-17)
 
 - New **Models** page: browse all available whisper.cpp models with name, size, and language scope

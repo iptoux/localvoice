@@ -13,7 +13,7 @@ Offline-first desktop voice dictation. Record with a global shortcut, transcribe
 | MS-05 | History | ✅ done |
 | MS-06 | Dashboard | ✅ done |
 | MS-07 | Models | ✅ done |
-| MS-08 | Dictionary v1 | todo |
+| MS-08 | Dictionary v1 | ✅ done |
 | MS-09 | Ambiguity v1 | todo |
 | MS-10 | Polish | todo |
 

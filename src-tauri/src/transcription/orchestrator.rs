@@ -4,7 +4,8 @@ use tauri::{AppHandle, Emitter, Manager};
 use uuid::Uuid;
 
 use crate::db::models::Session;
-use crate::db::repositories::{models_repo, sessions_repo, settings_repo};
+use crate::db::repositories::{dictionary_repo, models_repo, sessions_repo, settings_repo};
+use crate::dictionary::service as dict_service;
 use crate::errors::CmdResult;
 use crate::os::{clipboard, text_insertion};
 use crate::state::app_state::emit_recording_state;
@@ -95,7 +96,19 @@ pub fn transcribe(
 
     let raw_text = parser::segments_to_text(&segments);
 
-    let (cleaned_text, cleaned_segments) = pipeline::run(&raw_text, segments, &settings);
+    // Load active correction rules for the current language.
+    let active_rules = dictionary_repo::list_active_rules(&state.db, Some(&lang_code))
+        .unwrap_or_default();
+
+    let (cleaned_text, cleaned_segments, fired_rule_ids) =
+        pipeline::run(&raw_text, segments, &settings, &active_rules);
+
+    // Increment usage counters for rules that fired.
+    if !fired_rule_ids.is_empty() {
+        if let Err(e) = dict_service::record_rule_usage(&state.db, &fired_rule_ids) {
+            log::warn!("Failed to record rule usage: {e}");
+        }
+    }
 
     Ok(TranscriptionResult {
         raw_text,
