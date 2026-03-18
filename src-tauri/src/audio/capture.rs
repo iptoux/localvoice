@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -13,6 +14,30 @@ use crate::state::recording_state::ActiveRecording;
 const TARGET_SAMPLE_RATE: u32 = 16_000;
 const TARGET_CHANNELS: u16 = 1;
 
+/// Default RMS threshold below which audio is considered silent.
+const DEFAULT_SILENCE_THRESHOLD: f32 = 0.01;
+
+/// Configuration for silence detection passed into the capture callbacks.
+#[derive(Clone)]
+pub struct SilenceConfig {
+    /// Whether silence detection is enabled at all.
+    pub enabled: bool,
+    /// RMS threshold below which frames are considered silent.
+    pub threshold: f32,
+    /// How many milliseconds of continuous silence before triggering.
+    pub timeout_ms: u64,
+}
+
+impl Default for SilenceConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            threshold: DEFAULT_SILENCE_THRESHOLD,
+            timeout_ms: 1500,
+        }
+    }
+}
+
 /// Starts audio capture on the given device and returns an [ActiveRecording].
 ///
 /// The caller must store the returned value in AppState to keep the stream alive.
@@ -20,6 +45,7 @@ const TARGET_CHANNELS: u16 = 1;
 pub fn start_capture(
     device: &cpal::Device,
     app: &AppHandle,
+    silence_cfg: SilenceConfig,
 ) -> CmdResult<ActiveRecording> {
     let device_name = device.name().unwrap_or_else(|_| "Unknown".into());
 
@@ -31,14 +57,27 @@ pub fn start_capture(
 
     let app_cb = app.clone();
     let last_emit = Arc::new(Mutex::new(Instant::now()));
+    let silence_triggered = Arc::new(AtomicBool::new(false));
 
     let temp_path = std::env::temp_dir()
         .join(format!("localvoice_{}.wav", uuid::Uuid::new_v4()));
 
+    // Silence tracking state shared with the audio callback.
+    let silence_start = Arc::new(Mutex::new(None::<Instant>));
+
     let stream = match config.sample_format() {
-        SampleFormat::F32 => build_stream_f32(device, &config.into(), samples_cb, app_cb, last_emit)?,
-        SampleFormat::I16 => build_stream_i16(device, &config.into(), samples_cb, app_cb, last_emit)?,
-        SampleFormat::U8 => build_stream_u8(device, &config.into(), samples_cb, app_cb, last_emit)?,
+        SampleFormat::F32 => build_stream_f32(
+            device, &config.into(), samples_cb, app_cb, last_emit,
+            silence_cfg, silence_triggered.clone(), silence_start,
+        )?,
+        SampleFormat::I16 => build_stream_i16(
+            device, &config.into(), samples_cb, app_cb, last_emit,
+            silence_cfg, silence_triggered.clone(), silence_start,
+        )?,
+        SampleFormat::U8 => build_stream_u8(
+            device, &config.into(), samples_cb, app_cb, last_emit,
+            silence_cfg, silence_triggered.clone(), silence_start,
+        )?,
         other => return Err(format!("Unsupported sample format: {other:?}").into()),
     };
 
@@ -52,6 +91,7 @@ pub fn start_capture(
         temp_path,
         sample_rate,
         device_name,
+        silence_triggered,
     })
 }
 
@@ -74,8 +114,6 @@ pub fn stop_capture(recording: ActiveRecording) -> CmdResult<String> {
 }
 
 /// Cancels capture without writing any file.
-/// Deletes the temp path reservation if it exists on disk (it shouldn't yet, but
-/// guards against partial writes if we ever buffer-to-file in the future).
 pub fn cancel_capture(recording: ActiveRecording) {
     drop(recording.stream);
     let _ = std::fs::remove_file(&recording.temp_path);
@@ -85,7 +123,6 @@ pub fn cancel_capture(recording: ActiveRecording) {
 
 /// Picks the best supported input config for whisper.cpp compatibility.
 fn select_input_config(device: &cpal::Device) -> CmdResult<SupportedStreamConfig> {
-    // Prefer 16 kHz mono.
     if let Ok(configs) = device.supported_input_configs() {
         for range in configs {
             if range.channels() == TARGET_CHANNELS
@@ -96,12 +133,33 @@ fn select_input_config(device: &cpal::Device) -> CmdResult<SupportedStreamConfig
             }
         }
     }
-
-    // Fall back to the device default — the WAV will record at whatever rate the
-    // device supports. MS-03 transcription will handle resampling if needed.
     device
         .default_input_config()
         .map_err(|e| format!("No supported input config: {e}").into())
+}
+
+/// Checks silence state and sets the `silence_triggered` flag if silence exceeds timeout.
+fn check_silence(
+    rms: f32,
+    cfg: &SilenceConfig,
+    silence_start: &Mutex<Option<Instant>>,
+    silence_triggered: &AtomicBool,
+) {
+    if !cfg.enabled {
+        return;
+    }
+
+    let mut start = silence_start.lock().unwrap();
+    if rms < cfg.threshold {
+        // Audio is silent.
+        let began = start.get_or_insert_with(Instant::now);
+        if began.elapsed() >= Duration::from_millis(cfg.timeout_ms) {
+            silence_triggered.store(true, Ordering::Relaxed);
+        }
+    } else {
+        // Audio is loud enough — reset the silence timer.
+        *start = None;
+    }
 }
 
 fn build_stream_f32(
@@ -110,6 +168,9 @@ fn build_stream_f32(
     samples: Arc<Mutex<Vec<i16>>>,
     app: AppHandle,
     last_emit: Arc<Mutex<Instant>>,
+    silence_cfg: SilenceConfig,
+    silence_triggered: Arc<AtomicBool>,
+    silence_start: Arc<Mutex<Option<Instant>>>,
 ) -> CmdResult<cpal::Stream> {
     device
         .build_input_stream(
@@ -120,7 +181,9 @@ fn build_stream_f32(
                     .map(|&x| (x.clamp(-1.0, 1.0) * i16::MAX as f32) as i16)
                     .collect();
                 samples.lock().unwrap().extend_from_slice(&chunk);
-                maybe_emit_level(&app, &last_emit, calculate_rms(data));
+                let rms = calculate_rms(data);
+                maybe_emit_level(&app, &last_emit, rms);
+                check_silence(rms, &silence_cfg, &silence_start, &silence_triggered);
             },
             |err| log::error!("Audio capture error: {err}"),
             None,
@@ -134,6 +197,9 @@ fn build_stream_i16(
     samples: Arc<Mutex<Vec<i16>>>,
     app: AppHandle,
     last_emit: Arc<Mutex<Instant>>,
+    silence_cfg: SilenceConfig,
+    silence_triggered: Arc<AtomicBool>,
+    silence_start: Arc<Mutex<Option<Instant>>>,
 ) -> CmdResult<cpal::Stream> {
     device
         .build_input_stream(
@@ -148,6 +214,7 @@ fn build_stream_i16(
                     (sum_sq / data.len() as f32).sqrt()
                 };
                 maybe_emit_level(&app, &last_emit, rms);
+                check_silence(rms, &silence_cfg, &silence_start, &silence_triggered);
             },
             |err| log::error!("Audio capture error: {err}"),
             None,
@@ -161,6 +228,9 @@ fn build_stream_u8(
     samples: Arc<Mutex<Vec<i16>>>,
     app: AppHandle,
     last_emit: Arc<Mutex<Instant>>,
+    silence_cfg: SilenceConfig,
+    silence_triggered: Arc<AtomicBool>,
+    silence_start: Arc<Mutex<Option<Instant>>>,
 ) -> CmdResult<cpal::Stream> {
     device
         .build_input_stream(
@@ -179,6 +249,7 @@ fn build_stream_u8(
                 };
                 samples.lock().unwrap().extend_from_slice(&converted);
                 maybe_emit_level(&app, &last_emit, rms);
+                check_silence(rms, &silence_cfg, &silence_start, &silence_triggered);
             },
             |err| log::error!("Audio capture error: {err}"),
             None,

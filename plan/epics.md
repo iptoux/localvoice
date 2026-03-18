@@ -26,7 +26,7 @@
 
 | Epic | Title | Depends on | Status |
 |------|-------|-----------|--------|
-| [MS-10a](tasks/ms10a_settings_fixes.md) | Backend for Existing Settings | MS-10 | `todo` |
+| [MS-10a](tasks/ms10a_settings_fixes.md) | Backend for Existing Settings | MS-10 | `done` |
 
 > **Critical:** 6 settings in the UI have no backend implementation. Must be fixed before v0.2.
 

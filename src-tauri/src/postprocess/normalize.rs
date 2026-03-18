@@ -47,11 +47,33 @@ pub fn capitalize_sentences(text: &str) -> String {
     result
 }
 
+/// Ensures the text ends with a terminal punctuation mark (`.`, `!`, or `?`).
+///
+/// If the trimmed text already ends with punctuation, it is returned unchanged.
+/// Otherwise, a period is appended.
+pub fn ensure_terminal_punctuation(text: &str) -> String {
+    let trimmed = text.trim_end();
+    if trimmed.is_empty() {
+        return trimmed.to_string();
+    }
+    if trimmed.ends_with(|c: char| matches!(c, '.' | '!' | '?' | '…' | ':' | ';')) {
+        trimmed.to_string()
+    } else {
+        format!("{trimmed}.")
+    }
+}
+
 /// Full normalisation pipeline applied in order:
 /// 1. Collapse whitespace
-/// 2. Capitalise sentences (if `auto_capitalization` is enabled)
-pub fn normalize(text: &str, auto_capitalization: bool) -> String {
+/// 2. Ensure terminal punctuation (if `auto_punctuation` is enabled)
+/// 3. Capitalise sentences (if `auto_capitalization` is enabled)
+pub fn normalize(text: &str, auto_capitalization: bool, auto_punctuation: bool) -> String {
     let text = collapse_whitespace(text);
+    let text = if auto_punctuation {
+        ensure_terminal_punctuation(&text)
+    } else {
+        text
+    };
     if auto_capitalization {
         capitalize_sentences(&text)
     } else {

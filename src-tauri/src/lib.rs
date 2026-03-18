@@ -60,15 +60,15 @@ pub fn run() {
                 .map_err(|e| Box::<dyn std::error::Error>::from(e))?;
 
             // ── Restore pill position ─────────────────────────────────────────
-            if let (Some(x), Some(y)) = (
-                persisted
-                    .get("ui.pill.position_x")
-                    .and_then(|v| v.parse::<i32>().ok()),
-                persisted
-                    .get("ui.pill.position_y")
-                    .and_then(|v| v.parse::<i32>().ok()),
-            ) {
-                if let Some(pill) = app.get_webview_window("pill") {
+            if let Some(pill) = app.get_webview_window("pill") {
+                if let (Some(x), Some(y)) = (
+                    persisted
+                        .get("ui.pill.position_x")
+                        .and_then(|v| v.parse::<i32>().ok()),
+                    persisted
+                        .get("ui.pill.position_y")
+                        .and_then(|v| v.parse::<i32>().ok()),
+                ) {
                     let _ = pill.set_position(tauri::PhysicalPosition::new(x, y));
                 }
             }
@@ -95,6 +95,37 @@ pub fn run() {
                 ) {
                     let _ = main_win.set_position(tauri::PhysicalPosition::new(x, y));
                 }
+            }
+
+            // ── Apply start-hidden and default-mode settings ──────────────────
+            let start_hidden = persisted
+                .get("app.start_hidden")
+                .map(|v| v == "true")
+                .unwrap_or(false);
+            let default_mode = persisted
+                .get("ui.default_mode")
+                .cloned()
+                .unwrap_or_else(|| "pill".to_string());
+
+            if start_hidden {
+                // Tray-only mode: hide everything on startup.
+                if let Some(pill) = app.get_webview_window("pill") {
+                    let _ = pill.hide();
+                }
+                // Main window starts hidden by default in tauri.conf.json.
+                log::info!("Starting hidden (tray-only mode)");
+            } else if default_mode == "main" {
+                // Main window mode: show main, hide pill.
+                if let Some(main_win) = app.get_webview_window("main") {
+                    let _ = main_win.show();
+                }
+                if let Some(pill) = app.get_webview_window("pill") {
+                    let _ = pill.hide();
+                }
+                log::info!("Starting in main window mode");
+            } else {
+                // Default pill mode: pill is already visible via tauri.conf.json.
+                log::info!("Starting in pill mode");
             }
 
             Ok(())
