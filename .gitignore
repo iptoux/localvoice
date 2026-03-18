@@ -54,3 +54,4 @@ playwright-report/
 *.njsproj
 *.sln
 *.sw?
+plan/
