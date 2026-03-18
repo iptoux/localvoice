@@ -2,11 +2,14 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   AmbiguousTerm,
   CorrectionRule,
+  CorrectionStat,
+  DailyStats,
   LogEntry,
   DashboardStats,
   DateRange,
   DeviceInfo,
   DictionaryEntry,
+  LanguageBreakdown,
   ModelInfo,
   RecordingState,
   Session,
@@ -15,6 +18,7 @@ import type {
   Settings,
   TimeseriesPoint,
   TranscriptionResult,
+  WpmPoint,
 } from "../types";
 
 // ── Settings ──────────────────────────────────────────────────────────────────
@@ -120,6 +124,24 @@ export const getUsageTimeseries = (
   bucket: "day" | "week" = "day"
 ): Promise<TimeseriesPoint[]> =>
   invoke<TimeseriesPoint[]>("get_usage_timeseries", { range, bucket });
+
+export const getLanguageBreakdown = (range: DateRange = {}): Promise<LanguageBreakdown[]> =>
+  invoke<LanguageBreakdown[]>("get_language_breakdown", { range });
+
+export const getCorrectionStats = (): Promise<CorrectionStat[]> =>
+  invoke<CorrectionStat[]>("get_correction_stats");
+
+export const getWpmTrend = (
+  range: DateRange = {},
+  bucket: "day" | "week" = "day"
+): Promise<WpmPoint[]> =>
+  invoke<WpmPoint[]>("get_wpm_trend", { range, bucket });
+
+export const getDailyComparison = (
+  dateA: string,
+  dateB: string
+): Promise<[DailyStats, DailyStats]> =>
+  invoke<[DailyStats, DailyStats]>("get_daily_comparison", { dateA, dateB });
 
 // ── Models ────────────────────────────────────────────────────────────────────
 

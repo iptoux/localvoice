@@ -187,6 +187,34 @@ export interface DateRange {
   end?: string;
 }
 
+export interface LanguageBreakdown {
+  language: string;
+  sessionCount: number;
+  wordCount: number;
+  durationMs: number;
+}
+
+export interface CorrectionStat {
+  sourcePhrase: string;
+  targetPhrase: string;
+  usageCount: number;
+  lastUsedAt?: string;
+}
+
+export interface WpmPoint {
+  date: string;
+  avgWpm: number;
+  sessionCount: number;
+}
+
+export interface DailyStats {
+  date: string;
+  sessionCount: number;
+  wordCount: number;
+  durationMs: number;
+  avgWpm: number;
+}
+
 export interface LogEntry {
   id: string;
   level: string;

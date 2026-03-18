@@ -169,6 +169,10 @@ pub fn run() {
             // Stats
             cmd_stats::get_dashboard_stats,
             cmd_stats::get_usage_timeseries,
+            cmd_stats::get_language_breakdown,
+            cmd_stats::get_correction_stats,
+            cmd_stats::get_wpm_trend,
+            cmd_stats::get_daily_comparison,
             // Models
             cmd_models::list_available_models,
             cmd_models::download_model,
