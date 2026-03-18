@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { listLogs, exportLogs, clearLogs } from "../lib/tauri";
 import type { LogEntry } from "../types";
 
-type LevelFilter = "all" | "warn" | "error";
+type LevelFilter = "all" | "info" | "warn" | "error";
 
 const LEVEL_COLORS: Record<string, string> = {
+  info: "text-blue-300 bg-blue-900/20 border-blue-800/50",
   warn: "text-yellow-400 bg-yellow-900/30 border-yellow-700/50",
   error: "text-red-400 bg-red-900/30 border-red-700/50",
 };
@@ -52,13 +53,12 @@ export default function Logs() {
     <div className="p-8 max-w-4xl mx-auto">
       <h1 className="text-2xl font-semibold text-white mb-1">Logs</h1>
       <p className="text-neutral-400 text-sm mb-6">
-        Warnings and errors captured during this session. Useful for diagnosing
-        transcription or output issues.
+        Application logs captured during this session. Filter by level to focus on what matters.
       </p>
 
       {/* Controls */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
-        {(["all", "warn", "error"] as LevelFilter[]).map((level) => (
+        {(["all", "info", "warn", "error"] as LevelFilter[]).map((level) => (
           <button
             key={level}
             onClick={() => setFilter(level)}
@@ -102,7 +102,7 @@ export default function Logs() {
         <p className="text-neutral-500 text-sm">Loading…</p>
       ) : entries.length === 0 ? (
         <div className="text-center py-12 text-neutral-500 text-sm">
-          No log entries. Warnings and errors will appear here as they occur.
+          No log entries for this filter. Logs will appear here as they occur.
         </div>
       ) : (
         <div className="flex flex-col gap-1.5">

@@ -72,8 +72,8 @@ impl log::Log for AppLogger {
             record.args()
         );
 
-        // Buffer only warn/error for the in-app Logs page.
-        if record.level() > log::Level::Warn {
+        // Buffer warn/error/info for the in-app Logs page.
+        if record.level() > log::Level::Info {
             return;
         }
 
