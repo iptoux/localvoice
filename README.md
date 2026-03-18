@@ -68,13 +68,13 @@ It's built for developers, writers, and anyone who wants fast, private voice inp
     </td>
     <td align="center">
       <img src="docs/screenshots/models-light.png" alt="Model Manager — download and manage whisper.cpp models (light theme)" width="480"/>
-      <br/><sub>Model Manager — download whisper.cpp models (light theme)</sub>
+      <br/><sub>Model Manager — download whisper.cpp models (dark theme)</sub>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="docs/screenshots/models-dark.png" alt="Model Manager — installed models with per-language defaults (dark theme)" width="480"/>
-      <br/><sub>Model Manager — per-language defaults &amp; installed models (dark theme)</sub>
+      <br/><sub>Model Manager — per-language defaults &amp; installed models (light theme)</sub>
     </td>
     <td align="center">
       <img src="docs/screenshots/logs.png" alt="Log Viewer — filterable in-app debug logs with export" width="480"/>
