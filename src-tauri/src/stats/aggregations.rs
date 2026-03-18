@@ -17,16 +17,13 @@ use crate::errors::{AppError, CmdResult};
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DashboardStats {
-    /// Sum of `word_count` across all sessions in range.
     pub total_word_count: i64,
-    /// Number of sessions in range.
     pub total_session_count: i64,
-    /// Average of non-null `estimated_wpm` across sessions in range.
     pub avg_wpm: f64,
-    /// Sum of `duration_ms` across sessions in range (milliseconds).
     pub total_duration_ms: i64,
-    /// Session count per language code, sorted by count descending.
     pub language_counts: Vec<LanguageCount>,
+    /// Top 3 models by session count in the selected range.
+    pub top_models: Vec<ModelUsageStat>,
 }
 
 /// Session count for a single language.
@@ -35,6 +32,17 @@ pub struct DashboardStats {
 pub struct LanguageCount {
     pub language: String,
     pub count: i64,
+}
+
+/// Usage stats for a single model.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelUsageStat {
+    pub model_id: String,
+    pub session_count: i64,
+    pub total_word_count: i64,
+    pub total_duration_ms: i64,
+    pub avg_wpm: f64,
 }
 
 /// One data point in a usage time-series.
@@ -105,12 +113,43 @@ pub fn get_dashboard_stats(db: &DbConn, range: &DateRange) -> CmdResult<Dashboar
         .collect::<rusqlite::Result<Vec<_>>>()
         .map_err(AppError::from)?;
 
+    // ── Top 3 models ──────────────────────────────────────────────────────────
+    let model_sql = format!(
+        "SELECT
+            COALESCE(model_id, 'unknown') as mid,
+            COUNT(*) as cnt,
+            COALESCE(SUM(word_count), 0),
+            COALESCE(SUM(duration_ms), 0),
+            COALESCE(AVG(CASE WHEN estimated_wpm IS NOT NULL THEN estimated_wpm END), 0.0)
+         FROM sessions
+         {where_clause}
+         GROUP BY mid
+         ORDER BY cnt DESC
+         LIMIT 3"
+    );
+    let params_refs3: Vec<&dyn rusqlite::ToSql> = params.iter().map(|b| b.as_ref()).collect();
+    let mut stmt3 = conn.prepare(&model_sql).map_err(AppError::from)?;
+    let top_models = stmt3
+        .query_map(params_refs3.as_slice(), |row| {
+            Ok(ModelUsageStat {
+                model_id: row.get(0)?,
+                session_count: row.get(1)?,
+                total_word_count: row.get(2)?,
+                total_duration_ms: row.get(3)?,
+                avg_wpm: row.get(4)?,
+            })
+        })
+        .map_err(AppError::from)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(AppError::from)?;
+
     Ok(DashboardStats {
         total_word_count,
         total_session_count,
         avg_wpm,
         total_duration_ms,
         language_counts,
+        top_models,
     })
 }
 

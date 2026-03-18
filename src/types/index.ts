@@ -158,7 +158,9 @@ export interface LanguageCount {
 export interface ModelUsage {
   modelId: string;
   sessionCount: number;
-  wordCount: number;
+  totalWordCount: number;
+  totalDurationMs: number;
+  avgWpm: number;
 }
 
 export interface DashboardStats {

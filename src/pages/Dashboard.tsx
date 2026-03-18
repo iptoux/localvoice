@@ -67,6 +67,14 @@ export default function Dashboard() {
         </h2>
         <LanguageChart stats={stats} loading={loading} />
       </section>
+
+      {/* Top models */}
+      <section className="bg-neutral-900 rounded-xl border border-neutral-800 p-5">
+        <h2 className="text-sm font-semibold text-neutral-300 mb-4">
+          Top models
+        </h2>
+        <TopModels stats={stats} loading={loading} />
+      </section>
     </div>
   );
 }
@@ -278,6 +286,62 @@ function LanguageChart({
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+// ── Top models ────────────────────────────────────────────────────────────────
+
+function TopModels({
+  stats,
+  loading,
+}: {
+  stats: DashboardStats | null;
+  loading: boolean;
+}) {
+  if (loading) return <ChartPlaceholder label="Loading…" />;
+
+  const models = stats?.topModels ?? [];
+  if (models.length === 0) {
+    return <ChartPlaceholder label="No sessions yet." />;
+  }
+
+  const maxSessions = Math.max(...models.map((m) => m.sessionCount), 1);
+
+  return (
+    <div className="flex flex-col gap-3">
+      {models.map((m, i) => {
+        const pct = Math.round((m.sessionCount / maxSessions) * 100);
+        const label = m.modelId === "unknown" ? "Unknown" : m.modelId.replace(/^ggml-/, "");
+        const wpm = m.avgWpm > 0 ? `${Math.round(m.avgWpm)} wpm` : null;
+        const dur = formatDuration(m.totalDurationMs);
+        const rank = ["🥇", "🥈", "🥉"][i] ?? `#${i + 1}`;
+
+        return (
+          <div key={m.modelId} className="flex items-center gap-3">
+            <span className="text-base w-6 shrink-0">{rank}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1 gap-2">
+                <span className="text-sm text-white font-medium truncate capitalize">{label}</span>
+                <span className="text-xs text-neutral-500 shrink-0">
+                  {m.sessionCount} {m.sessionCount === 1 ? "session" : "sessions"}
+                </span>
+              </div>
+              <div className="w-full bg-neutral-800 rounded-full h-1.5 mb-1">
+                <div
+                  className="bg-blue-500 h-1.5 rounded-full transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className="flex gap-3 text-xs text-neutral-500">
+                <span>{m.totalWordCount.toLocaleString()} words</span>
+                <span>{dur} recorded</span>
+                {wpm && <span>{wpm} avg</span>}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
