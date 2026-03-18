@@ -554,8 +554,9 @@ function SessionDrawer({
             <button
               onClick={handleReprocess}
               disabled={reprocessing}
-              className="flex-1 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1.5 transition-colors disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1.5 transition-colors disabled:opacity-50"
             >
+              {reprocessing && <RefreshCw size={12} className="animate-spin" />}
               {reprocessing ? "Reprocessing…" : "Reprocess"}
             </button>
             <button

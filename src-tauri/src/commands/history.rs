@@ -68,18 +68,25 @@ pub fn export_sessions(
 /// Optionally overrides the language and/or model. Emits `session-reprocessed`
 /// on success so the frontend can refresh the detail view.
 #[tauri::command]
-pub fn reprocess_session(
+pub async fn reprocess_session(
     app: AppHandle,
     session_id: String,
     language: Option<String>,
     model_id: Option<String>,
 ) -> CmdResult<SessionWithSegments> {
-    reprocess::reprocess_session(
-        &app,
-        &session_id,
-        language.as_deref(),
-        model_id.as_deref(),
-    )?;
+    let app_clone = app.clone();
+    let sid = session_id.clone();
+
+    tauri::async_runtime::spawn_blocking(move || {
+        reprocess::reprocess_session(
+            &app_clone,
+            &sid,
+            language.as_deref(),
+            model_id.as_deref(),
+        )
+    })
+    .await
+    .map_err(|e| AppError(format!("Task join error: {e}")))??;
 
     // Re-read the updated session to return it.
     let state = app.state::<AppState>();
