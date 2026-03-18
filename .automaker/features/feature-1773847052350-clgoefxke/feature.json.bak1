@@ -2,7 +2,7 @@
   "category": "chore",
   "description": "Add a tauri::command endpoint that triggers transcription with synthetic audio and returns timing metrics (mic-to-text latency, whisper init time, post-processing duration). Include a simple CLI tool to run benchmarks.\n\n**Rationale:** Enables regression detection for performance issues as the codebase evolves. Currently there is no systematic way to measure whether new features slow down the critical recording-to-output path.",
   "title": "Performance Benchmarking Harness",
-  "status": "in_progress",
+  "status": "verified",
   "id": "feature-1773847052350-clgoefxke",
   "createdAt": "2026-03-18T15:17:32.351Z",
   "descriptionHistory": [
@@ -24,6 +24,6 @@
   "requirePlanApproval": false,
   "workMode": "current",
   "dependencies": [],
-  "updatedAt": "2026-03-18T15:29:41.902Z",
+  "updatedAt": "2026-03-18T15:29:41.996Z",
   "summary": "## Summary: Add benchmark endpoint for transcription timing metrics\n\n### Changes Implemented\n- Created `src-tauri/src/benchmark/` module with:\n  - `mod.rs` - Module exports\n  - `orchestrator.rs` - Benchmark orchestration with synthetic audio generation and timing metrics\n- Created `src-tauri/src/commands/benchmark.rs` - Tauri command endpoint `run_transcription_benchmark`\n- Updated `src-tauri/src/lib.rs` to register the new command\n- Updated `src-tauri/src/commands/mod.rs` to export the benchmark module\n- Added `BenchmarkResult` type to `src/types/index.ts`\n- Added `runTranscriptionBenchmark` function to `src/lib/tauri.ts`\n- Created `scripts/run-benchmark.ps1` - CLI tool for running benchmarks with PowerShell\n\n### Files Modified\n- `src-tauri/src/benchmark/mod.rs` (new)\n- `src-tauri/src/benchmark/orchestrator.rs` (new)\n- `src-tauri/src/commands/benchmark.rs` (new)\n- `src-tauri/src/commands/mod.rs`\n- `src-tauri/src/lib.rs`\n- `src/types/index.ts`\n- `src/lib/tauri.ts`\n- `scripts/run-benchmark.ps1` (new)\n\n### Notes for Developer\n- The benchmark command generates synthetic audio (440Hz sine wave with noise) and transcribes it to measure timing\n- Metrics returned: `micToTextMs`, `whisperInitMs`, `whisperInferenceMs`, `postProcessingMs`, `totalTranscriptionMs`\n- CLI usage: `.\\scripts\\run-benchmark.ps1 -Language de -Iterations 3 -DurationMs 1000`\n- Requires LocalVoice app to be running with Tauri IPC enabled for CLI usage\n- All Rust tests pass (10/10)"
 }

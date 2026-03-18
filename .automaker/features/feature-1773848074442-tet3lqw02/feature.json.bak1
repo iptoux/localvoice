@@ -2,7 +2,7 @@
   "category": "chore",
   "description": "A single source of truth that documents all Tauri event channels with their TypeScript types, Rust payload structures, and usage examples. Auto-generates type-safe event emitters/subscribers from a shared schema file.\n\n**Rationale:** Currently events are scattered across the codebase. A centralized registry prevents type mismatches between Rust events and TypeScript handlers, which is a common source of bugs.",
   "title": "Frontend-Backend Event Contract Registry",
-  "status": "in_progress",
+  "status": "verified",
   "id": "feature-1773848074442-tet3lqw02",
   "createdAt": "2026-03-18T15:34:34.443Z",
   "descriptionHistory": [
@@ -12,7 +12,7 @@
       "source": "initial"
     }
   ],
-  "updatedAt": "2026-03-18T15:39:24.542Z",
+  "updatedAt": "2026-03-18T15:39:24.567Z",
   "startedAt": "2026-03-18T15:36:57.082Z",
   "skipTests": false,
   "model": "opencode-big-pickle",

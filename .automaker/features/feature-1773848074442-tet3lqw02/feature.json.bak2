@@ -12,7 +12,7 @@
       "source": "initial"
     }
   ],
-  "updatedAt": "2026-03-18T15:36:47.318Z",
+  "updatedAt": "2026-03-18T15:39:24.542Z",
   "startedAt": "2026-03-18T15:36:57.082Z",
   "skipTests": false,
   "model": "opencode-big-pickle",
@@ -25,5 +25,6 @@
   "planningMode": "skip",
   "requirePlanApproval": false,
   "workMode": "current",
-  "dependencies": []
+  "dependencies": [],
+  "summary": "## Summary: Frontend-Backend Event Contract Registry\n\n### Changes Implemented\n- Created centralized `src/lib/events.ts` with:\n  - `EventChannels` const object with all 8 Tauri event channel names (recording-state-changed, audio-level, output-result, transcription-completed, silence-detected, session-reprocessed, model-download-progress, navigate-to)\n  - `EventPayloads` interface mapping each channel to its TypeScript payload type\n  - `EventChannel` type for type-safe channel name inference\n  - `listenEvent()` helper for low-frequency events with automatic type inference\n  - `listenThrottledEvent()` helper for high-frequency events (audio level, download progress) with RAF throttling\n\n### Files Modified\n- `src/lib/events.ts` (new file - 120 lines)\n\n### Notes for Developer\n- All event payloads reference existing types from `src/types/index.ts`\n- Channel names match exactly what Rust emits in: `app_state.rs:58`, `audio/capture.rs:354`, `transcription/orchestrator.rs:240,387`, `commands/recording.rs:76`, `commands/history.rs:88`, `models/downloader.rs:79`\n- Pre-existing TypeScript errors in `src/i18n/index.ts` and `src/mocks/tauri.ts` are unrelated to this feature"
 }

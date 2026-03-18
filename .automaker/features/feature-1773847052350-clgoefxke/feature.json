@@ -2,7 +2,7 @@
   "category": "chore",
   "description": "Add a tauri::command endpoint that triggers transcription with synthetic audio and returns timing metrics (mic-to-text latency, whisper init time, post-processing duration). Include a simple CLI tool to run benchmarks.\n\n**Rationale:** Enables regression detection for performance issues as the codebase evolves. Currently there is no systematic way to measure whether new features slow down the critical recording-to-output path.",
   "title": "Performance Benchmarking Harness",
-  "status": "verified",
+  "status": "completed",
   "id": "feature-1773847052350-clgoefxke",
   "createdAt": "2026-03-18T15:17:32.351Z",
   "descriptionHistory": [
