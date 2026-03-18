@@ -1,7 +1,7 @@
 import { memo, useMemo } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "../../stores/app-store";
-import { expandPill, collapsePill, openMainWindow } from "../../lib/tauri";
+import { expandPill, collapsePill, openMainWindow, getSettings } from "../../lib/tauri";
 import { Waveform } from "./Waveform";
 import { ExpandedPill } from "./ExpandedPill";
 import type { RecordingState } from "../../types";
@@ -23,6 +23,14 @@ export function Pill() {
   const recordingError = useAppStore((s) => s.recordingError);
   const isPillExpanded = useAppStore((s) => s.isPillExpanded);
   const setIsPillExpanded = useAppStore((s) => s.setIsPillExpanded);
+  const [pushToTalk, setPushToTalk] = useState(false);
+
+  // Load push-to-talk setting once on mount.
+  useEffect(() => {
+    getSettings()
+      .then((s) => setPushToTalk(s["recording.push_to_talk"] === "true"))
+      .catch(() => {});
+  }, []);
 
   // Track whether we're fading out from success → idle.
   const [isFadingOut, setIsFadingOut] = useState(false);
@@ -92,7 +100,7 @@ export function Pill() {
         className="flex items-center gap-3 px-4 h-16 text-sm font-medium"
       >
         {recordingState === "idle" ? (
-          <IdleContent />
+          <IdleContent pushToTalk={pushToTalk} />
         ) : (
           <>
             <StateIcon state={recordingState} />
@@ -120,7 +128,7 @@ export function Pill() {
 
 // ── Idle content ─────────────────────────────────────────────────────────────
 
-function IdleContent() {
+function IdleContent({ pushToTalk }: { pushToTalk: boolean }) {
   const lastTranscription = useAppStore((s) => s.lastTranscription);
   // < 0.1ms — split + filter word count, memoized to prevent re-computation on every render
   const wordCount = useMemo(
@@ -148,6 +156,19 @@ function IdleContent() {
       >
         LocalVoice
       </span>
+      {pushToTalk && (
+        <span
+          data-tauri-drag-region
+          className="ml-1 flex items-center gap-1 text-xs text-foreground/40 bg-foreground/10 px-1.5 py-0.5 rounded"
+          title="Push-to-Talk active"
+        >
+          <svg data-tauri-drag-region viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
+            <rect x="5" y="1" width="6" height="9" rx="3" />
+            <path d="M3 8a5 5 0 0 0 10 0M8 13v2M6 15h4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+          </svg>
+          Hold
+        </span>
+      )}
       {wordCount !== undefined && wordCount > 0 && (
         <span
           data-tauri-drag-region

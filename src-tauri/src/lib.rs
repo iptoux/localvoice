@@ -203,6 +203,9 @@ pub fn run() {
             cmd_history::list_sessions,
             cmd_history::get_session,
             cmd_history::delete_session,
+            cmd_history::bulk_delete_sessions,
+            cmd_history::bulk_export_sessions,
+            cmd_history::get_audio_file_path,
             cmd_history::export_sessions,
             cmd_history::reprocess_session,
             // Stats

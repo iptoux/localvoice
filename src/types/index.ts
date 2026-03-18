@@ -51,6 +51,7 @@ export interface SessionFilter {
   dateFrom?: string;
   dateTo?: string;
   modelId?: string;
+  hasAudio?: boolean;
   limit?: number;
   offset?: number;
 }

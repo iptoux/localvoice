@@ -123,9 +123,21 @@ export const getSessionDetail = (
 export const deleteSession = (sessionId: string): Promise<void> =>
   invoke<void>("delete_session", { sessionId });
 
+export const bulkDeleteSessions = (sessionIds: string[]): Promise<number> =>
+  invoke<number>("bulk_delete_sessions", { sessionIds });
+
+export const bulkExportSessions = (
+  sessionIds: string[],
+  format: "txt" | "json" | "csv"
+): Promise<string> =>
+  invoke<string>("bulk_export_sessions", { sessionIds, format });
+
+export const getAudioFilePath = (sessionId: string): Promise<string | null> =>
+  invoke<string | null>("get_audio_file_path", { sessionId });
+
 export const exportSessions = (
   sessionIds: string[],
-  format: "txt" | "json"
+  format: "txt" | "json" | "csv"
 ): Promise<string> =>
   invoke<string>("export_sessions", { sessionIds, format });
 

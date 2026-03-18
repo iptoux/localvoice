@@ -131,6 +131,9 @@ pub fn list_sessions(db: &DbConn, filter: &SessionFilter) -> CmdResult<Vec<Sessi
             param_values.push(Box::new(pattern));
         }
     }
+    if let Some(true) = filter.has_audio {
+        conditions.push("audio_path IS NOT NULL");
+    }
 
     let where_clause = if conditions.is_empty() {
         String::new()
@@ -223,6 +226,24 @@ pub fn delete_session(db: &DbConn, id: &str) -> CmdResult<()> {
         return Err(AppError(format!("Session '{id}' not found")));
     }
     Ok(())
+}
+
+/// Deletes multiple sessions in a single transaction. Segments are removed via ON DELETE CASCADE.
+pub fn bulk_delete_sessions(db: &DbConn, ids: &[String]) -> CmdResult<usize> {
+    if ids.is_empty() {
+        return Ok(0);
+    }
+    let conn = db.lock().unwrap();
+    let placeholders = (1..=ids.len())
+        .map(|i| format!("?{i}"))
+        .collect::<Vec<_>>()
+        .join(",");
+    let sql = format!("DELETE FROM sessions WHERE id IN ({placeholders})");
+    let params_refs: Vec<&dyn rusqlite::ToSql> = ids.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+    let n = conn
+        .execute(&sql, params_refs.as_slice())
+        .map_err(AppError::from)?;
+    Ok(n)
 }
 
 /// Returns sessions matching the given ids, ordered newest first.

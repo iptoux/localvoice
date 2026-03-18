@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Search, Copy, Check, Trash2, Upload, ChevronLeft, ChevronRight, X, RefreshCw, Calendar } from "lucide-react";
+import { Search, Copy, Check, Trash2, Upload, ChevronLeft, ChevronRight, X, RefreshCw, Calendar, Square, CheckSquare, Headphones } from "lucide-react";
 import type { Session, SessionFilter, SessionWithSegments } from "../types";
 import {
   deleteSession,
@@ -9,11 +9,33 @@ import {
   reprocessSession,
   listAvailableModels,
 } from "../lib/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import type { ModelInfo } from "../types";
 import { VirtualList } from "../components/VirtualList";
 import { useWordDiff } from "../hooks/use-text-processor";
+import { AudioPlayer } from "../components/history/AudioPlayer";
 
-const PAGE_SIZE = 50;
+const PAGE_SIZES = [25, 50, 100] as const;
+type PageSize = typeof PAGE_SIZES[number];
+
+// ── Date preset helpers ───────────────────────────────────────────────────────
+
+function toIsoDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+function getPreset(preset: "today" | "week" | "month"): { from: string; to: string } {
+  const now = new Date();
+  const to = toIsoDate(now);
+  if (preset === "today") return { from: to, to };
+  if (preset === "week") {
+    const from = new Date(now);
+    from.setDate(now.getDate() - 6);
+    return { from: toIsoDate(from), to };
+  }
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  return { from: toIsoDate(from), to };
+}
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
@@ -21,34 +43,41 @@ export default function History() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState<PageSize>(50);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters (TASK-075, 076)
+  // Filters
   const [query, setQuery] = useState("");
   const [language, setLanguage] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [hasAudio, setHasAudio] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Detail drawer (TASK-077)
-  const [selected, setSelected] = useState<SessionWithSegments | null>(null);
+  // Multi-select (TASK-223)
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  // Detail drawer
+  const [drawerDetail, setDrawerDetail] = useState<SessionWithSegments | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
 
   const load = useCallback(
-    async (filter: SessionFilter, pageIndex: number) => {
+    async (filter: SessionFilter, pageIndex: number, size: PageSize) => {
       setLoading(true);
       setError(null);
       try {
         const data = await listSessions({
           ...filter,
-          limit: PAGE_SIZE,
-          offset: pageIndex * PAGE_SIZE,
+          limit: size,
+          offset: pageIndex * size,
         });
         setSessions(data);
-        // Approximate total: if we got a full page there may be more.
         setTotal(
-          data.length === PAGE_SIZE ? (pageIndex + 1) * PAGE_SIZE + 1 : pageIndex * PAGE_SIZE + data.length
+          data.length === size
+            ? (pageIndex + 1) * size + 1
+            : pageIndex * size + data.length
         );
       } catch (e) {
         setError(String(e));
@@ -59,32 +88,96 @@ export default function History() {
     []
   );
 
-  // Debounced re-load when filters change (TASK-075).
+  const currentFilter = useMemo<SessionFilter>(
+    () => ({ query, language, dateFrom, dateTo, hasAudio: hasAudio || undefined }),
+    [query, language, dateFrom, dateTo, hasAudio]
+  );
+
+  // Debounced reload on filter change.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setPage(0);
-      load({ query, language, dateFrom, dateTo }, 0);
+      setSelected(new Set());
+      load(currentFilter, 0, pageSize);
     }, 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [query, language, dateFrom, dateTo, load]);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query, language, dateFrom, dateTo, hasAudio, pageSize, load]);
 
-  // Re-load when page changes.
+  // Reload on page change.
   useEffect(() => {
-    load({ query, language, dateFrom, dateTo }, page);
+    load(currentFilter, page, pageSize);
+    setSelected(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
+  function applyPreset(preset: "today" | "week" | "month") {
+    const { from, to } = getPreset(preset);
+    setDateFrom(from);
+    setDateTo(to);
+  }
+
+  function clearFilters() {
+    setQuery(""); setLanguage(""); setDateFrom(""); setDateTo(""); setHasAudio(false);
+  }
+
+  const hasFilters = query || language || dateFrom || dateTo || hasAudio;
+
+  // ── Multi-select ────────────────────────────────────────────────────────────
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selected.size === sessions.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(sessions.map((s) => s.id)));
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selected.size === 0) return;
+    setBulkLoading(true);
+    try {
+      await invoke("bulk_delete_sessions", { sessionIds: [...selected] });
+      setSelected(new Set());
+      if (drawerDetail && selected.has(drawerDetail.session.id)) setDrawerDetail(null);
+      load(currentFilter, page, pageSize);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  async function handleBulkExport(format: string) {
+    if (selected.size === 0) return;
+    setBulkLoading(true);
+    try {
+      await invoke("bulk_export_sessions", { sessionIds: [...selected], format });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
+  // ── Detail drawer ───────────────────────────────────────────────────────────
+
   async function openDetail(session: Session) {
     setDrawerLoading(true);
-    setSelected(null);
+    setDrawerDetail(null);
     try {
       const detail = await getSessionDetail(session.id);
-      setSelected(detail);
+      setDrawerDetail(detail);
     } catch {
-      setSelected({ session, segments: [] });
+      setDrawerDetail({ session, segments: [] });
     } finally {
       setDrawerLoading(false);
     }
@@ -92,13 +185,13 @@ export default function History() {
 
   async function handleDelete(sessionId: string) {
     await deleteSession(sessionId);
-    setSelected(null);
-    load({ query, language, dateFrom, dateTo }, page);
+    setDrawerDetail(null);
+    load(currentFilter, page, pageSize);
   }
 
   async function handleReprocess(detail: SessionWithSegments) {
-    setSelected(detail);
-    load({ query, language, dateFrom, dateTo }, page);
+    setDrawerDetail(detail);
+    load(currentFilter, page, pageSize);
   }
 
   return (
@@ -109,10 +202,7 @@ export default function History() {
           <h1 className="text-2xl font-semibold text-foreground shrink-0">History</h1>
           <button
             onClick={() =>
-              exportSessions(
-                sessions.map((s) => s.id),
-                "txt"
-              ).catch(console.error)
+              exportSessions(sessions.map((s) => s.id), "txt").catch(console.error)
             }
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border hover:border-neutral-500 px-3 py-1.5 rounded transition-colors"
           >
@@ -121,7 +211,8 @@ export default function History() {
           </button>
         </div>
 
-          <div className="flex flex-col gap-2">
+        {/* ── Filters ──────────────────────────────────────────────────────── */}
+        <div className="flex flex-col gap-2">
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <input
@@ -132,7 +223,7 @@ export default function History() {
               className="w-full bg-muted border border-border text-foreground text-sm rounded-md pl-9 pr-3 py-2 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
@@ -145,6 +236,12 @@ export default function History() {
               <option value="es">Spanish (es)</option>
               <option value="auto">Auto-detect</option>
             </select>
+
+            {/* Date quick presets */}
+            <button onClick={() => applyPreset("today")} className="text-xs text-muted-foreground hover:text-foreground bg-muted border border-border px-2 py-1.5 rounded transition-colors">Today</button>
+            <button onClick={() => applyPreset("week")} className="text-xs text-muted-foreground hover:text-foreground bg-muted border border-border px-2 py-1.5 rounded transition-colors">This Week</button>
+            <button onClick={() => applyPreset("month")} className="text-xs text-muted-foreground hover:text-foreground bg-muted border border-border px-2 py-1.5 rounded transition-colors">This Month</button>
+
             <label className="flex items-center gap-1 text-xs text-muted-foreground">
               <Calendar size={12} />
               From
@@ -165,14 +262,23 @@ export default function History() {
                 className="bg-muted border border-border text-foreground/70 rounded px-2 py-1 text-xs focus:outline-none"
               />
             </label>
-            {(query || language || dateFrom || dateTo) && (
+
+            {/* Has audio toggle */}
+            <button
+              onClick={() => setHasAudio((v) => !v)}
+              className={`flex items-center gap-1 text-xs px-2 py-1.5 rounded border transition-colors ${
+                hasAudio
+                  ? "bg-blue-600/20 border-blue-500 text-blue-400"
+                  : "bg-muted border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Headphones size={12} />
+              Has audio
+            </button>
+
+            {hasFilters && (
               <button
-                onClick={() => {
-                  setQuery("");
-                  setLanguage("");
-                  setDateFrom("");
-                  setDateTo("");
-                }}
+                onClick={clearFilters}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2"
               >
                 <X size={12} />
@@ -182,50 +288,96 @@ export default function History() {
           </div>
         </div>
 
-        {/* Session list (TASK-074) — virtualized */}
-        {loading && (
-          <p className="text-muted-foreground text-sm py-8 text-center">Loading…</p>
-        )}
-        {error && (
-          <p className="text-rose-400 text-sm py-8 text-center">{error}</p>
-        )}
-        {!loading && !error && sessions.length === 0 && (
-          <p className="text-muted-foreground text-sm py-8 text-center">
-            No sessions found.
-          </p>
-        )}
-        {!loading && !error && sessions.length > 0 && (
-          <VirtualList
-            items={sessions}
-            estimateSize={72}
-            className="flex-1 min-h-0"
-            renderItem={(session) => (
-              <SessionRow
-                session={session}
-                active={selected?.session.id === session.id}
-                onClick={() => openDetail(session)}
-              />
-            )}
-          />
+        {/* ── Bulk action bar (TASK-223) ────────────────────────────────────── */}
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-muted border border-border rounded-md">
+            <span className="text-xs text-muted-foreground flex-1">{selected.size} selected</span>
+            <button
+              onClick={() => handleBulkExport("txt")}
+              disabled={bulkLoading}
+              className="flex items-center gap-1 text-xs bg-card hover:bg-accent border border-border text-foreground/70 rounded px-2 py-1 transition-colors disabled:opacity-50"
+            >
+              <Upload size={11} /> Export TXT
+            </button>
+            <button
+              onClick={() => handleBulkExport("csv")}
+              disabled={bulkLoading}
+              className="flex items-center gap-1 text-xs bg-card hover:bg-accent border border-border text-foreground/70 rounded px-2 py-1 transition-colors disabled:opacity-50"
+            >
+              <Upload size={11} /> Export CSV
+            </button>
+            <button
+              onClick={() => handleBulkExport("json")}
+              disabled={bulkLoading}
+              className="flex items-center gap-1 text-xs bg-card hover:bg-accent border border-border text-foreground/70 rounded px-2 py-1 transition-colors disabled:opacity-50"
+            >
+              <Upload size={11} /> Export JSON
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={bulkLoading}
+              className="flex items-center gap-1 text-xs bg-rose-700 hover:bg-rose-600 text-white rounded px-2 py-1 transition-colors disabled:opacity-50"
+            >
+              <Trash2 size={11} /> Delete Selected
+            </button>
+            <button onClick={() => setSelected(new Set())} className="text-xs text-muted-foreground hover:text-foreground px-1">
+              <X size={12} />
+            </button>
+          </div>
         )}
 
-        {/* Pagination (TASK-079) */}
+        {/* Session list */}
+        {loading && <p className="text-muted-foreground text-sm py-8 text-center">Loading…</p>}
+        {error && <p className="text-rose-400 text-sm py-8 text-center">{error}</p>}
+        {!loading && !error && sessions.length === 0 && (
+          <p className="text-muted-foreground text-sm py-8 text-center">No sessions found.</p>
+        )}
+        {!loading && !error && sessions.length > 0 && (
+          <>
+            {/* Select all row */}
+            <div className="flex items-center gap-2 px-1">
+              <button onClick={toggleSelectAll} className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Select all">
+                {selected.size === sessions.length && sessions.length > 0
+                  ? <CheckSquare size={14} className="text-blue-400" />
+                  : <Square size={14} />}
+              </button>
+              <span className="text-xs text-muted-foreground">Select all</span>
+            </div>
+            <VirtualList
+              items={sessions}
+              estimateSize={72}
+              className="flex-1 min-h-0"
+              renderItem={(session) => (
+                <SessionRow
+                  session={session}
+                  active={drawerDetail?.session.id === session.id}
+                  checked={selected.has(session.id)}
+                  onCheck={() => toggleSelect(session.id)}
+                  onClick={() => openDetail(session)}
+                />
+              )}
+            />
+          </>
+        )}
+
+        {/* Pagination with page size selector (TASK-224) */}
         <Pagination
           page={page}
-          pageSize={PAGE_SIZE}
+          pageSize={pageSize}
           total={total}
           sessionCount={sessions.length}
           onPrev={() => setPage((p) => Math.max(0, p - 1))}
           onNext={() => setPage((p) => p + 1)}
+          onPageSizeChange={(s) => { setPageSize(s); setPage(0); }}
         />
       </div>
 
-      {/* ── Detail drawer (TASK-077, 078) ──────────────────────────────────── */}
-      {(selected || drawerLoading) && (
+      {/* ── Detail drawer ──────────────────────────────────────────────────── */}
+      {(drawerDetail || drawerLoading) && (
         <SessionDrawer
-          detail={selected}
+          detail={drawerDetail}
           loading={drawerLoading}
-          onClose={() => setSelected(null)}
+          onClose={() => setDrawerDetail(null)}
           onDelete={handleDelete}
           onReprocess={handleReprocess}
         />
@@ -239,22 +391,21 @@ export default function History() {
 const SessionRow = memo(function SessionRow({
   session,
   active,
+  checked,
+  onCheck,
   onClick,
 }: {
   session: Session;
   active: boolean;
+  checked: boolean;
+  onCheck: () => void;
   onClick: () => void;
 }) {
   const date = formatDate(session.startedAt);
-  // < 0.1ms — string slice operation, memoized to prevent re-computation on every render
   const preview = useMemo(
-    () =>
-      session.cleanedText.length > 80
-        ? session.cleanedText.slice(0, 78) + "…"
-        : session.cleanedText,
+    () => session.cleanedText.length > 80 ? session.cleanedText.slice(0, 78) + "…" : session.cleanedText,
     [session.cleanedText]
   );
-
   const [copied, setCopied] = useState(false);
 
   const handleCopy = (e: React.MouseEvent) => {
@@ -266,34 +417,39 @@ const SessionRow = memo(function SessionRow({
   };
 
   return (
-    <button
-      onClick={onClick}
+    <div
       className={`
-        w-full text-left px-4 py-3 rounded-lg border transition-colors
-        ${
-          active
-            ? "border-primary/60 bg-muted ring-1 ring-primary/30"
-            : "border-border bg-card hover:border-border hover:bg-muted"
-        }
+        flex items-start gap-2 w-full text-left px-4 py-3 rounded-lg border transition-colors
+        ${active ? "border-primary/60 bg-muted ring-1 ring-primary/30" : "border-border bg-card hover:border-border hover:bg-muted"}
       `}
     >
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-xs text-muted-foreground tabular-nums">{date}</span>
-        <LanguageBadge lang={session.language} />
-        <span className="text-xs text-muted-foreground">{session.wordCount} words</span>
-        <OutputBadge mode={session.outputMode} ok={session.insertedSuccessfully} />
-        <span className="flex-1" />
-        <button
-          onClick={handleCopy}
-          title="Copy to clipboard"
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-muted"
-        >
-          {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
-          {copied ? "Copied" : "Copy"}
-        </button>
-      </div>
-      <p className="text-sm text-foreground/70 leading-snug">{preview}</p>
-    </button>
+      <button
+        onClick={(e) => { e.stopPropagation(); onCheck(); }}
+        className="mt-1 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+        aria-label="Select session"
+      >
+        {checked ? <CheckSquare size={14} className="text-blue-400" /> : <Square size={14} />}
+      </button>
+      <button onClick={onClick} className="flex-1 text-left min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs text-muted-foreground tabular-nums">{date}</span>
+          <LanguageBadge lang={session.language} />
+          <span className="text-xs text-muted-foreground">{session.wordCount} words</span>
+          <OutputBadge mode={session.outputMode} ok={session.insertedSuccessfully} />
+          {session.audioPath && <Headphones size={11} className="text-blue-400" aria-label="Has audio" />}
+          <span className="flex-1" />
+          <button
+            onClick={handleCopy}
+            title="Copy to clipboard"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-muted"
+          >
+            {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+        <p className="text-sm text-foreground/70 leading-snug">{preview}</p>
+      </button>
+    </div>
   );
 });
 
@@ -321,10 +477,8 @@ function SessionDrawer({
   const [reprocessError, setReprocessError] = useState<string | null>(null);
   const [models, setModels] = useState<ModelInfo[]>([]);
 
-  // < 0.2ms — filter installed models, memoized to prevent re-computation on every render
   const installedModels = useMemo(() => models.filter((m) => m.installed), [models]);
 
-  // Reset tabs & confirm state when session changes.
   useEffect(() => {
     setTab("cleaned");
     setConfirmDelete(false);
@@ -333,7 +487,6 @@ function SessionDrawer({
     setReprocessError(null);
   }, [detail?.session.id]);
 
-  // Load models when reprocess dialog opens.
   useEffect(() => {
     if (showReprocess) {
       listAvailableModels().then(setModels).catch(console.error);
@@ -355,7 +508,6 @@ function SessionDrawer({
       setShowReprocess(false);
       onReprocess(updated);
     } catch (e) {
-      console.error("Reprocess failed:", e);
       const msg = typeof e === "string" ? e : (e as any)?.["0"] ?? (e as any)?.message ?? String(e);
       setReprocessError(msg);
     } finally {
@@ -385,10 +537,7 @@ function SessionDrawer({
   }
 
   function handleDelete() {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
+    if (!confirmDelete) { setConfirmDelete(true); return; }
     onDelete(session.id);
   }
 
@@ -397,11 +546,7 @@ function SessionDrawer({
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <h2 className="text-sm font-semibold text-foreground">Session Details</h2>
-        <button
-          onClick={onClose}
-          className="text-muted-foreground hover:text-foreground"
-          aria-label="Close"
-        >
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close">
           <X size={16} />
         </button>
       </div>
@@ -412,36 +557,30 @@ function SessionDrawer({
         <div className="flex flex-wrap gap-2">
           <LanguageBadge lang={session.language} />
           {session.modelId && (
-            <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-              {session.modelId}
-            </span>
+            <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{session.modelId}</span>
           )}
           <span className="text-xs text-muted-foreground">{session.wordCount} words</span>
-          {durationSec > 0 && (
-            <span className="text-xs text-muted-foreground">{durationSec}s</span>
-          )}
+          {durationSec > 0 && <span className="text-xs text-muted-foreground">{durationSec}s</span>}
           {session.estimatedWpm && (
-            <span className="text-xs text-muted-foreground">
-              ~{Math.round(session.estimatedWpm)} wpm
-            </span>
+            <span className="text-xs text-muted-foreground">~{Math.round(session.estimatedWpm)} wpm</span>
           )}
         </div>
+
+        {/* Audio player (TASK-229) */}
+        {session.audioPath && <AudioPlayer audioPath={session.audioPath} />}
       </div>
 
       {/* Text tabs */}
       <div className="flex border-b border-border">
-        {(
-          session.originalRawText
-            ? (["cleaned", "raw", "original", "diff"] as const)
-            : (["cleaned", "raw", "diff"] as const)
+        {(session.originalRawText
+          ? (["cleaned", "raw", "original", "diff"] as const)
+          : (["cleaned", "raw", "diff"] as const)
         ).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 py-2 text-xs font-medium transition-colors ${
-              tab === t
-                ? "text-foreground border-b-2 border-foreground"
-                : "text-muted-foreground hover:text-foreground/70"
+              tab === t ? "text-foreground border-b-2 border-foreground" : "text-muted-foreground hover:text-foreground/70"
             }`}
           >
             {t === "cleaned" ? "Cleaned" : t === "raw" ? "Raw" : t === "original" ? "Original" : "Diff"}
@@ -449,7 +588,7 @@ function SessionDrawer({
         ))}
       </div>
 
-      {/* Reprocessed badge + original metadata */}
+      {/* Reprocessed badge */}
       {session.reprocessedCount > 0 && (
         <div className="px-5 pt-2">
           <details className="group">
@@ -461,12 +600,8 @@ function SessionDrawer({
               <span className="text-xs text-muted-foreground hidden group-open:inline">▾ Original info</span>
             </summary>
             <div className="mt-2 mb-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground pl-1 border-l-2 border-blue-900/40">
-              {session.originalLanguage && (
-                <span>Lang: <span className="text-foreground/70">{session.originalLanguage.toUpperCase()}</span></span>
-              )}
-              {session.originalModelId && (
-                <span>Model: <span className="text-foreground/70">{session.originalModelId}</span></span>
-              )}
+              {session.originalLanguage && <span>Lang: <span className="text-foreground/70">{session.originalLanguage.toUpperCase()}</span></span>}
+              {session.originalModelId && <span>Model: <span className="text-foreground/70">{session.originalModelId}</span></span>}
               {session.originalAvgConfidence != null && (
                 <span>Confidence: <span className="text-foreground/70">{Math.round(session.originalAvgConfidence * 100)}%</span></span>
               )}
@@ -481,15 +616,10 @@ function SessionDrawer({
           <WordDiff rawText={session.rawText} cleanedText={session.cleanedText} />
         ) : (
           <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-            {tab === "cleaned"
-              ? session.cleanedText
-              : tab === "raw"
-                ? session.rawText
-                : session.originalRawText ?? session.rawText}
+            {tab === "cleaned" ? session.cleanedText : tab === "raw" ? session.rawText : session.originalRawText ?? session.rawText}
           </p>
         )}
 
-        {/* Confidence-colored segments (TASK-219) — virtualized for large lists */}
         {tab === "cleaned" && segments.length > 0 && (
           <details className="mt-4" open>
             <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground/70 select-none">
@@ -502,23 +632,12 @@ function SessionDrawer({
               gap={6}
               className="mt-2 max-h-64"
               renderItem={(seg) => (
-                <div
-                  className="text-xs flex items-start gap-2 group"
-                  title={
-                    seg.confidence !== undefined
-                      ? `Confidence: ${Math.round(seg.confidence * 100)}%`
-                      : "No confidence data"
-                  }
-                >
-                  <span className="tabular-nums text-muted-foreground/60 shrink-0 w-10">
-                    {msToTime(seg.startMs)}
-                  </span>
+                <div className="text-xs flex items-start gap-2 group" title={seg.confidence !== undefined ? `Confidence: ${Math.round(seg.confidence * 100)}%` : "No confidence data"}>
+                  <span className="tabular-nums text-muted-foreground/60 shrink-0 w-10">{msToTime(seg.startMs)}</span>
                   <ConfidenceDot confidence={seg.confidence} />
                   <span className="text-foreground/70">{seg.text}</span>
                   {seg.confidence !== undefined && (
-                    <span className="text-muted-foreground/50 shrink-0 tabular-nums ml-auto">
-                      {Math.round(seg.confidence * 100)}%
-                    </span>
+                    <span className="text-muted-foreground/50 shrink-0 tabular-nums ml-auto">{Math.round(seg.confidence * 100)}%</span>
                   )}
                 </div>
               )}
@@ -532,11 +651,7 @@ function SessionDrawer({
         <div className="px-5 py-3 border-t border-border space-y-2">
           <p className="text-xs font-medium text-foreground">Reprocess Session</p>
           <div className="flex gap-2">
-            <select
-              value={reprocessLang}
-              onChange={(e) => setReprocessLang(e.target.value)}
-              className="flex-1 bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1.5"
-            >
+            <select value={reprocessLang} onChange={(e) => setReprocessLang(e.target.value)} className="flex-1 bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1.5">
               <option value="">Same language</option>
               <option value="de">German</option>
               <option value="en">English</option>
@@ -544,91 +659,51 @@ function SessionDrawer({
               <option value="es">Spanish</option>
               <option value="auto">Auto-detect</option>
             </select>
-            <select
-              value={reprocessModel}
-              onChange={(e) => setReprocessModel(e.target.value)}
-              className="flex-1 bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1.5"
-            >
+            <select value={reprocessModel} onChange={(e) => setReprocessModel(e.target.value)} className="flex-1 bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1.5">
               <option value="">Default model</option>
-              {installedModels.map((m) => (
-                <option key={m.key} value={m.key}>
-                  {m.displayName}
-                </option>
-              ))}
+              {installedModels.map((m) => <option key={m.key} value={m.key}>{m.displayName}</option>)}
             </select>
           </div>
           {session.originalRawText && (
             <details className="text-xs">
-              <summary className="text-muted-foreground cursor-pointer hover:text-foreground/70 select-none">
-                Original raw text
-              </summary>
-              <p className="mt-1 text-foreground/60 whitespace-pre-wrap leading-relaxed">
-                {session.originalRawText}
-              </p>
+              <summary className="text-muted-foreground cursor-pointer hover:text-foreground/70 select-none">Original raw text</summary>
+              <p className="mt-1 text-foreground/60 whitespace-pre-wrap leading-relaxed">{session.originalRawText}</p>
             </details>
           )}
           <div className="flex gap-2">
-            <button
-              onClick={handleReprocess}
-              disabled={reprocessing}
-              className="flex-1 flex items-center justify-center gap-2 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1.5 transition-colors disabled:opacity-50"
-            >
+            <button onClick={handleReprocess} disabled={reprocessing} className="flex-1 flex items-center justify-center gap-2 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1.5 transition-colors disabled:opacity-50">
               {reprocessing && <RefreshCw size={12} className="animate-spin" />}
               {reprocessing ? "Reprocessing…" : "Reprocess"}
             </button>
-            <button
-              onClick={() => setShowReprocess(false)}
-              className="text-xs bg-muted hover:bg-accent text-foreground/70 rounded px-3 py-1.5 transition-colors"
-            >
-              Cancel
-            </button>
+            <button onClick={() => setShowReprocess(false)} className="text-xs bg-muted hover:bg-accent text-foreground/70 rounded px-3 py-1.5 transition-colors">Cancel</button>
           </div>
-          {reprocessError && (
-            <p className="text-xs text-red-400">{reprocessError}</p>
-          )}
+          {reprocessError && <p className="text-xs text-red-400">{reprocessError}</p>}
         </div>
       )}
 
       <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
         <button
-          onClick={() =>
-            copyText(tab === "cleaned" ? session.cleanedText : session.rawText)
-          }
+          onClick={() => copyText(tab === "cleaned" ? session.cleanedText : session.rawText)}
           className="flex items-center gap-1.5 flex-1 text-xs bg-muted hover:bg-accent text-foreground/70 hover:text-foreground rounded px-3 py-1.5 transition-colors"
         >
-          <Copy size={12} />
-          Copy
+          <Copy size={12} /> Copy
         </button>
         {session.audioPath && (
           <button
             onClick={() => setShowReprocess(!showReprocess)}
-            className={`flex items-center gap-1.5 text-xs rounded px-3 py-1.5 transition-colors ${
-              showReprocess
-                ? "bg-blue-700 text-white"
-                : "bg-muted hover:bg-accent text-foreground/70 hover:text-foreground"
-            }`}
+            className={`flex items-center gap-1.5 text-xs rounded px-3 py-1.5 transition-colors ${showReprocess ? "bg-blue-700 text-white" : "bg-muted hover:bg-accent text-foreground/70 hover:text-foreground"}`}
           >
-            <RefreshCw size={12} />
-            Reprocess
+            <RefreshCw size={12} /> Reprocess
           </button>
         )}
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-1.5 text-xs bg-muted hover:bg-accent text-foreground/70 hover:text-foreground rounded px-3 py-1.5 transition-colors"
-        >
-          <Upload size={12} />
-          Export
+        <button onClick={handleExport} className="flex items-center gap-1.5 text-xs bg-muted hover:bg-accent text-foreground/70 hover:text-foreground rounded px-3 py-1.5 transition-colors">
+          <Upload size={12} /> Export
         </button>
         <button
           onClick={handleDelete}
-          className={`flex items-center gap-1.5 text-xs rounded px-3 py-1.5 transition-colors ${
-            confirmDelete
-              ? "bg-rose-700 hover:bg-rose-600 text-white"
-              : "bg-muted hover:bg-accent text-rose-400 hover:text-rose-300"
-          }`}
+          className={`flex items-center gap-1.5 text-xs rounded px-3 py-1.5 transition-colors ${confirmDelete ? "bg-rose-700 hover:bg-rose-600 text-white" : "bg-muted hover:bg-accent text-rose-400 hover:text-rose-300"}`}
         >
-          <Trash2 size={12} />
-          {confirmDelete ? "Confirm delete" : "Delete"}
+          <Trash2 size={12} /> {confirmDelete ? "Confirm delete" : "Delete"}
         </button>
       </div>
     </aside>
@@ -644,13 +719,15 @@ function Pagination({
   sessionCount,
   onPrev,
   onNext,
+  onPageSizeChange,
 }: {
   page: number;
-  pageSize: number;
+  pageSize: PageSize;
   total: number;
   sessionCount: number;
   onPrev: () => void;
   onNext: () => void;
+  onPageSizeChange: (s: PageSize) => void;
 }) {
   const from = page * pageSize + 1;
   const to = page * pageSize + sessionCount;
@@ -660,22 +737,22 @@ function Pagination({
 
   return (
     <div className="flex items-center justify-between text-xs text-muted-foreground">
-      <span>
-        {from}–{to}
-      </span>
-      <div className="flex gap-2">
-        <button
-          onClick={onPrev}
-          disabled={page === 0}
-          className="flex items-center gap-1 px-3 py-1 rounded bg-muted hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      <div className="flex items-center gap-2">
+        <span>{from}–{to}</span>
+        <select
+          value={pageSize}
+          onChange={(e) => onPageSizeChange(Number(e.target.value) as PageSize)}
+          className="bg-muted border border-border text-foreground/70 text-xs rounded px-1.5 py-1 focus:outline-none"
+          aria-label="Page size"
         >
+          {PAGE_SIZES.map((s) => <option key={s} value={s}>{s} / page</option>)}
+        </select>
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onPrev} disabled={page === 0} className="flex items-center gap-1 px-3 py-1 rounded bg-muted hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
           <ChevronLeft size={12} /> Previous
         </button>
-        <button
-          onClick={onNext}
-          disabled={!hasNext}
-          className="flex items-center gap-1 px-3 py-1 rounded bg-muted hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
+        <button onClick={onNext} disabled={!hasNext} className="flex items-center gap-1 px-3 py-1 rounded bg-muted hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
           Next <ChevronRight size={12} />
         </button>
       </div>
@@ -687,27 +764,19 @@ function Pagination({
 
 const LanguageBadge = memo(function LanguageBadge({ lang }: { lang: string }) {
   return (
-    <span className="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded font-mono uppercase">
-      {lang}
-    </span>
+    <span className="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded font-mono uppercase">{lang}</span>
   );
 }, (prev, next) => prev.lang === next.lang);
 
 const OutputBadge = memo(function OutputBadge({ mode, ok }: { mode: string; ok: boolean }) {
   return (
-    <span
-      className={`text-xs px-1.5 py-0.5 rounded ${
-        ok
-          ? "bg-green-600 text-white"
-          : "bg-red-600 text-white"
-      }`}
-    >
+    <span className={`text-xs px-1.5 py-0.5 rounded ${ok ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>
       {mode === "insert" ? "inserted" : "copied"}
     </span>
   );
 }, (prev, next) => prev.mode === next.mode && prev.ok === next.ok);
 
-// ── Word diff (TASK-220) — offloaded to Web Worker ────────────────────────
+// ── Word diff ─────────────────────────────────────────────────────────────────
 
 function WordDiff({ rawText, cleanedText }: { rawText: string; cleanedText: string }) {
   const tokens = useWordDiff(rawText, cleanedText);
@@ -715,9 +784,7 @@ function WordDiff({ rawText, cleanedText }: { rawText: string; cleanedText: stri
   if (!tokens) {
     return (
       <div className="text-sm leading-relaxed">
-        <p className="text-xs text-muted-foreground mb-2">
-          Raw → Cleaned comparison
-        </p>
+        <p className="text-xs text-muted-foreground mb-2">Raw → Cleaned comparison</p>
         <p className="text-xs text-muted-foreground italic">Computing diff…</p>
       </div>
     );
@@ -725,44 +792,23 @@ function WordDiff({ rawText, cleanedText }: { rawText: string; cleanedText: stri
 
   return (
     <div className="text-sm leading-relaxed">
-      <p className="text-xs text-muted-foreground mb-2">
-        Raw → Cleaned comparison
-      </p>
+      <p className="text-xs text-muted-foreground mb-2">Raw → Cleaned comparison</p>
       <p className="whitespace-pre-wrap">
         {tokens.map((token, i) => {
-          if (token.type === "equal") {
-            return <span key={i}>{token.value} </span>;
-          }
-          if (token.type === "removed") {
-            return (
-              <span key={i} className="bg-red-900/30 text-red-400 line-through">
-                {token.value}
-              </span>
-            );
-          }
-          return (
-            <span key={i} className="bg-green-900/30 text-green-400">
-              {token.value}
-            </span>
-          );
+          if (token.type === "equal") return <span key={i}>{token.value} </span>;
+          if (token.type === "removed") return <span key={i} className="bg-red-900/30 text-red-400 line-through">{token.value}</span>;
+          return <span key={i} className="bg-green-900/30 text-green-400">{token.value}</span>;
         })}
       </p>
     </div>
   );
 }
 
-// ── Confidence indicator (TASK-219) ───────────────────────────────────────
+// ── Confidence indicator ──────────────────────────────────────────────────────
 
 const ConfidenceDot = memo(function ConfidenceDot({ confidence }: { confidence?: number }) {
-  if (confidence === undefined) {
-    return <span className="w-2 h-2 rounded-full bg-muted-foreground/30 mt-1 shrink-0" />;
-  }
-  const color =
-    confidence >= 0.8
-      ? "bg-green-500"
-      : confidence >= 0.5
-        ? "bg-yellow-500"
-        : "bg-red-500";
+  if (confidence === undefined) return <span className="w-2 h-2 rounded-full bg-muted-foreground/30 mt-1 shrink-0" />;
+  const color = confidence >= 0.8 ? "bg-green-500" : confidence >= 0.5 ? "bg-yellow-500" : "bg-red-500";
   return <span className={`w-2 h-2 rounded-full ${color} mt-1 shrink-0`} />;
 }, (prev, next) => prev.confidence === next.confidence);
 
@@ -771,15 +817,9 @@ const ConfidenceDot = memo(function ConfidenceDot({ confidence }: { confidence?:
 function formatDate(iso: string): string {
   try {
     return new Date(iso).toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+      year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
     });
-  } catch {
-    return iso;
-  }
+  } catch { return iso; }
 }
 
 function msToTime(ms: number): string {

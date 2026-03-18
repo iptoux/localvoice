@@ -66,6 +66,8 @@ pub struct SessionFilter {
     pub date_to: Option<String>,
     /// Filter by model stem (e.g. "ggml-base").
     pub model_id: Option<String>,
+    /// When true, only return sessions that have an audio file.
+    pub has_audio: Option<bool>,
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }

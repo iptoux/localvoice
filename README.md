@@ -28,13 +28,17 @@ It's built for developers, writers, and anyone who wants fast, private voice inp
 ## Key Features
 
 - **Global hotkey recording** — start and stop dictation from anywhere on your desktop
+- **Push-to-talk mode** — hold the shortcut to record, release to stop; configurable per session
 - **100% local transcription** — powered by whisper.cpp; your audio never leaves your machine
 - **Multiple Whisper models** — download and switch between models per language
 - **Smart output** — insert directly into the active app, copy to clipboard, or preview first
 - **Custom dictionary** — teach LocalVoice your vocabulary, acronyms, and corrections
 - **Filler word removal** — automatically strips "um", "uh", and other fillers
 - **Ambiguity detection** — flags low-confidence phrases for your review
-- **Session history** — browse past transcriptions with confidence scores and word counts
+- **Session history** — browse, search, and filter past transcriptions with bulk select, delete, and export
+- **Audio playback** — replay the original recording directly from the session detail view
+- **Pagination & filters** — configurable page size (25/50/100), "has audio" toggle, and date quick-presets
+- **CSV / JSON / TXT export** — export single or multiple sessions in your preferred format
 - **Dashboard & analytics** — WPM trends, language breakdown, correction metrics
 - **Session reprocessing** — re-run post-processing on past sessions with updated rules
 - **Compact pill UI** — a small floating window that stays out of your way

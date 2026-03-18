@@ -1,6 +1,6 @@
-{
+﻿{
   "name": "localvoice",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Offline-first desktop voice dictation app",
   "private": false,
   "type": "module",

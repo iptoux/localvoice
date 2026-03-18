@@ -24,10 +24,33 @@ pub fn delete_session(state: State<AppState>, session_id: String) -> CmdResult<(
     sessions_repo::delete_session(&state.db, &session_id)
 }
 
+/// Deletes multiple sessions in a single transaction. Returns the number of deleted rows.
+#[tauri::command]
+pub fn bulk_delete_sessions(
+    state: State<AppState>,
+    session_ids: Vec<String>,
+) -> CmdResult<usize> {
+    if session_ids.is_empty() {
+        return Err(AppError("No sessions selected".to_string()));
+    }
+    sessions_repo::bulk_delete_sessions(&state.db, &session_ids)
+}
+
+/// Returns the absolute path to the audio file for a session.
+/// Frontend should use `convertFileSrc()` from `@tauri-apps/api` to get a playable URL.
+#[tauri::command]
+pub fn get_audio_file_path(
+    state: State<AppState>,
+    session_id: String,
+) -> CmdResult<Option<String>> {
+    let detail = sessions_repo::get_session(&state.db, &session_id)?;
+    Ok(detail.session.audio_path)
+}
+
 /// Exports the requested sessions to a user-chosen file.
 ///
 /// - `session_ids`: list of session ids to export; if empty, exports nothing.
-/// - `format`: `"json"` for JSON array, anything else for plain text.
+/// - `format`: `"json"`, `"csv"`, or anything else for plain text.
 ///
 /// Opens a native save-file dialog. Returns the chosen path on success,
 /// or an error if the dialog is cancelled or the write fails.
@@ -43,16 +66,17 @@ pub fn export_sessions(
 
     let sessions = sessions_repo::get_sessions_by_ids(&state.db, &session_ids)?;
 
-    let (content, ext) = if format == "json" {
-        (export::to_json(&sessions)?, "json")
-    } else {
-        (export::to_text(&sessions), "txt")
+    let (content, ext) = match format.as_str() {
+        "json" => (export::to_json(&sessions)?, "json"),
+        "csv"  => (export::to_csv(&sessions), "csv"),
+        _      => (export::to_text(&sessions), "txt"),
     };
 
     let path = rfd::FileDialog::new()
         .set_title("Export Sessions")
         .add_filter("Text file", &["txt"])
         .add_filter("JSON", &["json"])
+        .add_filter("CSV", &["csv"])
         .set_file_name(&format!("localvoice-export.{ext}"))
         .save_file()
         .ok_or_else(|| AppError("Export cancelled".to_string()))?;
@@ -61,6 +85,17 @@ pub fn export_sessions(
         .map_err(|e| AppError(format!("Failed to write export file: {e}")))?;
 
     Ok(path.to_string_lossy().to_string())
+}
+
+/// Exports multiple sessions at once (bulk). Identical to `export_sessions` but
+/// named explicitly for bulk use from the multi-select UI.
+#[tauri::command]
+pub fn bulk_export_sessions(
+    state: State<AppState>,
+    session_ids: Vec<String>,
+    format: String,
+) -> CmdResult<String> {
+    export_sessions(state, session_ids, format)
 }
 
 /// Re-transcribes a session using its stored audio file.
