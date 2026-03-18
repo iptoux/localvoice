@@ -318,6 +318,7 @@ function SessionDrawer({
   const [reprocessing, setReprocessing] = useState(false);
   const [reprocessLang, setReprocessLang] = useState("");
   const [reprocessModel, setReprocessModel] = useState("");
+  const [reprocessError, setReprocessError] = useState<string | null>(null);
   const [models, setModels] = useState<ModelInfo[]>([]);
 
   // < 0.2ms — filter installed models, memoized to prevent re-computation on every render
@@ -329,6 +330,7 @@ function SessionDrawer({
     setConfirmDelete(false);
     setShowReprocess(false);
     setReprocessing(false);
+    setReprocessError(null);
   }, [detail?.session.id]);
 
   // Load models when reprocess dialog opens.
@@ -343,6 +345,7 @@ function SessionDrawer({
   async function handleReprocess() {
     if (!detail) return;
     setReprocessing(true);
+    setReprocessError(null);
     try {
       const updated = await reprocessSession(
         detail.session.id,
@@ -353,6 +356,8 @@ function SessionDrawer({
       onReprocess(updated);
     } catch (e) {
       console.error("Reprocess failed:", e);
+      const msg = typeof e === "string" ? e : (e as any)?.["0"] ?? (e as any)?.message ?? String(e);
+      setReprocessError(msg);
     } finally {
       setReprocessing(false);
     }
@@ -560,6 +565,9 @@ function SessionDrawer({
               Cancel
             </button>
           </div>
+          {reprocessError && (
+            <p className="text-xs text-red-400">{reprocessError}</p>
+          )}
         </div>
       )}
 

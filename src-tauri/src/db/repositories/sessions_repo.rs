@@ -172,7 +172,8 @@ pub fn get_session(db: &DbConn, id: &str) -> CmdResult<SessionWithSegments> {
             "SELECT id, started_at, ended_at, duration_ms, language, model_id, trigger_type,
                     input_device_id, raw_text, cleaned_text, word_count, char_count,
                     avg_confidence, estimated_wpm, output_mode, output_target_app,
-                    inserted_successfully, error_message, created_at
+                    inserted_successfully, error_message, created_at,
+                    audio_path, original_raw_text, reprocessed_count
              FROM sessions WHERE id = ?1",
             params![id],
             row_to_session,
