@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      # ── whisper.cpp binaries ──────────────────────────────────────────────
+      # The app requires whisper-cli + DLLs in src-tauri/binaries/.
+      # We download the pre-built Windows release from whisper.cpp.
+      - name: Download whisper.cpp binaries
+        shell: pwsh
+        run: |
+          $url  = "https://github.com/ggerganov/whisper.cpp/releases/download/v1.7.1/whisper-bin-win-x64.zip"
+          $dest = "src-tauri\binaries"
+          $zip  = "$env:TEMP\whisper-bin.zip"
+
+          Write-Host "Downloading whisper.cpp binaries..."
+          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+
+          Write-Host "Extracting..."
+          Expand-Archive -Path $zip -DestinationPath $dest -Force
+          Remove-Item $zip -Force
+
+          # Tauri sidecar naming: must include the target triple.
+          $src = "$dest\Release\whisper-cli.exe"
+          $tgt = "$dest\whisper-cli-x86_64-pc-windows-msvc.exe"
+          if (Test-Path $src) {
+            Move-Item $src $tgt -Force
+          }
+
+          # Copy required DLLs to src-tauri/ (where tauri.conf.json resources expects them).
+          $dlls = @("ggml.dll","ggml-base.dll","ggml-cpu.dll","whisper.dll","SDL2.dll")
+          foreach ($dll in $dlls) {
+            $s = "$dest\Release\$dll"
+            if (Test-Path $s) {
+              Copy-Item $s "src-tauri\$dll" -Force
+              Write-Host "  Copied $dll"
+            } else {
+              Write-Warning "  $dll not found in archive"
+            }
+          }
+
+          Write-Host "Done."
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "LocalVoice ${{ github.ref_name }}"
+          releaseBody: |
+            ## LocalVoice ${{ github.ref_name }}
+
+            ### Installation
+            Download the `.msi` installer or the `.exe` setup below.
+
+            > **Note:** The whisper.cpp models are not bundled — download them from the Models page inside the app after installation.
+
+            ### What's new
+            See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for details.
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: false
