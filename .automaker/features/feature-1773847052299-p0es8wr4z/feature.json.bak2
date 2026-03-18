@@ -25,5 +25,6 @@
   "workMode": "current",
   "dependencies": [],
   "startedAt": "2026-03-18T15:18:39.311Z",
-  "updatedAt": "2026-03-18T15:19:24.608Z"
+  "updatedAt": "2026-03-18T15:21:00.958Z",
+  "summary": "## Summary: Create state flow architecture diagram\n\n### Changes Implemented\n- Created comprehensive Mermaid diagrams in `docs/dev/state-flow.md` showing:\n  - Full state flow between Rust AppState, Tauri events/commands, Zustand stores, and React components\n  - Recording state transition diagram (Idle → Listening → Processing → Success/Error)\n  - Sync vs async communication patterns with `invoke()` vs `emit()`\n  - Audio level flow sequence (high-frequency ~10ms updates)\n  - Transcription flow sequence (background task with whisper.cpp)\n  - Data flow tables by domain (recording, transcription, settings)\n\n### Files Modified\n- `docs/dev/state-flow.md` (new file)\n\n### Notes for Developer\n- The diagrams highlight sync vs async patterns: `invoke()` commands are blocking/frontend-initiated, while Tauri `emit()` events are non-blocking/backend-pushed\n- Key events documented: `recording-state-changed`, `audio-level`, `transcription-completed`, `output-result`, `theme-changed`, `navigate-to`, `silence-detected`\n- All Mermaid diagrams use HTML-encoded characters (`&lt;`, `&gt;`, `&amp;`) for proper rendering in markdown viewers\n\n### Verification Status\n- Document created and verified by reading back the file content. No Playwright test needed as this is a static documentation artifact containing Mermaid diagrams."
 }

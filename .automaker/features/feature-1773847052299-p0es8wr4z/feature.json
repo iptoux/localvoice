@@ -2,7 +2,7 @@
   "category": "chore",
   "description": "Create a visual diagram (Mermaid format in docs/) showing the flow of state between Rust AppState, Tauri events, Zustand slices, and React components. Highlights which state is synchronous via invoke() vs async via events.\n\n**Rationale:** The dual-language, dual-store architecture is complex. A diagram helps developers mentally model how recording state propagates from cpal through whisper to the UI without tracing through multiple files.",
   "title": "State Management Flow Diagram",
-  "status": "verified",
+  "status": "completed",
   "id": "feature-1773847052299-p0es8wr4z",
   "createdAt": "2026-03-18T15:17:32.300Z",
   "descriptionHistory": [

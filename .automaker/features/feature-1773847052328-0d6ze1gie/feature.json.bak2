@@ -24,5 +24,6 @@
   "requirePlanApproval": false,
   "workMode": "current",
   "dependencies": [],
-  "updatedAt": "2026-03-18T15:19:24.624Z"
+  "updatedAt": "2026-03-18T15:23:48.442Z",
+  "summary": "## Summary: Document the project's conventions for Rust error handling\n\n### Changes Implemented\n- Created `docs/dev/error-handling.md` with comprehensive documentation covering:\n  - `AppError` struct and `CmdResult<T>` type alias patterns\n  - Creating errors from strings and library errors\n  - Propagating errors with `?` operator and `.map_err(Into::into)`\n  - Frontend event handling via `recording-state-changed` and `useTauriEvent` hook\n  - Frontend command error handling patterns (fire-and-forget, try/catch, optional fallback)\n  - User-friendly error message mapping via `user_friendly_message()`\n  - Pattern summary table\n  - Guide for adding new error types\n- Updated `docs/dev/index.md` to link to the new documentation\n\n### Files Modified\n- `docs/dev/error-handling.md` (created)\n- `docs/dev/index.md` (updated reference section)\n\n### Notes for Developer\n- Documentation is based on patterns observed in existing codebase (`src-tauri/src/errors/mod.rs`, `commands/*.rs`, `PillApp.tsx`)\n- Frontend event handling uses the `useTauriEvent` and `useThrottledEvent` hooks from `src/hooks/use-throttled-event.ts`\n- Errors for async state-changing operations (recording/transcription) are propagated via events, not command return values\n- TypeScript build passes successfully"
 }

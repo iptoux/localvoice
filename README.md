@@ -1,5 +1,10 @@
 # LocalVoice
 
+![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)
+![Tauri v2](https://img.shields.io/badge/Tauri-v2-2B90B8)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6)
+![Rust](https://img.shields.io/badge/Rust-1.77+-CE422B)
+
 Offline-first desktop voice dictation. Record with a global shortcut, transcribe locally via whisper.cpp, output to clipboard or active app — no cloud, no telemetry.
 
 ## Status

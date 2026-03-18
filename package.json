@@ -1,8 +1,22 @@
 {
   "name": "localvoice",
-  "private": true,
   "version": "0.1.0",
+  "description": "Offline-first desktop voice dictation app",
+  "private": false,
   "type": "module",
+  "license": "MIT",
+  "author": "LocalVoice Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/localvoice"
+  },
+  "keywords": [
+    "voice-dictation",
+    "offline",
+    "whisper",
+    "tauri",
+    "desktop-app"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

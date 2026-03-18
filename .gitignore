@@ -19,6 +19,31 @@ src-tauri/binaries/whisper-bin-*/
 src-tauri/binaries/*.exe
 src-tauri/binaries/*.dll
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Test coverage
+coverage
+*.lcov
+
+# Storybook build artifacts
+storybook-static
+
+# Test results
+test-results/
+playwright-report/
+
+# Build artifacts
+*.exe
+*.msi
+*.dmg
+*.app
+*.deb
+*.rpm
+*.AppImage
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

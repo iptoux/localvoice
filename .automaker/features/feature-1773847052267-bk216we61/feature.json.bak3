@@ -2,7 +2,7 @@
   "category": "chore",
   "description": "Generate structured API documentation for all Tauri commands using custom doc comments in Rust that describe parameters, return types, error codes, and usage examples. Export as a browsable HTML doc site.\n\n**Rationale:** Frontend developers need clear contract documentation for the invoke() API. Currently they must read Rust source to understand what commands accept and return, creating a bottleneck in the development loop.",
   "title": "Tauri Command API Reference Docs",
-  "status": "in_progress",
+  "status": "backlog",
   "id": "feature-1773847052267-bk216we61",
   "createdAt": "2026-03-18T15:17:32.268Z",
   "descriptionHistory": [
@@ -12,7 +12,7 @@
       "source": "initial"
     }
   ],
-  "updatedAt": "2026-03-18T15:17:44.159Z",
+  "updatedAt": "2026-03-18T15:19:24.593Z",
   "skipTests": false,
   "model": "opencode-minimax-m2.5-free",
   "thinkingLevel": "none",

@@ -2,7 +2,7 @@
   "category": "chore",
   "description": "Document the SQLite schema with ERD diagrams showing relationships between sessions, segments, dictionary entries, and settings. Include a migration guide explaining how to add new tables or columns safely.\n\n**Rationale:** Developers adding features that touch persistence need to understand existing table structures and how new fields fit in. Without docs, they risk schema inconsistencies or failed migrations.",
   "title": "Database Schema Visualization and Migration Guide",
-  "status": "verified",
+  "status": "completed",
   "id": "feature-1773847052314-7nb98uehd",
   "createdAt": "2026-03-18T15:17:32.315Z",
   "descriptionHistory": [

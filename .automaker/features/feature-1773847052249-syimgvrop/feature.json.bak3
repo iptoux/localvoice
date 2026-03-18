@@ -2,7 +2,7 @@
   "category": "chore",
   "description": "Set up Storybook configured with mock Tauri invoke() wrappers that return realistic fixture data. Stories exist for each UI component (Pill states, Dashboard charts, History list items) with controls for every state variant.\n\n**Rationale:** Enables visual regression testing and allows frontend iteration without running the full Rust backend. New developers can see component behavior in isolation before understanding the full system.",
   "title": "Component Storybook with Tauri Mocking",
-  "status": "in_progress",
+  "status": "backlog",
   "id": "feature-1773847052249-syimgvrop",
   "createdAt": "2026-03-18T15:17:32.250Z",
   "descriptionHistory": [
@@ -12,7 +12,7 @@
       "source": "initial"
     }
   ],
-  "updatedAt": "2026-03-18T15:17:48.447Z",
+  "updatedAt": "2026-03-18T15:19:24.584Z",
   "skipTests": false,
   "model": "opencode-big-pickle",
   "thinkingLevel": "none",

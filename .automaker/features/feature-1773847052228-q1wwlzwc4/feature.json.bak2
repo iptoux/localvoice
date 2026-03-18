@@ -12,7 +12,7 @@
       "source": "initial"
     }
   ],
-  "updatedAt": "2026-03-18T15:17:46.458Z",
+  "updatedAt": "2026-03-18T15:19:19.564Z",
   "skipTests": false,
   "model": "opencode-big-pickle",
   "thinkingLevel": "none",
@@ -25,5 +25,6 @@
   "requirePlanApproval": false,
   "workMode": "current",
   "dependencies": [],
-  "startedAt": "2026-03-18T15:18:06.312Z"
+  "startedAt": "2026-03-18T15:18:06.312Z",
+  "summary": "## Summary: Architecture Decision Records (ADRs)\n\n### Changes Implemented\n- Created `docs/adrs/` directory with 4 markdown files:\n  - `001-whispercpp-sidecar.md` - Documents using whisper.cpp as a sidecar process instead of FFI bindings\n  - `002-dual-window-design.md` - Documents the dual-window design (pill + main window)\n  - `003-sqlite-database.md` - Documents using SQLite as the single local database\n  - `index.md` - Index file with ADR list and guidance for adding new ADRs\n\n### Files Modified\n- Created: `docs/adrs/index.md`\n- Created: `docs/adrs/001-whispercpp-sidecar.md`\n- Created: `docs/adrs/002-dual-window-design.md`\n- Created: `docs/adrs/003-sqlite-database.md`\n\n### Notes for Developer\n- Each ADR follows the standard template with Context, Decision, and Consequences sections\n- ADRs are numbered sequentially (001, 002, 003)\n- Index file provides guidance for adding future ADRs"
 }
