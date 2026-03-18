@@ -1,0 +1,15 @@
+{
+  "category": "enhancement",
+  "description": "Replace any scrollable lists of transcription results or session history with a virtualized list (e.g., TanStack Virtual). Only render DOM nodes for visible items plus a small overscan buffer. This is essential for sessions with hundreds of transcription segments.\n\n**Rationale:** Long transcription outputs rendered as full DOM trees cause slow paints and janky scrolling. Virtualization reduces DOM node count from potentially thousands to ~30–50, dramatically improving scroll performance and memory usage.",
+  "title": "Virtual List for Long Transcription / History Views",
+  "status": "backlog",
+  "id": "feature-1773836390955-ppos4njzi",
+  "createdAt": "2026-03-18T12:19:50.958Z",
+  "descriptionHistory": [
+    {
+      "description": "Replace any scrollable lists of transcription results or session history with a virtualized list (e.g., TanStack Virtual). Only render DOM nodes for visible items plus a small overscan buffer. This is essential for sessions with hundreds of transcription segments.\n\n**Rationale:** Long transcription outputs rendered as full DOM trees cause slow paints and janky scrolling. Virtualization reduces DOM node count from potentially thousands to ~30–50, dramatically improving scroll performance and memory usage.",
+      "timestamp": "2026-03-18T12:19:50.958Z",
+      "source": "initial"
+    }
+  ]
+}

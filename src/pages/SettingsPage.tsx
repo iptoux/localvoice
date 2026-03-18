@@ -6,7 +6,6 @@ import {
   getAutostart,
   listInputDevices,
   setAutostart,
-  updateSetting,
   updateShortcut,
   clearLogs,
   setLoggingEnabled,

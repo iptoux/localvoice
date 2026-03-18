@@ -1,0 +1,15 @@
+{
+  "category": "enhancement",
+  "description": "Add debounce/throttle wrappers around Tauri event listeners that receive high-frequency updates from the sidecar process (e.g., audio level meters, transcription progress). Use a requestAnimationFrame-aligned flush strategy so UI updates stay in sync with the display refresh rate without dropping frames.\n\n**Rationale:** Sidecar processes (like audio capture) can emit events at rates far exceeding 60fps. Passing every raw event directly to React state causes excessive renders that degrade responsiveness and waste CPU on the render thread.",
+  "title": "Tauri Event Debouncing for High-Frequency Sidecar Events",
+  "status": "backlog",
+  "id": "feature-1773836357428-erot9bn98",
+  "createdAt": "2026-03-18T12:19:17.429Z",
+  "descriptionHistory": [
+    {
+      "description": "Add debounce/throttle wrappers around Tauri event listeners that receive high-frequency updates from the sidecar process (e.g., audio level meters, transcription progress). Use a requestAnimationFrame-aligned flush strategy so UI updates stay in sync with the display refresh rate without dropping frames.\n\n**Rationale:** Sidecar processes (like audio capture) can emit events at rates far exceeding 60fps. Passing every raw event directly to React state causes excessive renders that degrade responsiveness and waste CPU on the render thread.",
+      "timestamp": "2026-03-18T12:19:17.429Z",
+      "source": "initial"
+    }
+  ]
+}

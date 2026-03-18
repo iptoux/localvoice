@@ -1,0 +1,15 @@
+{
+  "category": "enhancement",
+  "description": "Audit all Zustand store subscriptions and replace broad state selections with fine-grained selectors using shallow equality checks. Use zustand's `subscribeWithSelector` middleware and `useShallow` to prevent components from re-rendering when unrelated slices update. Identify the top 10 most-subscribed components first.\n\n**Rationale:** With multiple Zustand slices already in place, components subscribing to entire slices will re-render on any slice change — even unrelated fields. This is a common and impactful source of unnecessary renders in slice-based stores.",
+  "title": "Zustand Slice Selector Memoization",
+  "status": "backlog",
+  "id": "feature-1773836413214-u71c43xwn",
+  "createdAt": "2026-03-18T12:20:13.216Z",
+  "descriptionHistory": [
+    {
+      "description": "Audit all Zustand store subscriptions and replace broad state selections with fine-grained selectors using shallow equality checks. Use zustand's `subscribeWithSelector` middleware and `useShallow` to prevent components from re-rendering when unrelated slices update. Identify the top 10 most-subscribed components first.\n\n**Rationale:** With multiple Zustand slices already in place, components subscribing to entire slices will re-render on any slice change — even unrelated fields. This is a common and impactful source of unnecessary renders in slice-based stores.",
+      "timestamp": "2026-03-18T12:20:13.216Z",
+      "source": "initial"
+    }
+  ]
+}

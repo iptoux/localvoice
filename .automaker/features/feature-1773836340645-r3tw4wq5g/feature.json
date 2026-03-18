@@ -1,0 +1,15 @@
+{
+  "category": "enhancement",
+  "description": "Split the frontend bundle by route/view so each page only loads its required JavaScript on demand. Implement React.lazy() and Suspense boundaries at the router level with skeleton screens as fallbacks. This prevents loading dashboard, settings, and recorder modules all at once on startup.\n\n**Rationale:** Tauri apps still parse and execute JavaScript bundles eagerly. With multiple milestone views (MS-01–05 already done), the bundle has grown significantly. Splitting by route reduces Time-to-Interactive for the initial window load.",
+  "title": "Route-Based Code Splitting with Lazy Loading",
+  "status": "backlog",
+  "id": "feature-1773836340645-r3tw4wq5g",
+  "createdAt": "2026-03-18T12:19:00.646Z",
+  "descriptionHistory": [
+    {
+      "description": "Split the frontend bundle by route/view so each page only loads its required JavaScript on demand. Implement React.lazy() and Suspense boundaries at the router level with skeleton screens as fallbacks. This prevents loading dashboard, settings, and recorder modules all at once on startup.\n\n**Rationale:** Tauri apps still parse and execute JavaScript bundles eagerly. With multiple milestone views (MS-01–05 already done), the bundle has grown significantly. Splitting by route reduces Time-to-Interactive for the initial window load.",
+      "timestamp": "2026-03-18T12:19:00.646Z",
+      "source": "initial"
+    }
+  ]
+}
