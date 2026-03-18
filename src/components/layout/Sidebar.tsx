@@ -34,8 +34,8 @@ export function Sidebar() {
   );
 
   return (
-    <nav className="w-48 bg-neutral-900 text-neutral-200 flex flex-col py-6 px-3 shrink-0">
-      <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-3 mb-2">
+    <nav className="w-48 bg-sidebar text-sidebar-foreground flex flex-col py-6 px-3 shrink-0">
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-2">
         LocalVoice
       </span>
       <div className="flex flex-col gap-1">
@@ -47,8 +47,8 @@ export function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
                 isActive
-                  ? "bg-neutral-700 text-white"
-                  : "hover:bg-neutral-800 text-neutral-300"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70"
               }`
             }
           >
@@ -65,8 +65,8 @@ export function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
                 isActive
-                  ? "bg-neutral-700 text-white"
-                  : "hover:bg-neutral-800 text-neutral-300"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  : "hover:bg-sidebar-accent/50 text-sidebar-foreground/70"
               }`
             }
           >

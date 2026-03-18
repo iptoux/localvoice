@@ -95,7 +95,7 @@ export default function History() {
       {/* ── List panel ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 min-w-0 p-8 gap-4">
         <div className="flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold text-white shrink-0">History</h1>
+          <h1 className="text-2xl font-semibold text-foreground shrink-0">History</h1>
           <button
             onClick={() =>
               exportSessions(
@@ -103,7 +103,7 @@ export default function History() {
                 "txt"
               ).catch(console.error)
             }
-            className="text-xs text-neutral-400 hover:text-white border border-neutral-700 hover:border-neutral-500 px-3 py-1.5 rounded transition-colors"
+            className="text-xs text-muted-foreground hover:text-foreground border border-border hover:border-neutral-500 px-3 py-1.5 rounded transition-colors"
           >
             Export page ↗
           </button>
@@ -116,13 +116,13 @@ export default function History() {
             placeholder="Search transcriptions…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-neutral-800 border border-neutral-700 text-white text-sm rounded-md px-3 py-2 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500"
+            className="w-full bg-muted border border-border text-foreground text-sm rounded-md px-3 py-2 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500"
           />
           <div className="flex flex-wrap gap-2">
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              className="bg-neutral-800 border border-neutral-700 text-neutral-300 text-xs rounded px-2 py-1.5 focus:outline-none"
+              className="bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1.5 focus:outline-none"
             >
               <option value="">All languages</option>
               <option value="de">German (de)</option>
@@ -131,22 +131,22 @@ export default function History() {
               <option value="es">Spanish (es)</option>
               <option value="auto">Auto-detect</option>
             </select>
-            <label className="flex items-center gap-1 text-xs text-neutral-400">
+            <label className="flex items-center gap-1 text-xs text-muted-foreground">
               From
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="bg-neutral-800 border border-neutral-700 text-neutral-300 rounded px-2 py-1 text-xs focus:outline-none"
+                className="bg-muted border border-border text-foreground/70 rounded px-2 py-1 text-xs focus:outline-none"
               />
             </label>
-            <label className="flex items-center gap-1 text-xs text-neutral-400">
+            <label className="flex items-center gap-1 text-xs text-muted-foreground">
               To
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="bg-neutral-800 border border-neutral-700 text-neutral-300 rounded px-2 py-1 text-xs focus:outline-none"
+                className="bg-muted border border-border text-foreground/70 rounded px-2 py-1 text-xs focus:outline-none"
               />
             </label>
             {(query || language || dateFrom || dateTo) && (
@@ -157,7 +157,7 @@ export default function History() {
                   setDateFrom("");
                   setDateTo("");
                 }}
-                className="text-xs text-neutral-500 hover:text-white transition-colors px-2"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2"
               >
                 Clear filters ✕
               </button>
@@ -168,13 +168,13 @@ export default function History() {
         {/* Session list (TASK-074) */}
         <div className="flex-1 overflow-y-auto min-h-0 space-y-1">
           {loading && (
-            <p className="text-neutral-500 text-sm py-8 text-center">Loading…</p>
+            <p className="text-muted-foreground text-sm py-8 text-center">Loading…</p>
           )}
           {error && (
             <p className="text-rose-400 text-sm py-8 text-center">{error}</p>
           )}
           {!loading && !error && sessions.length === 0 && (
-            <p className="text-neutral-500 text-sm py-8 text-center">
+            <p className="text-muted-foreground text-sm py-8 text-center">
               No sessions found.
             </p>
           )}
@@ -236,18 +236,18 @@ function SessionRow({
         w-full text-left px-4 py-3 rounded-lg border transition-colors
         ${
           active
-            ? "border-neutral-500 bg-neutral-700"
-            : "border-neutral-800 bg-neutral-900 hover:border-neutral-700 hover:bg-neutral-800"
+            ? "border-neutral-500 bg-accent"
+            : "border-border bg-card hover:border-border hover:bg-accent"
         }
       `}
     >
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-xs text-neutral-400 tabular-nums">{date}</span>
+        <span className="text-xs text-muted-foreground tabular-nums">{date}</span>
         <LanguageBadge lang={session.language} />
-        <span className="text-xs text-neutral-500">{session.wordCount} words</span>
+        <span className="text-xs text-muted-foreground">{session.wordCount} words</span>
         <OutputBadge mode={session.outputMode} ok={session.insertedSuccessfully} />
       </div>
-      <p className="text-sm text-neutral-300 leading-snug">{preview}</p>
+      <p className="text-sm text-foreground/70 leading-snug">{preview}</p>
     </button>
   );
 }
@@ -276,8 +276,8 @@ function SessionDrawer({
 
   if (loading) {
     return (
-      <aside className="w-96 shrink-0 border-l border-neutral-800 flex items-center justify-center">
-        <p className="text-neutral-500 text-sm">Loading…</p>
+      <aside className="w-96 shrink-0 border-l border-border flex items-center justify-center">
+        <p className="text-muted-foreground text-sm">Loading…</p>
       </aside>
     );
   }
@@ -304,13 +304,13 @@ function SessionDrawer({
   }
 
   return (
-    <aside className="w-96 shrink-0 border-l border-neutral-800 flex flex-col overflow-hidden">
+    <aside className="w-96 shrink-0 border-l border-border flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-800">
-        <h2 className="text-sm font-semibold text-white">Session Details</h2>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <h2 className="text-sm font-semibold text-foreground">Session Details</h2>
         <button
           onClick={onClose}
-          className="text-neutral-500 hover:text-white text-lg leading-none"
+          className="text-muted-foreground hover:text-foreground text-lg leading-none"
           aria-label="Close"
         >
           ✕
@@ -318,21 +318,21 @@ function SessionDrawer({
       </div>
 
       {/* Meta */}
-      <div className="px-5 py-3 border-b border-neutral-800 space-y-1">
-        <p className="text-xs text-neutral-400">{formatDate(session.startedAt)}</p>
+      <div className="px-5 py-3 border-b border-border space-y-1">
+        <p className="text-xs text-muted-foreground">{formatDate(session.startedAt)}</p>
         <div className="flex flex-wrap gap-2">
           <LanguageBadge lang={session.language} />
           {session.modelId && (
-            <span className="text-xs bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded">
+            <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
               {session.modelId}
             </span>
           )}
-          <span className="text-xs text-neutral-500">{session.wordCount} words</span>
+          <span className="text-xs text-muted-foreground">{session.wordCount} words</span>
           {durationSec > 0 && (
-            <span className="text-xs text-neutral-500">{durationSec}s</span>
+            <span className="text-xs text-muted-foreground">{durationSec}s</span>
           )}
           {session.estimatedWpm && (
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs text-muted-foreground">
               ~{Math.round(session.estimatedWpm)} wpm
             </span>
           )}
@@ -340,15 +340,15 @@ function SessionDrawer({
       </div>
 
       {/* Text tabs */}
-      <div className="flex border-b border-neutral-800">
+      <div className="flex border-b border-border">
         {(["cleaned", "raw"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 py-2 text-xs font-medium transition-colors ${
               tab === t
-                ? "text-white border-b-2 border-white"
-                : "text-neutral-500 hover:text-neutral-300"
+                ? "text-foreground border-b-2 border-foreground"
+                : "text-muted-foreground hover:text-foreground/70"
             }`}
           >
             {t === "cleaned" ? "Cleaned" : "Raw"}
@@ -358,19 +358,19 @@ function SessionDrawer({
 
       {/* Text content */}
       <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
-        <p className="text-sm text-neutral-200 leading-relaxed whitespace-pre-wrap">
+        <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
           {tab === "cleaned" ? session.cleanedText : session.rawText}
         </p>
 
         {/* Segments list (optional) */}
         {tab === "cleaned" && segments.length > 0 && (
           <details className="mt-4">
-            <summary className="text-xs text-neutral-500 cursor-pointer hover:text-neutral-300 select-none">
+            <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground/70 select-none">
               {segments.length} segments
             </summary>
             <ol className="mt-2 space-y-1">
               {segments.map((seg) => (
-                <li key={seg.id} className="text-xs text-neutral-400">
+                <li key={seg.id} className="text-xs text-muted-foreground">
                   <span className="tabular-nums text-neutral-600 mr-2">
                     {msToTime(seg.startMs)}
                   </span>
@@ -388,18 +388,18 @@ function SessionDrawer({
       </div>
 
       {/* Actions (TASK-078) */}
-      <div className="flex items-center gap-2 px-5 py-3 border-t border-neutral-800">
+      <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
         <button
           onClick={() =>
             copyText(tab === "cleaned" ? session.cleanedText : session.rawText)
           }
-          className="flex-1 text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white rounded px-3 py-1.5 transition-colors"
+          className="flex-1 text-xs bg-muted hover:bg-accent text-foreground/70 hover:text-foreground rounded px-3 py-1.5 transition-colors"
         >
           Copy
         </button>
         <button
           onClick={handleExport}
-          className="text-xs bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white rounded px-3 py-1.5 transition-colors"
+          className="text-xs bg-muted hover:bg-accent text-foreground/70 hover:text-foreground rounded px-3 py-1.5 transition-colors"
         >
           Export ↗
         </button>
@@ -408,7 +408,7 @@ function SessionDrawer({
           className={`text-xs rounded px-3 py-1.5 transition-colors ${
             confirmDelete
               ? "bg-rose-700 hover:bg-rose-600 text-white"
-              : "bg-neutral-800 hover:bg-neutral-700 text-rose-400 hover:text-rose-300"
+              : "bg-muted hover:bg-accent text-rose-400 hover:text-rose-300"
           }`}
         >
           {confirmDelete ? "Confirm delete" : "Delete"}
@@ -442,7 +442,7 @@ function Pagination({
   if (total === 0) return null;
 
   return (
-    <div className="flex items-center justify-between text-xs text-neutral-500">
+    <div className="flex items-center justify-between text-xs text-muted-foreground">
       <span>
         {from}–{to}
       </span>
@@ -450,14 +450,14 @@ function Pagination({
         <button
           onClick={onPrev}
           disabled={page === 0}
-          className="px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-1 rounded bg-muted hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           ← Previous
         </button>
         <button
           onClick={onNext}
           disabled={!hasNext}
-          className="px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-3 py-1 rounded bg-muted hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           Next →
         </button>
@@ -470,7 +470,7 @@ function Pagination({
 
 function LanguageBadge({ lang }: { lang: string }) {
   return (
-    <span className="text-xs bg-neutral-700 text-neutral-300 px-1.5 py-0.5 rounded font-mono uppercase">
+    <span className="text-xs bg-accent text-foreground/70 px-1.5 py-0.5 rounded font-mono uppercase">
       {lang}
     </span>
   );

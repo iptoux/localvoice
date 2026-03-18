@@ -10,7 +10,8 @@ import Dictionary from "./pages/Dictionary";
 import Logs from "./pages/Logs";
 import Models from "./pages/Models";
 import SettingsPage from "./pages/SettingsPage";
-import { checkFirstRun } from "./lib/tauri";
+import { checkFirstRun, getSettings } from "./lib/tauri";
+import { applyTheme, watchSystemTheme, type Theme } from "./lib/theme";
 
 export function MainApp() {
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -23,10 +24,23 @@ export function MainApp() {
       .catch(() => {});
   }, []);
 
+  // Apply persisted theme on mount and watch for OS changes.
+  useEffect(() => {
+    let currentTheme: Theme = "dark";
+    getSettings()
+      .then((s) => {
+        currentTheme = (s["app.theme"] as Theme) || "dark";
+        applyTheme(currentTheme);
+      })
+      .catch(() => applyTheme("dark"));
+
+    return watchSystemTheme(() => currentTheme);
+  }, []);
+
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <div className="flex h-screen bg-neutral-950 text-white">
+        <div className="flex h-screen bg-background text-foreground">
           <Sidebar />
           <main className="flex-1 overflow-auto">
             <Routes>

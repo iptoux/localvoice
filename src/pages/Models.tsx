@@ -19,7 +19,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  standard: "bg-neutral-700 text-neutral-300",
+  standard: "bg-accent text-foreground/70",
   quantized: "bg-cyan-900/60 text-cyan-300",
   turbo: "bg-orange-900/60 text-orange-300",
   large: "bg-purple-900/60 text-purple-300",
@@ -39,7 +39,7 @@ function Dots({ filled, total = 5, color }: { filled: number; total?: number; co
       {Array.from({ length: total }).map((_, i) => (
         <span
           key={i}
-          className={`w-2 h-2 rounded-full ${i < filled ? color : "bg-neutral-700"}`}
+          className={`w-2 h-2 rounded-full ${i < filled ? color : "bg-accent"}`}
         />
       ))}
     </span>
@@ -60,12 +60,12 @@ function DefaultSelector({ label, language, models, currentKey, onSelect }: Defa
   const installed = models.filter((m) => m.installed);
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm text-neutral-400 w-32 shrink-0">{label}</span>
+      <span className="text-sm text-muted-foreground w-32 shrink-0">{label}</span>
       {installed.length === 0 ? (
-        <span className="text-xs text-neutral-500 italic">No installed models</span>
+        <span className="text-xs text-muted-foreground italic">No installed models</span>
       ) : (
         <select
-          className="bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="bg-muted border border-border text-foreground text-sm rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
           value={currentKey ?? ""}
           onChange={(e) => onSelect(language, e.target.value)}
         >
@@ -96,14 +96,14 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
   return (
     <div className={`p-4 rounded-lg border transition-colors ${
       model.installed
-        ? "bg-neutral-800 border-neutral-600"
-        : "bg-neutral-800/60 border-neutral-700"
+        ? "bg-muted border-neutral-600"
+        : "bg-muted/60 border-border"
     }`}>
       {/* Header row */}
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-white font-medium text-sm">{model.displayName}</span>
+            <span className="text-foreground font-medium text-sm">{model.displayName}</span>
             <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${CATEGORY_COLORS[model.category]}`}>
               {CATEGORY_LABELS[model.category]}
             </span>
@@ -121,19 +121,19 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
           </div>
 
           {/* Description */}
-          <p className="text-xs text-neutral-400 mt-1 leading-relaxed">{model.description}</p>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{model.description}</p>
 
           {/* Stats row */}
           <div className="flex items-center gap-4 mt-2 flex-wrap">
-            <span className="text-xs text-neutral-500">{formatBytes(model.fileSizeBytes)}</span>
-            <span className="text-xs text-neutral-500 capitalize">
+            <span className="text-xs text-muted-foreground">{formatBytes(model.fileSizeBytes)}</span>
+            <span className="text-xs text-muted-foreground capitalize">
               {model.languageScope === "multilingual" ? "🌍 Multilingual" : "🇬🇧 EN only"}
             </span>
-            <span className="flex items-center gap-1.5 text-xs text-neutral-500">
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>Speed</span>
               <Dots filled={speedDots} color="bg-green-500" />
             </span>
-            <span className="flex items-center gap-1.5 text-xs text-neutral-500">
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>Accuracy</span>
               <Dots filled={accuracyDots} color="bg-blue-500" />
             </span>
@@ -141,7 +141,7 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
 
           {/* Recommended for */}
           <p className="text-xs text-neutral-600 mt-1">
-            <span className="text-neutral-500">Best for:</span> {model.recommendedFor}
+            <span className="text-muted-foreground">Best for:</span> {model.recommendedFor}
           </p>
         </div>
 
@@ -155,7 +155,7 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
               Delete
             </button>
           ) : isDownloading ? (
-            <button disabled className="text-xs px-3 py-1.5 rounded bg-neutral-700 text-neutral-500 cursor-not-allowed">
+            <button disabled className="text-xs px-3 py-1.5 rounded bg-accent text-muted-foreground cursor-not-allowed">
               Downloading…
             </button>
           ) : (
@@ -172,7 +172,7 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
       {/* Download progress */}
       {isDownloading && (
         <div className="mt-3">
-          <div className="flex justify-between text-xs text-neutral-400 mb-1">
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
             <span>Downloading…</span>
             <span>
               {downloadState.percent}%
@@ -180,7 +180,7 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
                 ` · ${formatBytes(downloadState.bytesDownloaded)} / ${formatBytes(downloadState.totalBytes)}`}
             </span>
           </div>
-          <div className="w-full bg-neutral-700 rounded-full h-1.5">
+          <div className="w-full bg-accent rounded-full h-1.5">
             <div
               className="bg-blue-500 h-1.5 rounded-full transition-all duration-100"
               style={{ width: `${downloadState.percent}%` }}
@@ -244,23 +244,23 @@ export default function Models() {
   if (loading && models.length === 0) {
     return (
       <div className="p-8 max-w-3xl mx-auto">
-        <h1 className="text-2xl font-semibold text-white mb-1">Models</h1>
-        <p className="text-neutral-500 text-sm mt-8">Loading models…</p>
+        <h1 className="text-2xl font-semibold text-foreground mb-1">Models</h1>
+        <p className="text-muted-foreground text-sm mt-8">Loading models…</p>
       </div>
     );
   }
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-semibold text-white mb-1">Models</h1>
-      <p className="text-neutral-400 text-sm mb-8">
+      <h1 className="text-2xl font-semibold text-foreground mb-1">Models</h1>
+      <p className="text-muted-foreground text-sm mb-8">
         Download and manage local whisper.cpp transcription models.
       </p>
 
       {/* Default model selectors */}
       <section className="mb-8">
-        <h2 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Default models</h2>
-        <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-4 flex flex-col gap-3">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Default models</h2>
+        <div className="bg-muted border border-border rounded-lg p-4 flex flex-col gap-3">
           <DefaultSelector label="German (DE)" language="de" models={models} currentKey={defaultDe} onSelect={setDefault} />
           <DefaultSelector label="English (EN)" language="en" models={models} currentKey={defaultEn} onSelect={setDefault} />
         </div>
@@ -269,7 +269,7 @@ export default function Models() {
       {/* Category filter tabs */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Available models</h2>
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Available models</h2>
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
               {CATEGORIES.map((cat) => (
@@ -278,8 +278,8 @@ export default function Models() {
                   onClick={() => setFilter(cat)}
                   className={`text-xs px-2.5 py-1 rounded capitalize transition-colors ${
                     filter === cat
-                      ? "bg-neutral-600 text-white"
-                      : "text-neutral-500 hover:text-neutral-300"
+                      ? "bg-neutral-600 text-foreground"
+                      : "text-muted-foreground hover:text-foreground/70"
                   }`}
                 >
                   {cat === "all" ? "All" : CATEGORY_LABELS[cat]}
@@ -289,7 +289,7 @@ export default function Models() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className="bg-neutral-800 border border-neutral-700 text-neutral-300 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="default">Default order</option>
               <option value="speed">Fastest first</option>

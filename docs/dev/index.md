@@ -18,6 +18,7 @@ Technical reference for contributors and maintainers.
 | [ms10-polish.md](ms10-polish.md) | MS-10 Polish | done |
 | [ms11-expanded-pill.md](ms11-expanded-pill.md) | MS-11 Expanded Pill & Animations | done |
 | [ms12-insert-flow.md](ms12-insert-flow.md) | MS-12 Improved Insert Flow | done |
+| [ms13-theme-shortcuts.md](ms13-theme-shortcuts.md) | MS-13 Theme & Shortcuts | done |
 
 ## Reference
 

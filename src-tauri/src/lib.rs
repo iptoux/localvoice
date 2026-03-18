@@ -135,6 +135,7 @@ pub fn run() {
             settings::get_settings,
             settings::update_setting,
             settings::reset_settings,
+            settings::update_shortcut,
             // Window
             window::show_pill,
             window::hide_pill,
