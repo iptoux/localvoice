@@ -1,5 +1,14 @@
 # Changelog
 
+## MS-11 — Expanded Pill View & Animations (2026-03-18)
+
+- **Expanded pill**: single-click the pill to reveal transcript preview, language/model badges, word count, language switcher, start/stop button, and quick actions (Copy, History, Settings)
+- **Collapse on blur**: expanded pill automatically collapses when clicking elsewhere or clicking the pill bar again
+- **Waveform visualization**: animated canvas-based audio bars replace the static "Listening…" text during recording, responding to real-time audio level
+- **Smooth state transitions**: CSS `transition-all` with 300ms easing on the pill container for color and size changes
+- **Success-to-idle fade**: after 3 seconds in success state, the pill fades back to idle with an opacity transition instead of an abrupt reset
+- **Pill window resize**: Tauri commands `expand_pill` / `collapse_pill` resize the pill window between 300×64 and 300×280
+
 ## MS-10 — Polish (2026-03-17)
 
 - **Onboarding**: first-time users with no model installed see a welcome overlay guiding them to the Models page

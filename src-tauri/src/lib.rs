@@ -140,6 +140,8 @@ pub fn run() {
             window::hide_pill,
             window::open_main_window,
             window::set_pill_position,
+            window::expand_pill,
+            window::collapse_pill,
             // Recording
             recording::start_recording,
             recording::stop_recording,
