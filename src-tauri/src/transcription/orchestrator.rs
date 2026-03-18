@@ -315,6 +315,9 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                 audio_path: persisted_audio_path,
                 original_raw_text: None,
                 reprocessed_count: 0,
+                original_model_id: None,
+                original_language: None,
+                original_avg_confidence: None,
             };
             if let Err(e) = sessions_repo::insert_session(&state.db, &session) {
                 log::error!("Failed to persist session: {e}");
