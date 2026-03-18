@@ -272,8 +272,8 @@ const SessionRow = memo(function SessionRow({
         w-full text-left px-4 py-3 rounded-lg border transition-colors
         ${
           active
-            ? "border-neutral-500 bg-accent"
-            : "border-border bg-card hover:border-border hover:bg-accent"
+            ? "border-primary/60 bg-muted ring-1 ring-primary/30"
+            : "border-border bg-card hover:border-border hover:bg-muted"
         }
       `}
     >
