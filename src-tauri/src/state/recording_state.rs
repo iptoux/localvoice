@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 
 /// All possible recording states serialized to/from the frontend.
@@ -49,6 +50,9 @@ pub struct ActiveRecording {
     /// Human-readable device name (for logging and MS-03 session metadata).
     #[allow(dead_code)]
     pub device_name: String,
+    /// Set to `true` by the audio callback when silence exceeds the configured timeout.
+    /// Polled by the silence watcher thread to trigger auto-stop.
+    pub silence_triggered: Arc<AtomicBool>,
 }
 
 // cpal::Stream is unsafe impl Send on WASAPI (Windows desktop target).

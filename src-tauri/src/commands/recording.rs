@@ -1,6 +1,10 @@
-use tauri::{AppHandle, State};
+use std::sync::atomic::Ordering;
+use std::time::Duration;
 
-use crate::audio::{capture, devices};
+use tauri::{AppHandle, Emitter, Manager, State};
+
+use crate::audio::capture::{self, SilenceConfig};
+use crate::audio::devices;
 use crate::errors::CmdResult;
 use crate::state::app_state::emit_recording_state;
 use crate::state::recording_state::RecordingState;
@@ -17,22 +21,71 @@ pub fn start_recording_internal(app: &AppHandle, state: &State<AppState>) -> Cmd
         }
     }
 
-    // Read the preferred device from settings (falls back to default).
-    let device_id: Option<String> = {
-        let settings =
-            crate::db::repositories::settings_repo::get_all(&state.db).unwrap_or_default();
-        settings
-            .get("recording.device_id")
-            .cloned()
-            .filter(|s| !s.is_empty())
+    // Read settings.
+    let settings =
+        crate::db::repositories::settings_repo::get_all(&state.db).unwrap_or_default();
+
+    // Preferred audio device.
+    let device_id: Option<String> = settings
+        .get("recording.device_id")
+        .cloned()
+        .filter(|s| !s.is_empty());
+
+    // Silence detection configuration.
+    let silence_cfg = SilenceConfig {
+        enabled: settings
+            .get("recording.silence_timeout_ms")
+            .and_then(|v| v.parse::<u64>().ok())
+            .map(|ms| ms > 0)
+            .unwrap_or(false),
+        threshold: settings
+            .get("recording.silence_threshold")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(0.01),
+        timeout_ms: settings
+            .get("recording.silence_timeout_ms")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(1500),
     };
 
     let device = devices::get_input_device(device_id.as_deref())?;
-    let recording = capture::start_capture(&device, app)?;
+    let recording = capture::start_capture(&device, app, silence_cfg)?;
+
+    // Grab the silence flag before moving the recording into state.
+    let silence_flag = recording.silence_triggered.clone();
 
     *state.active_recording.lock().unwrap() = Some(recording);
     *state.recording_started_at.lock().unwrap() = Some(chrono::Utc::now());
     emit_recording_state(app, RecordingState::Listening, None);
+
+    // Spawn a background thread that polls the silence flag every 200ms.
+    let app_watcher = app.clone();
+    tauri::async_runtime::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_millis(200)).await;
+
+            // Check if we are still listening.
+            let state = app_watcher.state::<AppState>();
+            let current = state.recording_state.lock().unwrap().clone();
+            if current != RecordingState::Listening {
+                break;
+            }
+
+            if silence_flag.load(Ordering::Relaxed) {
+                log::info!("Silence timeout reached — auto-stopping recording");
+                let _ = app_watcher.emit("silence-detected", ());
+                // Must run stop on a blocking thread because it does file I/O.
+                let app_for_stop = app_watcher.clone();
+                let _ = tauri::async_runtime::spawn_blocking(move || {
+                    let state = app_for_stop.state::<AppState>();
+                    if let Err(e) = stop_recording_internal(&app_for_stop, &state) {
+                        log::error!("Silence auto-stop failed: {e}");
+                    }
+                }).await;
+                break;
+            }
+        }
+    });
 
     log::info!("Recording started");
     Ok(())
@@ -64,8 +117,6 @@ pub fn stop_recording_internal(app: &AppHandle, state: &State<AppState>) -> CmdR
     log::info!("Recording saved to {wav_path}");
 
     // Kick off transcription in a background thread so the command returns immediately.
-    // tauri::async_runtime::spawn works from any thread (including the hotkey message-loop
-    // thread) because it uses Tauri's managed runtime rather than requiring an ambient one.
     let app_for_task = app.clone();
     let wav_for_task = wav_path.clone();
     tauri::async_runtime::spawn(async move {

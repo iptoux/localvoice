@@ -102,7 +102,7 @@ pub fn transcribe(
         .unwrap_or_default();
 
     let (cleaned_text, cleaned_segments, fired_rule_ids) =
-        pipeline::run(&raw_text, segments, &settings, &active_rules);
+        pipeline::run(&raw_text, segments, &settings, &active_rules, &lang_code);
 
     // Increment usage counters for rules that fired.
     if !fired_rule_ids.is_empty() {
