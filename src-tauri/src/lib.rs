@@ -253,6 +253,13 @@ pub fn run() {
                 tauri::WindowEvent::CloseRequested { api, .. } => {
                     // Hide instead of closing — tray keeps the app alive.
                     window.hide().unwrap_or_default();
+                    // When the main window is closed, make sure the pill is visible.
+                    if window.label() == "main" {
+                        if let Some(pill) = window.app_handle().get_webview_window("pill") {
+                            pill.show().unwrap_or_default();
+                            let _ = pill.set_focus();
+                        }
+                    }
                     api.prevent_close();
                 }
                 tauri::WindowEvent::Moved(pos) => {
