@@ -101,6 +101,7 @@ export const mockTranscription: TranscriptionResult = {
   modelId: "ggml-base",
   durationMs: 6000,
   output: { mode: "clipboard", success: true },
+  removedFillers: [],
 };
 
 export const mockDashboardStats: DashboardStats = {
