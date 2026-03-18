@@ -646,7 +646,7 @@ function Pagination({
 
 function LanguageBadge({ lang }: { lang: string }) {
   return (
-    <span className="text-xs bg-accent text-foreground/70 px-1.5 py-0.5 rounded font-mono uppercase">
+    <span className="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded font-mono uppercase">
       {lang}
     </span>
   );
@@ -657,8 +657,8 @@ function OutputBadge({ mode, ok }: { mode: string; ok: boolean }) {
     <span
       className={`text-xs px-1.5 py-0.5 rounded ${
         ok
-          ? "bg-green-900/40 text-green-400"
-          : "bg-rose-900/40 text-rose-400"
+          ? "bg-green-600 text-white"
+          : "bg-red-600 text-white"
       }`}
     >
       {mode === "insert" ? "inserted" : "copied"}

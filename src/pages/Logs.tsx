@@ -6,9 +6,9 @@ import type { LogEntry } from "../types";
 type LevelFilter = "all" | "info" | "warn" | "error";
 
 const LEVEL_COLORS: Record<string, string> = {
-  info: "text-blue-300 bg-blue-900/20 border-blue-800/50",
-  warn: "text-yellow-400 bg-yellow-900/30 border-yellow-700/50",
-  error: "text-red-400 bg-red-900/30 border-red-700/50",
+  info: "text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50",
+  warn: "text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700/50",
+  error: "text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700/50",
 };
 
 const LEVEL_ICONS: Record<string, React.ReactNode> = {
@@ -57,7 +57,7 @@ export default function Logs() {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-8">
       <h1 className="text-2xl font-semibold text-foreground mb-1">Logs</h1>
       <p className="text-muted-foreground text-sm mb-6">
         Application logs captured during this session. Filter by level to focus on what matters.
@@ -88,13 +88,13 @@ export default function Logs() {
         </button>
         <button
           onClick={handleExport}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-accent hover:bg-neutral-600 text-foreground rounded transition-colors"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-muted hover:bg-accent border border-border text-foreground rounded transition-colors"
         >
           <Download size={13} /> Export JSON
         </button>
         <button
           onClick={handleClear}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 text-red-500 hover:text-red-400 border border-red-800 hover:border-red-600 rounded transition-colors"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 border border-red-300 dark:border-red-800 hover:border-red-400 dark:hover:border-red-600 rounded transition-colors"
         >
           <Trash2 size={13} /> Clear
         </button>

@@ -14,11 +14,11 @@
       {
         "label": "pill",
         "title": "LocalVoice",
-        "width": 200,
+        "width": 240,
         "height": 70,
-        "minWidth": 200,
+        "minWidth": 240,
         "minHeight": 70,
-        "maxWidth": 200,
+        "maxWidth": 240,
         "maxHeight": 70,
         "resizable": false,
         "decorations": false,
@@ -43,11 +43,6 @@
         "center": true
       }
     ],
-    "trayIcon": {
-      "iconPath": "icons/32x32.png",
-      "iconAsTemplate": true,
-      "menuOnLeftClick": false
-    },
     "security": {
       "csp": null
     }

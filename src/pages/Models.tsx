@@ -271,7 +271,7 @@ export default function Models() {
 
   if (loading && models.length === 0) {
     return (
-      <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-8 max-w-3xl mx-auto">
         <h1 className="text-2xl font-semibold text-foreground mb-1">Models</h1>
         <p className="text-muted-foreground text-sm mt-8">Loading models…</p>
       </div>
@@ -279,7 +279,7 @@ export default function Models() {
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="p-8">
       <h1 className="text-2xl font-semibold text-foreground mb-1">Models</h1>
       <p className="text-muted-foreground text-sm mb-8">
         Download and manage local whisper.cpp transcription models.
@@ -314,8 +314,8 @@ export default function Models() {
                   onClick={() => setFilter(cat)}
                   className={`text-xs px-2.5 py-1 rounded capitalize transition-colors ${
                     filter === cat
-                      ? "bg-neutral-600 text-foreground"
-                      : "text-muted-foreground hover:text-foreground/70"
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {cat === "all" ? "All" : CATEGORY_LABELS[cat]}

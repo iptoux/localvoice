@@ -35,9 +35,9 @@ export function Sidebar() {
 
   return (
     <nav className="w-48 bg-sidebar text-sidebar-foreground flex flex-col py-6 px-3 shrink-0">
-      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-2">
-        LocalVoice
-      </span>
+      <div className="px-3 mb-4">
+        <img src="/localvoice_logo_transparent.svg" alt="LocalVoice" className="w-full h-auto" />
+      </div>
       <div className="flex flex-col gap-1">
         {visibleTopLinks.map(({ to, label, icon: Icon }) => (
           <NavLink

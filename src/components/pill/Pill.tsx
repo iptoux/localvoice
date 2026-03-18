@@ -6,11 +6,11 @@ import { ExpandedPill } from "./ExpandedPill";
 import type { RecordingState } from "../../types";
 
 const STATE_COLOR: Record<RecordingState, string> = {
-  idle: "bg-card/80",
-  listening: "bg-red-600/90",
-  processing: "bg-amber-500/90",
-  success: "bg-green-600/90",
-  error: "bg-rose-700/90",
+  idle: "bg-card",
+  listening: "bg-red-600",
+  processing: "bg-amber-500",
+  success: "bg-green-600",
+  error: "bg-rose-700",
 };
 
 /** Duration (ms) before the success state fades back to idle. */
@@ -78,8 +78,7 @@ export function Pill() {
       className={`
         w-full rounded-tl-2xl rounded-br-2xl select-none cursor-default overflow-hidden
         ${STATE_COLOR[recordingState]}
-        backdrop-blur-xl
-        text-foreground shadow-lg border border-border
+        text-foreground shadow-lg border border-foreground/20
         transition-all duration-300 ease-in-out
         ${isFadingOut ? "opacity-80" : "opacity-100"}
       `}
@@ -91,25 +90,66 @@ export function Pill() {
         onDoubleClick={handleDoubleClick}
         className="flex items-center gap-2 px-4 h-16 text-sm font-medium"
       >
-        <StateIcon state={recordingState} />
-        <span data-tauri-drag-region className="flex-1 truncate">
-          {recordingState === "error" && recordingError ? (
-            recordingError
-          ) : recordingState === "success" ? (
-            <SuccessContent />
-          ) : recordingState === "listening" ? (
-            <Waveform />
-          ) : recordingState === "processing" ? (
-            "Transcribing…"
-          ) : (
-            "LocalVoice"
-          )}
-        </span>
-        {recordingState === "listening" && <ElapsedTimer />}
+        {recordingState === "idle" ? (
+          <IdleContent />
+        ) : (
+          <>
+            <StateIcon state={recordingState} />
+            <span data-tauri-drag-region className="flex-1 truncate">
+              {recordingState === "error" && recordingError ? (
+                recordingError
+              ) : recordingState === "success" ? (
+                <SuccessContent />
+              ) : recordingState === "listening" ? (
+                <Waveform />
+              ) : (
+                "Transcribing…"
+              )}
+            </span>
+            {recordingState === "listening" && <ElapsedTimer />}
+          </>
+        )}
       </div>
 
       {/* Expanded content — shown below the bar when expanded */}
       {isPillExpanded && <ExpandedPill />}
+    </div>
+  );
+}
+
+// ── Idle content ─────────────────────────────────────────────────────────────
+
+function IdleContent() {
+  const lastTranscription = useAppStore((s) => s.lastTranscription);
+  const wordCount = lastTranscription?.cleanedText
+    ? lastTranscription.cleanedText.trim().split(/\s+/).filter(Boolean).length
+    : undefined;
+
+  return (
+    <div
+      data-tauri-drag-region
+      className="flex items-center justify-start gap-3 w-full"
+    >
+      <img
+        data-tauri-drag-region
+        src="/localvoice_appiconbadge_transparent.png.png"
+        alt="LocalVoice"
+        className="w-8 h-8 flex-shrink-0 object-contain"
+      />
+      <span
+        data-tauri-drag-region
+        className="text-base font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent"
+      >
+        LocalVoice
+      </span>
+      {wordCount !== undefined && wordCount > 0 && (
+        <span
+          data-tauri-drag-region
+          className="ml-auto text-xs text-foreground/30 tabular-nums"
+        >
+          {wordCount}w
+        </span>
+      )}
     </div>
   );
 }
@@ -209,21 +249,12 @@ function StateIcon({ state }: { state: RecordingState }) {
       );
     default:
       return (
-        <svg
+        <img
           data-tauri-drag-region
-          className="w-4 h-4 flex-shrink-0 text-foreground/70"
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect x="5" y="1" width="6" height="9" rx="3" />
-          <path d="M2 8a6 6 0 0 0 12 0" />
-          <line x1="8" y1="14" x2="8" y2="15" />
-          <line x1="5" y1="15" x2="11" y2="15" />
-        </svg>
+          src="/localvoice_appiconbadge_transparent.png.png"
+          alt="LocalVoice"
+          className="w-8 h-8 flex-shrink-0"
+        />
       );
   }
 }

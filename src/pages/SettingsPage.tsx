@@ -203,7 +203,7 @@ function ShortcutRecorder({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const { settings, loading, load } = useSettingsStore();
+  const { settings, loading, load, update } = useSettingsStore();
   const { audioDevices, setAudioDevices } = useAppStore();
   const [autostart, setAutostartState] = useState(false);
   const [clearingLogs, setClearingLogs] = useState(false);
@@ -220,15 +220,14 @@ export default function SettingsPage() {
     getAutostart().then(setAutostartState).catch(() => {});
   }, []);
 
-  const set = (key: string, value: string) =>
-    updateSetting(key, value).then(load);
+  const set = (key: string, value: string) => update(key, value);
 
   const setVal = (key: string) => (v: string | null) => {
     if (v !== null) set(key, v);
   };
 
   const handleLoggingToggle = async (enabled: boolean) => {
-    await set("logging.enabled", String(enabled));
+    await update("logging.enabled", String(enabled));
     await setLoggingEnabled(enabled);
   };
 
@@ -255,7 +254,7 @@ export default function SettingsPage() {
   const silenceMs = parseInt(settings["recording.silence_timeout_ms"] || "1500");
 
   return (
-    <div className="p-8 max-w-2xl space-y-1">
+    <div className="p-8 space-y-1">
       <h1 className="text-xl font-semibold text-foreground mb-6">Settings</h1>
 
       {/* ── Recording ── */}
@@ -287,7 +286,7 @@ export default function SettingsPage() {
         <ShortcutRecorder
           shortcut={shortcut}
           onSave={(s) => {
-            updateShortcut(s).then(load).catch(console.error);
+            updateShortcut(s).then(() => update("recording.shortcut", s)).catch(console.error);
           }}
         />
       </SettingRow>
@@ -656,7 +655,7 @@ export default function SettingsPage() {
           size="sm"
           disabled={clearingLogs}
           onClick={handleClearLogs}
-          className="border-neutral-700 bg-neutral-900 text-foreground/70 hover:bg-border hover:text-foreground text-xs"
+          className="border-border bg-muted text-foreground/70 hover:bg-accent hover:text-foreground text-xs"
         >
           {clearingLogs ? "Clearing…" : "Clear now"}
         </Button>

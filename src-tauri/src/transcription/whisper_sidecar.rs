@@ -231,8 +231,7 @@ pub fn resolve_model(
     }
 
     Err(
-        "No whisper model found. Download a model .bin file and place it in \
-         <app-data>/models/ or set WHISPER_MODEL_PATH."
+        "No transcription model loaded. Please go to Settings → Models, download a model and set it as default."
             .into(),
     )
 }

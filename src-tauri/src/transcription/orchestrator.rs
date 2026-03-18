@@ -424,7 +424,7 @@ fn persist_audio_file(app: &AppHandle, wav_path: &str) -> CmdResult<String> {
 
 /// Spawns an async task that transitions the recording state back to `Idle`
 /// after `delay`. Used to auto-dismiss the Success / Error pill state.
-fn schedule_idle_reset(app: AppHandle, delay: Duration) {
+pub fn schedule_idle_reset(app: AppHandle, delay: Duration) {
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(delay).await;
         emit_recording_state(&app, RecordingState::Idle, None);

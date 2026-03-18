@@ -107,6 +107,8 @@ pub fn stop_recording_internal(app: &AppHandle, state: &State<AppState>) -> CmdR
         Ok(path) => path,
         Err(e) => {
             emit_recording_state(app, RecordingState::Error, Some(e.to_string()));
+            // Auto-reset to Idle so the hotkey works again after the error.
+            crate::transcription::orchestrator::schedule_idle_reset(app.clone(), Duration::from_millis(2000));
             return Err(e);
         }
     };
