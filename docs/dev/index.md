@@ -20,6 +20,7 @@ Technical reference for contributors and maintainers.
 | [ms12-insert-flow.md](ms12-insert-flow.md) | MS-12 Improved Insert Flow | done |
 | [ms13-theme-shortcuts.md](ms13-theme-shortcuts.md) | MS-13 Theme & Shortcuts | done |
 | [ms14-reprocess-pipeline.md](ms14-reprocess-pipeline.md) | MS-14 Session Reprocessing & Configurable Post-Processing | done |
+| MS-15 | [Stronger Dashboard & Confidence Viz](ms15-dashboard-confidence.md) | `done` |
 
 ## Reference
 

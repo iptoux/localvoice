@@ -276,7 +276,7 @@ function SessionDrawer({
   onDelete: (id: string) => void;
   onReprocess: (detail: SessionWithSegments) => void;
 }) {
-  const [tab, setTab] = useState<"cleaned" | "raw" | "original">("cleaned");
+  const [tab, setTab] = useState<"cleaned" | "raw" | "original" | "diff">("cleaned");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showReprocess, setShowReprocess] = useState(false);
   const [reprocessing, setReprocessing] = useState(false);
@@ -388,8 +388,8 @@ function SessionDrawer({
       <div className="flex border-b border-border">
         {(
           session.originalRawText
-            ? (["cleaned", "raw", "original"] as const)
-            : (["cleaned", "raw"] as const)
+            ? (["cleaned", "raw", "original", "diff"] as const)
+            : (["cleaned", "raw", "diff"] as const)
         ).map((t) => (
           <button
             key={t}
@@ -400,7 +400,7 @@ function SessionDrawer({
                 : "text-muted-foreground hover:text-foreground/70"
             }`}
           >
-            {t === "cleaned" ? "Cleaned" : t === "raw" ? "Raw" : "Original"}
+            {t === "cleaned" ? "Cleaned" : t === "raw" ? "Raw" : t === "original" ? "Original" : "Diff"}
           </button>
         ))}
       </div>
@@ -416,30 +416,43 @@ function SessionDrawer({
 
       {/* Text content */}
       <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
-        <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-          {tab === "cleaned"
-            ? session.cleanedText
-            : tab === "raw"
-              ? session.rawText
-              : session.originalRawText ?? session.rawText}
-        </p>
+        {tab === "diff" ? (
+          <WordDiff rawText={session.rawText} cleanedText={session.cleanedText} />
+        ) : (
+          <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
+            {tab === "cleaned"
+              ? session.cleanedText
+              : tab === "raw"
+                ? session.rawText
+                : session.originalRawText ?? session.rawText}
+          </p>
+        )}
 
-        {/* Segments list (optional) */}
+        {/* Confidence-colored segments (TASK-219) */}
         {tab === "cleaned" && segments.length > 0 && (
-          <details className="mt-4">
+          <details className="mt-4" open>
             <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground/70 select-none">
               {segments.length} segments
             </summary>
-            <ol className="mt-2 space-y-1">
+            <ol className="mt-2 space-y-1.5">
               {segments.map((seg) => (
-                <li key={seg.id} className="text-xs text-muted-foreground">
-                  <span className="tabular-nums text-neutral-600 mr-2">
+                <li
+                  key={seg.id}
+                  className="text-xs flex items-start gap-2 group"
+                  title={
+                    seg.confidence !== undefined
+                      ? `Confidence: ${Math.round(seg.confidence * 100)}%`
+                      : "No confidence data"
+                  }
+                >
+                  <span className="tabular-nums text-muted-foreground/60 shrink-0 w-10">
                     {msToTime(seg.startMs)}
                   </span>
-                  {seg.text}
+                  <ConfidenceDot confidence={seg.confidence} />
+                  <span className="text-foreground/70">{seg.text}</span>
                   {seg.confidence !== undefined && (
-                    <span className="text-neutral-600 ml-1">
-                      ({Math.round(seg.confidence * 100)}%)
+                    <span className="text-muted-foreground/50 shrink-0 tabular-nums ml-auto">
+                      {Math.round(seg.confidence * 100)}%
                     </span>
                   )}
                 </li>
@@ -622,6 +635,104 @@ function OutputBadge({ mode, ok }: { mode: string; ok: boolean }) {
       {mode === "insert" ? "inserted" : "copied"}
     </span>
   );
+}
+
+// ── Word diff (TASK-220) ──────────────────────────────────────────────────
+
+function WordDiff({ rawText, cleanedText }: { rawText: string; cleanedText: string }) {
+  const rawWords = rawText.split(/\s+/).filter(Boolean);
+  const cleanedWords = cleanedText.split(/\s+/).filter(Boolean);
+
+  // Simple LCS-based word diff.
+  const diff = computeWordDiff(rawWords, cleanedWords);
+
+  return (
+    <div className="text-sm leading-relaxed">
+      <p className="text-xs text-muted-foreground mb-2">
+        Raw → Cleaned comparison
+      </p>
+      <p className="whitespace-pre-wrap">
+        {diff.map((token, i) => {
+          if (token.type === "equal") {
+            return <span key={i}>{token.value} </span>;
+          }
+          if (token.type === "removed") {
+            return (
+              <span key={i} className="bg-red-900/30 text-red-400 line-through">
+                {token.value}
+              </span>
+            );
+          }
+          return (
+            <span key={i} className="bg-green-900/30 text-green-400">
+              {token.value}
+            </span>
+          );
+        })}
+      </p>
+    </div>
+  );
+}
+
+interface DiffToken {
+  type: "equal" | "added" | "removed";
+  value: string;
+}
+
+function computeWordDiff(a: string[], b: string[]): DiffToken[] {
+  // Build LCS table.
+  const m = a.length;
+  const n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] =
+        a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1] + 1
+          : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+
+  // Backtrack to produce diff tokens.
+  const tokens: DiffToken[] = [];
+  let i = m;
+  let j = n;
+  const stack: DiffToken[] = [];
+
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
+      stack.push({ type: "equal", value: a[i - 1] });
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      stack.push({ type: "added", value: b[j - 1] + " " });
+      j--;
+    } else {
+      stack.push({ type: "removed", value: a[i - 1] + " " });
+      i--;
+    }
+  }
+
+  // Reverse since we built it backwards.
+  for (let k = stack.length - 1; k >= 0; k--) {
+    tokens.push(stack[k]);
+  }
+  return tokens;
+}
+
+// ── Confidence indicator (TASK-219) ───────────────────────────────────────
+
+function ConfidenceDot({ confidence }: { confidence?: number }) {
+  if (confidence === undefined) {
+    return <span className="w-2 h-2 rounded-full bg-muted-foreground/30 mt-1 shrink-0" />;
+  }
+  const color =
+    confidence >= 0.8
+      ? "bg-green-500"
+      : confidence >= 0.5
+        ? "bg-yellow-500"
+        : "bg-red-500";
+  return <span className={`w-2 h-2 rounded-full ${color} mt-1 shrink-0`} />;
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────

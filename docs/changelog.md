@@ -1,5 +1,14 @@
 # Changelog
 
+## MS-15 — Stronger Dashboard & Confidence Visualization (2026-03-18)
+
+- Language breakdown donut chart on Dashboard
+- Top correction rules frequency chart
+- WPM trend line chart with date range filtering
+- Confidence-colored segments in session detail (green/yellow/red)
+- Word-level diff view comparing raw vs. cleaned transcript
+- New backend stats: language breakdown, correction stats, WPM trend, daily comparison
+
 ## MS-14 — Session Reprocessing & Configurable Post-Processing (2026-03-18)
 
 - Reprocess sessions with a different whisper model or language

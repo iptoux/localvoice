@@ -198,6 +198,181 @@ pub fn get_usage_timeseries(
     Ok(points)
 }
 
+// ── Language breakdown (TASK-211) ─────────────────────────────────────────
+
+/// Per-language breakdown with word count, session count, and total duration.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LanguageBreakdown {
+    pub language: String,
+    pub session_count: i64,
+    pub word_count: i64,
+    pub duration_ms: i64,
+}
+
+/// Returns per-language word count, session count, and duration for the given range.
+pub fn get_language_breakdown(db: &DbConn, range: &DateRange) -> CmdResult<Vec<LanguageBreakdown>> {
+    let conn = db.lock().unwrap();
+    let (where_clause, params) = build_where(range);
+    let sql = format!(
+        "SELECT language, COUNT(*), COALESCE(SUM(word_count), 0), COALESCE(SUM(duration_ms), 0)
+         FROM sessions
+         {where_clause}
+         GROUP BY language
+         ORDER BY SUM(word_count) DESC"
+    );
+    let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|b| b.as_ref()).collect();
+    let mut stmt = conn.prepare(&sql).map_err(AppError::from)?;
+    let rows = stmt
+        .query_map(params_refs.as_slice(), |row| {
+            Ok(LanguageBreakdown {
+                language: row.get(0)?,
+                session_count: row.get(1)?,
+                word_count: row.get(2)?,
+                duration_ms: row.get(3)?,
+            })
+        })
+        .map_err(AppError::from)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(AppError::from)?;
+    Ok(rows)
+}
+
+// ── Correction stats (TASK-211) ──────────────────────────────────────────
+
+/// Usage stats for a single correction rule.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CorrectionStat {
+    pub source_phrase: String,
+    pub target_phrase: String,
+    pub usage_count: i64,
+    pub last_used_at: Option<String>,
+}
+
+/// Returns top 10 most-used correction rules.
+pub fn get_correction_stats(db: &DbConn) -> CmdResult<Vec<CorrectionStat>> {
+    let conn = db.lock().unwrap();
+    let mut stmt = conn
+        .prepare(
+            "SELECT source_phrase, target_phrase, usage_count, last_used_at
+             FROM correction_rules
+             WHERE is_active = 1
+             ORDER BY usage_count DESC
+             LIMIT 10",
+        )
+        .map_err(AppError::from)?;
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(CorrectionStat {
+                source_phrase: row.get(0)?,
+                target_phrase: row.get(1)?,
+                usage_count: row.get(2)?,
+                last_used_at: row.get(3)?,
+            })
+        })
+        .map_err(AppError::from)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(AppError::from)?;
+    Ok(rows)
+}
+
+// ── WPM trend (TASK-212) ─────────────────────────────────────────────────
+
+/// One data point in a WPM time-series.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WpmPoint {
+    pub date: String,
+    pub avg_wpm: f64,
+    pub session_count: i64,
+}
+
+/// Returns average WPM per time bucket (day or week).
+pub fn get_wpm_trend(
+    db: &DbConn,
+    range: &DateRange,
+    bucket: &str,
+) -> CmdResult<Vec<WpmPoint>> {
+    let conn = db.lock().unwrap();
+    let (where_clause, params) = build_where(range);
+    let date_expr = match bucket {
+        "week" => "date(started_at, 'weekday 0', '-6 days')",
+        _ => "date(started_at)",
+    };
+    let sql = format!(
+        "SELECT
+            {date_expr} AS bucket,
+            COALESCE(AVG(CASE WHEN estimated_wpm IS NOT NULL THEN estimated_wpm END), 0.0),
+            COUNT(*)
+         FROM sessions
+         {where_clause}
+         GROUP BY bucket
+         ORDER BY bucket ASC"
+    );
+    let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|b| b.as_ref()).collect();
+    let mut stmt = conn.prepare(&sql).map_err(AppError::from)?;
+    let rows = stmt
+        .query_map(params_refs.as_slice(), |row| {
+            Ok(WpmPoint {
+                date: row.get(0)?,
+                avg_wpm: row.get(1)?,
+                session_count: row.get(2)?,
+            })
+        })
+        .map_err(AppError::from)?
+        .collect::<rusqlite::Result<Vec<_>>>()
+        .map_err(AppError::from)?;
+    Ok(rows)
+}
+
+// ── Daily comparison (TASK-212) ──────────────────────────────────────────
+
+/// Side-by-side stats for a single date.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DailyStats {
+    pub date: String,
+    pub session_count: i64,
+    pub word_count: i64,
+    pub duration_ms: i64,
+    pub avg_wpm: f64,
+}
+
+/// Returns side-by-side stats for two dates.
+pub fn get_daily_comparison(
+    db: &DbConn,
+    date_a: &str,
+    date_b: &str,
+) -> CmdResult<(DailyStats, DailyStats)> {
+    fn stats_for_date(conn: &rusqlite::Connection, date: &str) -> rusqlite::Result<DailyStats> {
+        conn.query_row(
+            "SELECT
+                COALESCE(COUNT(*), 0),
+                COALESCE(SUM(word_count), 0),
+                COALESCE(SUM(duration_ms), 0),
+                COALESCE(AVG(CASE WHEN estimated_wpm IS NOT NULL THEN estimated_wpm END), 0.0)
+             FROM sessions
+             WHERE date(started_at) = ?1",
+            rusqlite::params![date],
+            |row| {
+                Ok(DailyStats {
+                    date: date.to_string(),
+                    session_count: row.get(0)?,
+                    word_count: row.get(1)?,
+                    duration_ms: row.get(2)?,
+                    avg_wpm: row.get(3)?,
+                })
+            },
+        )
+    }
+
+    let conn = db.lock().unwrap();
+    let a = stats_for_date(&conn, date_a).map_err(AppError::from)?;
+    let b = stats_for_date(&conn, date_b).map_err(AppError::from)?;
+    Ok((a, b))
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /// Builds a parameterized `WHERE` clause from a `DateRange`.
