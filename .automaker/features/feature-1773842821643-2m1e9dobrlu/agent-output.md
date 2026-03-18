@@ -94,3 +94,9 @@ Input: {
   "oldString": "  return (\n    <span\n      data-tauri-drag-region\n      className=\"text-muted-foreground text-xs tabular-nums flex-shrink-0\"\n    >\n      {formatted}\n    </span>\n  );",
   "newString": "  return (\n    <span\n      data-tauri-drag-region\n      className=\"text-white/90 text-xs tabular-nums flex-shrink-0 font-medium\"\n    >\n      {formatted}\n    </span>\n  );"
 }
+
+🔧 Tool: bash
+Input: {
+  "command": "xxd -l 20 \"C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice\\src\\components\\pill\\Pill.tsx\"",
+  "description": "Check file bytes"
+}
