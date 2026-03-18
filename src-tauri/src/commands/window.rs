@@ -1,5 +1,5 @@
 use crate::errors::{AppError, CmdResult};
-use tauri::{AppHandle, Manager, WebviewWindowBuilder, WebviewUrl};
+use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 /// Shows the pill window if hidden.
 #[tauri::command]
@@ -28,12 +28,13 @@ pub fn open_main_window(app: AppHandle) -> CmdResult<()> {
         w.show().map_err(|e| AppError(e.to_string()))?;
         w.set_focus().map_err(|e| AppError(e.to_string()))?;
     } else {
-        WebviewWindowBuilder::new(&app, "main", WebviewUrl::default())
+        let win = WebviewWindowBuilder::new(&app, "main", WebviewUrl::default())
             .title("LocalVoice")
             .inner_size(1100.0, 720.0)
             .min_inner_size(800.0, 500.0)
             .build()
             .map_err(|e| e.to_string())?;
+        win.set_focus().map_err(|e| AppError(e.to_string()))?;
     }
     Ok(())
 }

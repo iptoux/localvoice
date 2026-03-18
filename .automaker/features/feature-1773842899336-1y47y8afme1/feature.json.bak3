@@ -18,10 +18,10 @@
   "reasoningEffort": "none",
   "branchName": "main",
   "priority": 2,
-  "planningMode": "lite",
+  "planningMode": "spec",
   "requirePlanApproval": true,
   "dependencies": [],
-  "status": "backlog",
+  "status": "in_progress",
   "createdAt": "2026-03-18T14:08:19.336Z",
   "id": "feature-1773842899336-1y47y8afme1",
   "descriptionHistory": [
@@ -30,5 +30,42 @@
       "timestamp": "2026-03-18T14:08:19.631Z",
       "source": "initial"
     }
-  ]
+  ],
+  "workMode": "custom",
+  "startedAt": "2026-03-18T14:23:07.840Z",
+  "planSpec": {
+    "status": "approved",
+    "version": 2,
+    "reviewedByUser": true,
+    "content": "🔧 Tool: task\nInput: {\n  \"description\": \"Explore Tauri window config\",\n  \"prompt\": \"Explore the codebase to understand:\\n1. How Tauri windows are configured (tauri.conf.json, window creation code)\\n2. How settings/models are stored (SQLite schema, settings commands)\\n3. How the app detects first run or checks for existing data\\n4. Current window visibility behavior\\n\\nFocus on:\\n- src-tauri/tauri.conf.json\\n- src-tauri/src/commands/ directory (especially settings, window commands)\\n- src-tauri/src/main.rs\\n- src/ directory for any window management logic\\n\\nReturn a summary of findings including relevant file paths and code patterns.\",\n  \"subagent_type\": \"explore\"\n}\n## Specification: Show Main Window on First Run or When No Model Exists\n\n### 1. Problem\nThe main window remains hidden by default, requiring users to manually open it. On first run or when no model exists, users should be automatically shown the main window (onboarding/settings) instead of being left with only the pill window.\n\n### 2. Solution\nExtend the startup window visibility logic in `lib.rs` to check for first run (no installed models) and missing default model configuration, then show the main window instead of hiding it.\n\n### 3. Acceptance Criteria\n- **GIVEN** the app starts with no installed models, **WHEN** the app initializes, **THEN** the main window is shown automatically\n- **GIVEN** the app starts with installed models but no default model set, **WHEN** the app initializes, **THEN** the main window is shown automatically\n- **GIVEN** the app starts with a default model configured and not first run, **WHEN** the app initializes, **THEN** the default mode (pill or main) is respected\n- **GIVEN** the main window is shown automatically, **WHEN** it appears, **THEN** it is properly focused and brought to the foreground\n- **GIVEN** `app.start_hidden` is true, **WHEN** the app initializes, **THEN** all windows remain hidden regardless of model state\n\n### 4. Files to Modify\n| File | Purpose | Action |\n|------|---------|--------|\n| `src-tauri/src/lib.rs` | Startup logic for window visibility | Modify |\n| `src-tauri/src/commands/system.rs` | Add command to check if default model exists | Modify |\n\n### 5. Implementation Tasks\n```tasks\n- [ ] T001: Add `has_default_model()` command to system.rs | File: src-tauri/src/commands/system.rs\n- [ ] T002: Modify startup logic in lib.rs to show main window on first run or missing model | File: src-tauri/src/lib.rs\n- [ ] T003: Ensure proper window focus when auto-showing main window | File: src-tauri/src/commands/window.rs\n```\n\n### 6. Verification\n- Start app with no models → main window appears\n- Start app with models but no default → main window appears  \n- Start app with default model set → default mode respected\n- Test `app.start_hidden` still works correctly",
+    "generatedAt": "2026-03-18T14:25:07.380Z",
+    "tasks": [
+      {
+        "id": "T001",
+        "description": "Add `has_default_model()` command to system.rs",
+        "filePath": "src-tauri/src/commands/system.rs",
+        "status": "completed",
+        "summary": "Added `has_default_model()` command to system.rs that checks if a default model exists for the configured language (handles \"auto\" by checking both de/en). Also exported to TypeScript wrapper in `src/lib/tauri.ts`."
+      },
+      {
+        "id": "T002",
+        "description": "Modify startup logic in lib.rs to show main window on first run or missing model",
+        "filePath": "src-tauri/src/lib.rs",
+        "status": "completed",
+        "summary": "Modified startup logic in lib.rs to check for first run (no installed models) and missing default model, showing main window with focus when either condition is true (respecting `start_hidden` setting)."
+      },
+      {
+        "id": "T003",
+        "description": "Ensure proper window focus when auto-showing main window",
+        "filePath": "src-tauri/src/commands/window.rs",
+        "status": "completed",
+        "summary": "Added `set_focus()` call when creating a new main window in `open_main_window` command. The startup logic already had focus set when auto-showing."
+      }
+    ],
+    "tasksTotal": 3,
+    "tasksCompleted": 3,
+    "approvedAt": "2026-03-18T14:47:17.363Z",
+    "currentTaskId": "T003"
+  },
+  "updatedAt": "2026-03-18T14:52:22.324Z"
 }

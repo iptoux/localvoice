@@ -220,6 +220,17 @@
       "dismissed": false,
       "featureId": "feature-1773842821643-2m1e9dobrlu",
       "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "a714fe2b-923a-4215-82e0-ec2c2fdaed83",
+      "type": "feature_waiting_approval",
+      "title": "feature-1773842899336-1y47y8afme1",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-03-18T14:52:22.379Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773842899336-1y47y8afme1",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
     }
   ]
 }

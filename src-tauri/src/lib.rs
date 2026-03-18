@@ -115,6 +115,31 @@ pub fn run() {
                 .cloned()
                 .unwrap_or_else(|| "pill".to_string());
 
+            // ── Check if onboarding/main window is needed ────────────────────────
+            let state = app.state::<AppState>();
+            let needs_onboarding = db::repositories::models_repo::list_installed(&state.db)
+                .map(|v| v.is_empty())
+                .unwrap_or(true);
+            let has_default = {
+                let lang = persisted
+                    .get("transcription.default_language")
+                    .cloned()
+                    .unwrap_or_else(|| "auto".to_string());
+                if lang == "auto" {
+                    db::repositories::models_repo::get_default_path(&state.db, "de")
+                        .map(|p| p.is_some())
+                        .unwrap_or(false)
+                    || db::repositories::models_repo::get_default_path(&state.db, "en")
+                        .map(|p| p.is_some())
+                        .unwrap_or(false)
+                } else {
+                    db::repositories::models_repo::get_default_path(&state.db, &lang)
+                        .map(|p| p.is_some())
+                        .unwrap_or(false)
+                }
+            };
+            let show_main_on_startup = !start_hidden && (needs_onboarding || !has_default);
+
             if start_hidden {
                 // Tray-only mode: hide everything on startup.
                 if let Some(pill) = app.get_webview_window("pill") {
@@ -122,6 +147,16 @@ pub fn run() {
                 }
                 // Main window starts hidden by default in tauri.conf.json.
                 log::info!("Starting hidden (tray-only mode)");
+            } else if show_main_on_startup {
+                // First run or no default model: show main window for onboarding/settings.
+                if let Some(main_win) = app.get_webview_window("main") {
+                    let _ = main_win.show();
+                    let _ = main_win.set_focus();
+                }
+                if let Some(pill) = app.get_webview_window("pill") {
+                    let _ = pill.hide();
+                }
+                log::info!("Starting in main window mode (onboarding)");
             } else if default_mode == "main" {
                 // Main window mode: show main, hide pill.
                 if let Some(main_win) = app.get_webview_window("main") {
@@ -193,6 +228,7 @@ pub fn run() {
             cmd_dictionary::dismiss_ambiguity_suggestion,
             // System
             cmd_system::check_first_run,
+            cmd_system::has_default_model,
             cmd_system::set_autostart,
             cmd_system::get_autostart,
             // Logs

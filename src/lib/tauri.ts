@@ -238,6 +238,9 @@ export const dismissAmbiguitySuggestion = (id: string): Promise<void> =>
 export const checkFirstRun = (): Promise<boolean> =>
   invoke<boolean>("check_first_run");
 
+export const hasDefaultModel = (): Promise<boolean> =>
+  invoke<boolean>("has_default_model");
+
 export const setAutostart = (enabled: boolean): Promise<void> =>
   invoke<void>("set_autostart", { enabled });
 
