@@ -32,16 +32,16 @@ pub fn reprocess_session(
         return Err(format!("Audio file not found: {audio_path}").into());
     }
 
-    // Preserve original metadata on first reprocess.
-    if session.reprocessed_count == 0 {
+    // Preserve original metadata on first reprocess, or backfill if columns were added later.
+    if session.reprocessed_count == 0 || session.original_model_id.is_none() {
         let conn = state.db.lock().unwrap();
         conn.execute(
             "UPDATE sessions SET
-                original_raw_text = raw_text,
-                original_model_id = model_id,
-                original_language = language,
-                original_avg_confidence = avg_confidence
-             WHERE id = ?1 AND original_raw_text IS NULL",
+                original_raw_text      = COALESCE(original_raw_text, raw_text),
+                original_model_id      = COALESCE(original_model_id, model_id),
+                original_language      = COALESCE(original_language, language),
+                original_avg_confidence = COALESCE(original_avg_confidence, avg_confidence)
+             WHERE id = ?1",
             rusqlite::params![session_id],
         )
         .map_err(|e| format!("Failed to preserve original metadata: {e}"))?;
