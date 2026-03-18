@@ -6,6 +6,8 @@ import {
   listInputDevices,
   setAutostart,
   updateSetting,
+  clearLogs,
+  setLoggingEnabled,
 } from "../lib/tauri";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -32,7 +34,10 @@ import {
   EyeOff,
   BellOff,
   BellRing,
+  ScrollText,
+  Trash2,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -97,6 +102,7 @@ export default function SettingsPage() {
   const { settings, loading, load } = useSettingsStore();
   const { audioDevices, setAudioDevices } = useAppStore();
   const [autostart, setAutostartState] = useState(false);
+  const [clearingLogs, setClearingLogs] = useState(false);
 
   useEffect(() => { load(); }, [load]);
 
@@ -115,6 +121,20 @@ export default function SettingsPage() {
 
   const setVal = (key: string) => (v: string | null) => {
     if (v !== null) set(key, v);
+  };
+
+  const handleLoggingToggle = async (enabled: boolean) => {
+    await set("logging.enabled", String(enabled));
+    await setLoggingEnabled(enabled);
+  };
+
+  const handleClearLogs = async () => {
+    setClearingLogs(true);
+    try {
+      await clearLogs();
+    } finally {
+      setClearingLogs(false);
+    }
   };
 
   const bool = (key: string, fallback = false) =>
@@ -364,6 +384,41 @@ export default function SettingsPage() {
           checked={bool("notifications.on_success")}
           onCheckedChange={(v) => set("notifications.on_success", String(v))}
         />
+      </SettingRow>
+
+      {/* ── Logging ── */}
+      <div className="mt-10">
+        <SectionHeader title="Logging" />
+      </div>
+      <Separator className="bg-neutral-800 mb-1" />
+
+      <SettingRow
+        icon={ScrollText}
+        iconClass="text-fuchsia-400"
+        label="Enable logging"
+        description="Buffer app events and errors for the Logs page."
+      >
+        <Switch
+          checked={bool("logging.enabled", true)}
+          onCheckedChange={handleLoggingToggle}
+        />
+      </SettingRow>
+
+      <SettingRow
+        icon={Trash2}
+        iconClass="text-red-400"
+        label="Clear logs"
+        description="Delete all buffered log entries immediately."
+      >
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={clearingLogs}
+          onClick={handleClearLogs}
+          className="border-neutral-700 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-white text-xs"
+        >
+          {clearingLogs ? "Clearing…" : "Clear now"}
+        </Button>
       </SettingRow>
 
       <Label className="sr-only">Settings</Label>

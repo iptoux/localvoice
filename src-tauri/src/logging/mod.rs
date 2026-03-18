@@ -1,5 +1,8 @@
 use serde::Serialize;
-use std::sync::{Arc, OnceLock, RwLock};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, OnceLock, RwLock,
+};
 
 /// A single captured log entry (warn or error level).
 #[derive(Debug, Clone, Serialize)]
@@ -16,14 +19,21 @@ pub struct LogEntry {
 const MAX_ENTRIES: usize = 1000;
 
 static LOG_BUFFER: OnceLock<Arc<RwLock<Vec<LogEntry>>>> = OnceLock::new();
+static LOGGING_ENABLED: AtomicBool = AtomicBool::new(true);
 
 /// Initialises the global in-memory logger. Call once in app setup.
-pub fn init() {
+pub fn init(enabled: bool) {
+    LOGGING_ENABLED.store(enabled, Ordering::Relaxed);
     let buf = Arc::new(RwLock::new(Vec::with_capacity(MAX_ENTRIES)));
     LOG_BUFFER.set(buf).ok();
     log::set_boxed_logger(Box::new(AppLogger)).ok();
     // Allow info through for stderr output; only warn+ are buffered.
     log::set_max_level(log::LevelFilter::Info);
+}
+
+/// Enable or disable in-app log buffering at runtime.
+pub fn set_enabled(enabled: bool) {
+    LOGGING_ENABLED.store(enabled, Ordering::Relaxed);
 }
 
 /// Returns a clone of the shared log buffer handle.
@@ -35,6 +45,9 @@ pub fn get_buffer() -> Option<Arc<RwLock<Vec<LogEntry>>>> {
 /// Use this for structured app events (e.g. model downloaded) that should
 /// appear in the Logs panel regardless of log level filtering.
 pub fn push_log(level: &str, area: &str, message: &str) {
+    if !LOGGING_ENABLED.load(Ordering::Relaxed) {
+        return;
+    }
     if let Some(buf) = LOG_BUFFER.get() {
         if let Ok(mut lock) = buf.write() {
             if lock.len() >= MAX_ENTRIES {
@@ -74,6 +87,10 @@ impl log::Log for AppLogger {
 
         // Buffer warn/error/info for the in-app Logs page.
         if record.level() > log::Level::Info {
+            return;
+        }
+
+        if !LOGGING_ENABLED.load(Ordering::Relaxed) {
             return;
         }
 

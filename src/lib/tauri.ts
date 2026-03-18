@@ -201,3 +201,6 @@ export const exportLogs = (): Promise<void> =>
 
 export const clearLogs = (): Promise<void> =>
   invoke<void>("clear_logs");
+
+export const setLoggingEnabled = (enabled: boolean): Promise<void> =>
+  invoke<void>("set_logging_enabled", { enabled });

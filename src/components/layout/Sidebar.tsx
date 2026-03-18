@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useSettingsStore } from "../../stores/settings-store";
 import {
   LayoutDashboard,
   History,
@@ -7,6 +8,7 @@ import {
   ScrollText,
   Settings,
 } from "lucide-react";
+import { useEffect } from "react";
 
 const TOP_LINKS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -21,13 +23,23 @@ const BOTTOM_LINKS = [
 ];
 
 export function Sidebar() {
+  const { settings, load } = useSettingsStore();
+
+  useEffect(() => { load(); }, [load]);
+
+  const loggingEnabled = settings["logging.enabled"] !== "false";
+
+  const visibleTopLinks = TOP_LINKS.filter(
+    (l) => l.to !== "/logs" || loggingEnabled
+  );
+
   return (
     <nav className="w-48 bg-neutral-900 text-neutral-200 flex flex-col py-6 px-3 shrink-0">
       <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider px-3 mb-2">
         LocalVoice
       </span>
       <div className="flex flex-col gap-1">
-        {TOP_LINKS.map(({ to, label, icon: Icon }) => (
+        {visibleTopLinks.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}

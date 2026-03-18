@@ -1,5 +1,5 @@
 use crate::errors::{AppError, CmdResult};
-use crate::logging::{get_buffer, LogEntry};
+use crate::logging::{get_buffer, set_enabled, LogEntry};
 
 /// Returns the most recent log entries, optionally filtered by level.
 ///
@@ -56,5 +56,12 @@ pub fn clear_logs() -> CmdResult<()> {
     let buf = get_buffer().ok_or_else(|| AppError("Log buffer not initialized".into()))?;
     let mut lock = buf.write().map_err(|_| AppError("Log buffer lock poisoned".into()))?;
     lock.clear();
+    Ok(())
+}
+
+/// Enables or disables in-app log buffering at runtime.
+#[tauri::command]
+pub fn set_logging_enabled(enabled: bool) -> CmdResult<()> {
+    set_enabled(enabled);
     Ok(())
 }

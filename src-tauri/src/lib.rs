@@ -34,15 +34,19 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            // Initialise in-memory log buffer and set global logger.
-            logging::init();
-
             // Open / create SQLite database and run migrations.
             let db = db::open(app.handle())
                 .map_err(|e| Box::<dyn std::error::Error>::from(e))?;
 
             // Read persisted settings before moving the DB into AppState.
-            let settings = settings_repo::get_all(&db).unwrap_or_default();
+            let persisted = settings_repo::get_all(&db).unwrap_or_default();
+
+            // Initialise in-memory log buffer, respecting the persisted setting.
+            let logging_enabled = persisted
+                .get("logging.enabled")
+                .map(|v| v != "false")
+                .unwrap_or(true);
+            logging::init(logging_enabled);
 
             // Register shared state.
             app.manage(AppState::new(db));
@@ -57,10 +61,10 @@ pub fn run() {
 
             // ── Restore pill position ─────────────────────────────────────────
             if let (Some(x), Some(y)) = (
-                settings
+                persisted
                     .get("ui.pill.position_x")
                     .and_then(|v| v.parse::<i32>().ok()),
-                settings
+                persisted
                     .get("ui.pill.position_y")
                     .and_then(|v| v.parse::<i32>().ok()),
             ) {
@@ -72,20 +76,20 @@ pub fn run() {
             // ── Restore main window geometry ──────────────────────────────────
             if let Some(main_win) = app.get_webview_window("main") {
                 if let (Some(w), Some(h)) = (
-                    settings
+                    persisted
                         .get("ui.main_window.width")
                         .and_then(|v| v.parse::<u32>().ok()),
-                    settings
+                    persisted
                         .get("ui.main_window.height")
                         .and_then(|v| v.parse::<u32>().ok()),
                 ) {
                     let _ = main_win.set_size(tauri::PhysicalSize::new(w, h));
                 }
                 if let (Some(x), Some(y)) = (
-                    settings
+                    persisted
                         .get("ui.main_window.x")
                         .and_then(|v| v.parse::<i32>().ok()),
-                    settings
+                    persisted
                         .get("ui.main_window.y")
                         .and_then(|v| v.parse::<i32>().ok()),
                 ) {
@@ -148,6 +152,7 @@ pub fn run() {
             cmd_logs::list_logs,
             cmd_logs::export_logs,
             cmd_logs::clear_logs,
+            cmd_logs::set_logging_enabled,
         ])
         .on_window_event(|window, event| {
             match event {
