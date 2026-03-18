@@ -2,6 +2,13 @@ use arboard::Clipboard;
 
 use crate::errors::AppError;
 
+/// Reads the current clipboard text without modifying it.
+pub fn read_previous() -> Result<Option<String>, AppError> {
+    let mut board =
+        Clipboard::new().map_err(|e| AppError(format!("Clipboard open failed: {e}")))?;
+    Ok(board.get_text().ok())
+}
+
 /// Writes `text` to the system clipboard.
 ///
 /// Returns the previous clipboard text so the caller can optionally restore it

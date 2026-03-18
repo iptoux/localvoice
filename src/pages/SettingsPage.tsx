@@ -29,6 +29,7 @@ import {
   Pilcrow,
   Scissors,
   ClipboardCopy,
+  Clock,
   LayoutPanelLeft,
   LogIn,
   EyeOff,
@@ -38,6 +39,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -307,9 +309,32 @@ export default function SettingsPage() {
       </SettingRow>
 
       {outputMode === "insert" && (
-        <div className="py-2 px-3 rounded-md bg-neutral-900 border border-neutral-800 text-xs text-neutral-400">
-          Auto-insert pastes via Ctrl+V into the focused app. Your previous clipboard is restored afterwards.
-        </div>
+        <>
+          <div className="py-2 px-3 rounded-md bg-neutral-900 border border-neutral-800 text-xs text-neutral-400">
+            Auto-insert pastes via Ctrl+V into the focused app. Your previous clipboard is restored afterwards.
+          </div>
+
+          <SettingRow
+            icon={Clock}
+            iconClass="text-lime-400"
+            label="Insert delay"
+            description="Pause before pasting — increase if text is lost in slow apps."
+          >
+            <div className="flex items-center gap-3 w-52">
+              <Slider
+                min={50}
+                max={500}
+                step={50}
+                value={[parseInt(settings["output.insert_delay_ms"] || "100")]}
+                onValueChange={(val) => set("output.insert_delay_ms", String(Array.isArray(val) ? val[0] : val))}
+                className="flex-1"
+              />
+              <span className="text-xs text-neutral-400 tabular-nums w-12 text-right">
+                {settings["output.insert_delay_ms"] || "100"} ms
+              </span>
+            </div>
+          </SettingRow>
+        </>
       )}
 
       {/* ── Appearance ── */}

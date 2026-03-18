@@ -179,4 +179,11 @@ static MIGRATIONS: &[(i64, &str)] = &[(
         ('notifications.on_error',   'true',  datetime('now')),
         ('notifications.on_success', 'false', datetime('now'));
     ",
+),
+(
+    4,
+    "
+    INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES
+        ('output.insert_delay_ms', '100', datetime('now'));
+    ",
 )];

@@ -1,5 +1,14 @@
 # Changelog
 
+## MS-12 — Improved Insert Flow (2026-03-18)
+
+- **Direct SendInput**: replaced `enigo 0.1` with `windows-sys` `SendInput` for more reliable Ctrl+V simulation
+- **Chunked insertion**: texts longer than 4 000 characters are split into sequential paste chunks to prevent buffer overflow in target apps
+- **Configurable insert delay**: new "Insert delay" slider (50–500 ms) in Settings → Output; controls the pause before each Ctrl+V
+- **Graceful fallback**: if auto-insert fails, text stays on clipboard with message "Text copied — paste manually"
+- **Target app detection**: the foreground window title is detected before insertion and stored in session metadata (`output_target_app`)
+- **DB migration 4**: seeds `output.insert_delay_ms` setting (default: 100 ms)
+
 ## MS-11 — Expanded Pill View & Animations (2026-03-18)
 
 - **Expanded pill**: single-click the pill to reveal transcript preview, language/model badges, word count, language switcher, start/stop button, and quick actions (Copy, History, Settings)

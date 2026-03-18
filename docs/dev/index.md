@@ -17,6 +17,7 @@ Technical reference for contributors and maintainers.
 | [ms09-ambiguity.md](ms09-ambiguity.md) | MS-09 Ambiguity v1 | done |
 | [ms10-polish.md](ms10-polish.md) | MS-10 Polish | done |
 | [ms11-expanded-pill.md](ms11-expanded-pill.md) | MS-11 Expanded Pill & Animations | done |
+| [ms12-insert-flow.md](ms12-insert-flow.md) | MS-12 Improved Insert Flow | done |
 
 ## Reference
 

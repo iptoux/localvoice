@@ -8,7 +8,7 @@ use crate::db::models::Session;
 use crate::db::repositories::{ambiguous_terms_repo, dictionary_repo, models_repo, sessions_repo, settings_repo};
 use crate::dictionary::service as dict_service;
 use crate::errors::CmdResult;
-use crate::os::{clipboard, text_insertion};
+use crate::os::{clipboard, foreground_window, text_insertion};
 use crate::state::app_state::emit_recording_state;
 use crate::state::recording_state::RecordingState;
 use crate::state::AppState;
@@ -141,7 +141,19 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                 .cloned()
                 .unwrap_or_else(|| "clipboard".to_string());
 
-            let output_result = perform_output(&result.cleaned_text, &output_mode);
+            let insert_delay_ms: u64 = settings
+                .get("output.insert_delay_ms")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(100);
+
+            // Detect the foreground window before pasting into it.
+            let target_app = if output_mode == "insert" {
+                foreground_window::get_foreground_window_title()
+            } else {
+                None
+            };
+
+            let output_result = perform_output(&result.cleaned_text, &output_mode, insert_delay_ms);
 
             // Emit dedicated output-result event (TASK-057).
             if let Err(e) = app.emit("output-result", &output_result) {
@@ -194,7 +206,7 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                 avg_confidence,
                 estimated_wpm,
                 output_mode: output_mode.clone(),
-                output_target_app: None,
+                output_target_app: target_app,
                 inserted_successfully: output_result.success,
                 error_message: output_result.error.clone(),
                 created_at: now.to_rfc3339(),
@@ -309,9 +321,9 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
 /// - `"insert"` → write to clipboard then simulate Ctrl+V; falls back to
 ///   clipboard-only if the paste simulation fails.
 /// - anything else → write to clipboard only.
-fn perform_output(text: &str, mode: &str) -> OutputResult {
+fn perform_output(text: &str, mode: &str, insert_delay_ms: u64) -> OutputResult {
     match mode {
-        "insert" => match text_insertion::insert(text) {
+        "insert" => match text_insertion::insert(text, insert_delay_ms) {
             Ok(()) => OutputResult {
                 mode: "insert".to_string(),
                 success: true,
@@ -323,7 +335,7 @@ fn perform_output(text: &str, mode: &str) -> OutputResult {
                     Ok(_) => OutputResult {
                         mode: "clipboard".to_string(),
                         success: true,
-                        error: Some(format!("Insert failed, used clipboard: {e}")),
+                        error: Some("Text copied — paste manually".to_string()),
                     },
                     Err(e2) => OutputResult {
                         mode: "insert".to_string(),
