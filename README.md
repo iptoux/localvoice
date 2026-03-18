@@ -91,6 +91,14 @@ It's built for developers, writers, and anyone who wants fast, private voice inp
 
 ## Installation
 
+> **Windows Security Warning**
+>
+> When installing LocalVoice on Windows, you may see a SmartScreen warning saying the installer is from an "unknown publisher". This is expected — the binaries are not signed with a commercial code signing certificate.
+>
+> Code signing certificates for Windows cost around $300–$500 per year. As an indie developer working on this as a hobby project, that's not a cost I'm willing to justify — especially since a certificate can be purchased by anyone and doesn't actually verify the quality or safety of the software. The source code is fully open and auditable right here.
+>
+> To proceed: click **"More info"** → **"Run anyway"** in the SmartScreen dialog.
+
 ### Prerequisites
 
 | Tool | Version |
