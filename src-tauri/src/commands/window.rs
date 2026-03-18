@@ -22,20 +22,37 @@ pub fn hide_pill(app: AppHandle) -> CmdResult<()> {
 }
 
 /// Opens the main window, creating it if it does not yet exist.
+/// On Windows a window that has never been visible can silently fail to show,
+/// so we destroy and recreate it as a fallback.
 #[tauri::command]
 pub fn open_main_window(app: AppHandle) -> CmdResult<()> {
     if let Some(w) = app.get_webview_window("main") {
+        w.unminimize().ok();
         w.show().map_err(|e| AppError(e.to_string()))?;
         w.set_focus().map_err(|e| AppError(e.to_string()))?;
+
+        // On Windows, a window that was created hidden may not actually become
+        // visible via show(). Verify and recreate if needed.
+        if !w.is_visible().unwrap_or(true) {
+            w.destroy().ok();
+            return create_main_window(&app);
+        }
     } else {
-        let win = WebviewWindowBuilder::new(&app, "main", WebviewUrl::default())
-            .title("LocalVoice")
-            .inner_size(1100.0, 720.0)
-            .min_inner_size(800.0, 500.0)
-            .build()
-            .map_err(|e| e.to_string())?;
-        win.set_focus().map_err(|e| AppError(e.to_string()))?;
+        return create_main_window(&app);
     }
+    Ok(())
+}
+
+fn create_main_window(app: &AppHandle) -> CmdResult<()> {
+    let win = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
+        .title("LocalVoice")
+        .inner_size(1100.0, 720.0)
+        .min_inner_size(800.0, 500.0)
+        .decorations(true)
+        .build()
+        .map_err(|e| AppError(e.to_string()))?;
+    win.show().map_err(|e| AppError(e.to_string()))?;
+    win.set_focus().map_err(|e| AppError(e.to_string()))?;
     Ok(())
 }
 
