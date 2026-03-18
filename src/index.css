@@ -60,14 +60,6 @@
   --spacing: 0.25rem;
 }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background: transparent;
-}
-
 .dark {
   --background: oklch(0.1995 0.0198 262.0232);
   --foreground: oklch(0.9801 0.0096 252.8096);
@@ -200,4 +192,12 @@ body {
   ::-webkit-scrollbar-thumb:hover {
     background: oklch(0.45 0 0);
   }
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
 }
