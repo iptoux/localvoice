@@ -9,9 +9,18 @@ import { useFillerWordsStore } from "../stores/filler-words-store";
 // ── shared ────────────────────────────────────────────────────────────────────
 
 const LANGUAGES = [
-  { value: "", label: "All languages" },
-  { value: "de", label: "German (DE)" },
-  { value: "en", label: "English (EN)" },
+  { value: "", label: "All", labelLong: "All languages" },
+  { value: "de", label: "DE", labelLong: "German (DE)" },
+  { value: "en", label: "EN", labelLong: "English (EN)" },
+  { value: "fr", label: "FR", labelLong: "French (FR)" },
+  { value: "es", label: "ES", labelLong: "Spanish (ES)" },
+  { value: "it", label: "IT", labelLong: "Italian (IT)" },
+  { value: "pt", label: "PT", labelLong: "Portuguese (PT)" },
+  { value: "nl", label: "NL", labelLong: "Dutch (NL)" },
+  { value: "pl", label: "PL", labelLong: "Polish (PL)" },
+  { value: "ru", label: "RU", labelLong: "Russian (RU)" },
+  { value: "ja", label: "JA", labelLong: "Japanese (JA)" },
+  { value: "zh", label: "ZH", labelLong: "Chinese (ZH)" },
 ];
 
 const ENTRY_TYPES = ["term", "name", "acronym", "product", "custom"] as const;
@@ -100,7 +109,7 @@ function EntryForm({ initial, onSave, onClose }: EntryFormProps) {
           >
             {LANGUAGES.map((l) => (
               <option key={l.value} value={l.value}>
-                {l.label}
+                {l.labelLong}
               </option>
             ))}
           </select>
@@ -200,7 +209,7 @@ function RuleForm({ initial, onSave, onClose }: RuleFormProps) {
           >
             {LANGUAGES.map((l) => (
               <option key={l.value} value={l.value}>
-                {l.label}
+                {l.labelLong}
               </option>
             ))}
           </select>
@@ -245,6 +254,26 @@ function RuleForm({ initial, onSave, onClose }: RuleFormProps) {
   );
 }
 
+function LanguageFilter({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1 mb-4">
+      {LANGUAGES.map((l) => (
+        <button
+          key={l.value}
+          onClick={() => onChange(l.value)}
+          className={`px-2.5 py-1 text-xs rounded transition-colors ${
+            value === l.value
+              ? "bg-blue-600 text-white"
+              : "bg-muted text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {l.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ── Terms tab ─────────────────────────────────────────────────────────────────
 
 function TermsTab() {
@@ -258,21 +287,17 @@ function TermsTab() {
   );
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<DictionaryEntry | undefined>();
+  const [langFilter, setLangFilter] = useState("");
 
-  const openAdd = () => {
-    setEditing(undefined);
-    setShowForm(true);
-  };
-  const openEdit = (entry: DictionaryEntry) => {
-    setEditing(entry);
-    setShowForm(true);
-  };
+  const filtered = useMemo(
+    () => langFilter ? entries.filter((e) => e.language === langFilter) : entries,
+    [entries, langFilter]
+  );
+
+  const openAdd = () => { setEditing(undefined); setShowForm(true); };
+  const openEdit = (entry: DictionaryEntry) => { setEditing(entry); setShowForm(true); };
   const handleSave = async (data: Parameters<typeof addEntry>[0]) => {
-    if (editing) {
-      await editEntry(editing.id, data);
-    } else {
-      await addEntry(data);
-    }
+    if (editing) { await editEntry(editing.id, data); } else { await addEntry(data); }
     setShowForm(false);
   };
   const handleDelete = (entry: DictionaryEntry) => {
@@ -281,8 +306,9 @@ function TermsTab() {
 
   return (
     <>
+      <LanguageFilter value={langFilter} onChange={setLangFilter} />
       <div className="flex justify-between items-center mb-3">
-        <span className="text-xs text-muted-foreground">{entries.length} entries</span>
+        <span className="text-xs text-muted-foreground">{filtered.length} entries</span>
         <button
           onClick={openAdd}
           className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
@@ -291,11 +317,11 @@ function TermsTab() {
         </button>
       </div>
 
-      {entries.length === 0 ? (
+      {filtered.length === 0 ? (
         <p className="text-muted-foreground text-sm">No entries yet. Add terms, names, or acronyms that whisper frequently mishears.</p>
       ) : (
         <div className="flex flex-col gap-1.5">
-          {entries.map((entry) => (
+          {filtered.map((entry) => (
             <div
               key={entry.id}
               className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-muted border border-border"
@@ -352,38 +378,30 @@ function RulesTab() {
   );
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<CorrectionRule | undefined>();
+  const [langFilter, setLangFilter] = useState("");
 
-  const openAdd = () => {
-    setEditing(undefined);
-    setShowForm(true);
-  };
-  const openEdit = (rule: CorrectionRule) => {
-    setEditing(rule);
-    setShowForm(true);
-  };
+  const filtered = useMemo(
+    () => langFilter ? rules.filter((r) => r.language === langFilter) : rules,
+    [rules, langFilter]
+  );
+
+  const openAdd = () => { setEditing(undefined); setShowForm(true); };
+  const openEdit = (rule: CorrectionRule) => { setEditing(rule); setShowForm(true); };
   const handleSave = async (data: {
-    sourcePhrase: string;
-    targetPhrase: string;
-    language?: string;
-    isActive: boolean;
-    autoApply: boolean;
+    sourcePhrase: string; targetPhrase: string; language?: string; isActive: boolean; autoApply: boolean;
   }) => {
-    if (editing) {
-      await editRule(editing.id, data);
-    } else {
-      await addRule({ ...data, autoApply: data.autoApply });
-    }
+    if (editing) { await editRule(editing.id, data); } else { await addRule({ ...data, autoApply: data.autoApply }); }
     setShowForm(false);
   };
   const handleDelete = (rule: CorrectionRule) => {
-    if (confirm(`Delete rule "${rule.sourcePhrase} → ${rule.targetPhrase}"?`))
-      removeRule(rule.id);
+    if (confirm(`Delete rule "${rule.sourcePhrase} → ${rule.targetPhrase}"?`)) removeRule(rule.id);
   };
 
   return (
     <>
+      <LanguageFilter value={langFilter} onChange={setLangFilter} />
       <div className="flex justify-between items-center mb-3">
-        <span className="text-xs text-muted-foreground">{rules.length} rules</span>
+        <span className="text-xs text-muted-foreground">{filtered.length} rules</span>
         <button
           onClick={openAdd}
           className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
@@ -392,11 +410,11 @@ function RulesTab() {
         </button>
       </div>
 
-      {rules.length === 0 ? (
+      {filtered.length === 0 ? (
         <p className="text-muted-foreground text-sm">No correction rules yet. Rules replace misheard words automatically during transcription.</p>
       ) : (
         <div className="flex flex-col gap-1.5">
-          {rules.map((rule) => (
+          {filtered.map((rule) => (
             <div
               key={rule.id}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border ${
@@ -478,10 +496,14 @@ function SuggestionsTab() {
   );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [customTarget, setCustomTarget] = useState("");
+  const [langFilter, setLangFilter] = useState("");
 
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
+  useEffect(() => { fetch(); }, [fetch]);
+
+  const filtered = useMemo(
+    () => langFilter ? terms.filter((t) => t.language === langFilter) : terms,
+    [terms, langFilter]
+  );
 
   const handleAccept = async (term: AmbiguousTerm) => {
     const target =
@@ -510,6 +532,7 @@ function SuggestionsTab() {
 
   return (
     <>
+      <LanguageFilter value={langFilter} onChange={setLangFilter} />
       {error && (
         <div className="mb-3 p-3 rounded bg-red-900/40 border border-red-700 text-sm text-red-300">
           {error}
@@ -517,7 +540,7 @@ function SuggestionsTab() {
       )}
 
       <div className="flex justify-between items-center mb-3">
-        <span className="text-xs text-muted-foreground">{terms.length} suggestions</span>
+        <span className="text-xs text-muted-foreground">{filtered.length} suggestions</span>
         <button
           onClick={() => fetch()}
           className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -526,7 +549,7 @@ function SuggestionsTab() {
         </button>
       </div>
 
-      {terms.length === 0 ? (
+      {filtered.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           No suggestions yet. Ambiguous terms are detected automatically when
           whisper transcribes segments with low confidence (≥ 3 occurrences by
@@ -534,7 +557,7 @@ function SuggestionsTab() {
         </p>
       ) : (
         <div className="flex flex-col gap-2">
-          {terms.map((term) => (
+          {filtered.map((term) => (
             <div
               key={term.id}
               className="px-4 py-3 rounded-lg bg-muted border border-border"
@@ -650,20 +673,6 @@ function SuggestionsTab() {
 
 // ── Filler Words tab ──────────────────────────────────────────────────────────
 
-const FILLER_LANGUAGES = [
-  { value: "de", label: "DE" },
-  { value: "en", label: "EN" },
-  { value: "fr", label: "FR" },
-  { value: "es", label: "ES" },
-  { value: "it", label: "IT" },
-  { value: "pt", label: "PT" },
-  { value: "nl", label: "NL" },
-  { value: "pl", label: "PL" },
-  { value: "ru", label: "RU" },
-  { value: "ja", label: "JA" },
-  { value: "zh", label: "ZH" },
-];
-
 function FillerWordsTab() {
   const { words, loading, error, fetch, add, remove, reset } = useFillerWordsStore(
     useShallow((s) => ({
@@ -701,7 +710,7 @@ function FillerWordsTab() {
     <>
       {/* Language tabs */}
       <div className="flex flex-wrap gap-1 mb-4">
-        {FILLER_LANGUAGES.map((l) => (
+        {LANGUAGES.filter((l) => l.value !== "").map((l) => (
           <button
             key={l.value}
             onClick={() => setLang(l.value)}
