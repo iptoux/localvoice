@@ -2,9 +2,11 @@ use std::path::PathBuf;
 
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
+use tauri_plugin_notification::NotificationExt;
 
 use crate::db::repositories::models_repo;
 use crate::errors::AppError;
+use crate::logging::push_log;
 use crate::models::{downloader, registry, verify};
 use crate::state::AppState;
 
@@ -91,12 +93,26 @@ pub async fn download_model(app: AppHandle, key: String) -> Result<(), AppError>
     .await
     {
         downloader::cleanup_tmp(&dest_path);
+        let msg = format!("Failed to download {}: {e}", def.display_name);
+        push_log("error", "models::download", &msg);
+        let _ = app.notification()
+            .builder()
+            .title("Download failed")
+            .body(&msg)
+            .show();
         return Err(e);
     }
 
     // Verify checksum (skipped if None).
     if let Err(e) = verify::verify_checksum(&dest_path, def.sha256_checksum) {
         let _ = std::fs::remove_file(&dest_path);
+        let msg = format!("Checksum verification failed for {}: {e}", def.display_name);
+        push_log("error", "models::verify", &msg);
+        let _ = app.notification()
+            .builder()
+            .title("Download failed")
+            .body(&msg)
+            .show();
         return Err(e);
     }
 
@@ -113,12 +129,23 @@ pub async fn download_model(app: AppHandle, key: String) -> Result<(), AppError>
         true,
     )?;
 
+    let msg = format!("Model \"{}\" downloaded and ready.", def.display_name);
+    push_log("info", "models::download", &msg);
+    let _ = app.notification()
+        .builder()
+        .title("Model ready")
+        .body(&msg)
+        .show();
+
     Ok(())
 }
 
 /// Deletes the model file from disk and clears the DB install record.
 pub fn delete_model(app: &AppHandle, key: &str) -> Result<(), AppError> {
     let state = app.state::<AppState>();
+    let display_name = registry::find(key)
+        .map(|d| d.display_name)
+        .unwrap_or(key);
 
     if let Some(record) = models_repo::get(&state.db, key)? {
         let path = PathBuf::from(&record.local_path);
@@ -129,6 +156,7 @@ pub fn delete_model(app: &AppHandle, key: &str) -> Result<(), AppError> {
     }
 
     models_repo::mark_uninstalled(&state.db, key)?;
+    push_log("info", "models::delete", &format!("Model \"{display_name}\" deleted."));
     Ok(())
 }
 

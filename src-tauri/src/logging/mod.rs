@@ -31,6 +31,26 @@ pub fn get_buffer() -> Option<Arc<RwLock<Vec<LogEntry>>>> {
     LOG_BUFFER.get().cloned()
 }
 
+/// Pushes a log entry directly into the buffer at any level.
+/// Use this for structured app events (e.g. model downloaded) that should
+/// appear in the Logs panel regardless of log level filtering.
+pub fn push_log(level: &str, area: &str, message: &str) {
+    if let Some(buf) = LOG_BUFFER.get() {
+        if let Ok(mut lock) = buf.write() {
+            if lock.len() >= MAX_ENTRIES {
+                lock.remove(0);
+            }
+            lock.push(LogEntry {
+                id: uuid::Uuid::new_v4().to_string(),
+                level: level.to_string(),
+                area: area.to_string(),
+                message: message.to_string(),
+                created_at: chrono::Utc::now().to_rfc3339(),
+            });
+        }
+    }
+}
+
 // ── Logger implementation ─────────────────────────────────────────────────────
 
 struct AppLogger;
