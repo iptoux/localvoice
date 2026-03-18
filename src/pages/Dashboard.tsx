@@ -6,24 +6,9 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell,
 } from "recharts";
 import { useDashboardStore, type RangePreset } from "../stores/dashboard-store";
 import type { DashboardStats, TimeseriesPoint } from "../types";
-
-// ── Language palette (consistent across sessions) ────────────────────────────
-const LANG_COLORS: Record<string, string> = {
-  de: "#60a5fa",
-  en: "#34d399",
-  fr: "#f472b6",
-  es: "#fb923c",
-  auto: "#a78bfa",
-};
-function langColor(lang: string) {
-  return LANG_COLORS[lang] ?? "#94a3b8";
-}
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
@@ -202,83 +187,6 @@ function WordsChart({
         />
       </LineChart>
     </ResponsiveContainer>
-  );
-}
-
-// ── Language breakdown bar chart (TASK-091) ───────────────────────────────────
-
-function LanguageChart({
-  stats,
-  loading,
-}: {
-  stats: DashboardStats | null;
-  loading: boolean;
-}) {
-  if (loading) return <ChartPlaceholder label="Loading…" />;
-
-  const data = stats?.languageCounts ?? [];
-  if (data.length === 0) {
-    return <ChartPlaceholder label="No sessions yet." />;
-  }
-
-  return (
-    <div className="flex flex-col sm:flex-row gap-6 items-start">
-      {/* Bar chart */}
-      <ResponsiveContainer width="100%" height={160}>
-        <BarChart
-          data={data}
-          layout="vertical"
-          margin={{ top: 0, right: 16, bottom: 0, left: 8 }}
-        >
-          <XAxis
-            type="number"
-            tick={{ fill: "#71717a", fontSize: 11 }}
-            tickLine={false}
-            axisLine={false}
-            allowDecimals={false}
-          />
-          <YAxis
-            type="category"
-            dataKey="language"
-            tick={{ fill: "#a1a1aa", fontSize: 12, fontWeight: 600 }}
-            tickLine={false}
-            axisLine={false}
-            width={32}
-          />
-          <Tooltip
-            contentStyle={{
-              background: "#18181b",
-              border: "1px solid #3f3f46",
-              borderRadius: 8,
-              color: "#e4e4e7",
-              fontSize: 12,
-            }}
-            formatter={(v) => [v as number, "Sessions"]}
-          />
-          <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-            {data.map((entry) => (
-              <Cell key={entry.language} fill={langColor(entry.language)} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-
-      {/* Legend */}
-      <ul className="shrink-0 space-y-2 text-xs">
-        {data.map((entry) => (
-          <li key={entry.language} className="flex items-center gap-2">
-            <span
-              className="inline-block w-3 h-3 rounded-sm"
-              style={{ background: langColor(entry.language) }}
-            />
-            <span className="text-neutral-300 uppercase font-mono">
-              {entry.language}
-            </span>
-            <span className="text-neutral-500">{entry.count} sessions</span>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
 

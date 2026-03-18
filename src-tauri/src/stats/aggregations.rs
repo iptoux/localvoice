@@ -5,7 +5,6 @@
 //! WPM formula: `(word_count / duration_ms) * 60_000`
 //! (stored per-session as `estimated_wpm`; averaged here for the dashboard card)
 
-use rusqlite::params;
 use serde::Serialize;
 
 use crate::db::DbConn;
