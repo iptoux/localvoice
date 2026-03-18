@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/localvoice_appicon_transparent.png" alt="LocalVoice" width="120"/>
+
 # LocalVoice
 
 **Offline-first desktop voice dictation — no cloud, no telemetry, just your voice.**
