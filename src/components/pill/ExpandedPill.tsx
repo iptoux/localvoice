@@ -13,7 +13,7 @@ export function ExpandedPill() {
   const lastTranscription = useAppStore((s) => s.lastTranscription);
   const lastOutputResult = useAppStore((s) => s.lastOutputResult);
   const load = useSettingsStore((s) => s.load);
-  const language = useSettingsStore((s) => s.settings["transcription.default_language"] || "de");
+  const language = useSettingsStore((s) => s.settings["transcription.default_language"] || "auto");
 
   useEffect(() => { load(); }, [load]);
   const modelId = lastTranscription?.modelId ?? "—";
@@ -64,7 +64,7 @@ export function ExpandedPill() {
 
       {/* Language quick-switch */}
       <div className="flex items-center gap-1">
-        {["de", "en"].map((lang) => (
+        {["auto", "de", "en"].map((lang) => (
           <button
             key={lang}
             onClick={() => handleLanguageChange(lang)}

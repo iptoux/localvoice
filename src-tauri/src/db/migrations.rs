@@ -145,7 +145,7 @@ static MIGRATIONS: &[(i64, &str)] = &[(
         ('recording.shortcut',           'CommandOrControl+Shift+Space', datetime('now')),
         ('recording.push_to_talk',       'false',     datetime('now')),
         ('recording.silence_timeout_ms', '1500',      datetime('now')),
-        ('transcription.default_language','de',       datetime('now')),
+        ('transcription.default_language','auto',      datetime('now')),
         ('transcription.auto_punctuation','true',     datetime('now')),
         ('transcription.auto_capitalization','true',  datetime('now')),
         ('transcription.remove_fillers', 'false',     datetime('now')),

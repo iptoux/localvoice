@@ -18,10 +18,10 @@
   "reasoningEffort": "none",
   "branchName": "main",
   "priority": 2,
-  "planningMode": "spec",
+  "planningMode": "lite",
   "requirePlanApproval": true,
   "dependencies": [],
-  "status": "in_progress",
+  "status": "backlog",
   "createdAt": "2026-03-18T14:08:19.336Z",
   "id": "feature-1773842899336-1y47y8afme1",
   "descriptionHistory": [
@@ -30,7 +30,5 @@
       "timestamp": "2026-03-18T14:08:19.631Z",
       "source": "initial"
     }
-  ],
-  "workMode": "custom",
-  "startedAt": "2026-03-18T14:23:07.840Z"
+  ]
 }

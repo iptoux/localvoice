@@ -135,6 +135,79 @@ pub fn transcribe(
 /// 3. Transitions pill to Success (or Error on failure) then auto-resets to
 ///    Idle after 2 s (success) / 3 s (error).
 pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
+    // ── Pre-flight: verify a model is explicitly set for the selected language ─
+    {
+        let state = app.state::<AppState>();
+        let settings = settings_repo::get_all(&state.db).unwrap_or_default();
+        let lang_code = settings
+            .get("transcription.default_language")
+            .cloned()
+            .unwrap_or_else(|| "auto".to_string());
+
+        // For "auto" we still need *any* installed model — check via resolve_model.
+        // For a specific language, a model must be explicitly assigned to that language.
+        let model_ok = if lang_code == "auto" {
+            // auto: just needs any model to exist (resolve_model will find it or error)
+            // We let the normal transcribe() path handle this case.
+            true
+        } else {
+            models_repo::get_default_path(&state.db, &lang_code)
+                .unwrap_or(None)
+                .is_some()
+        };
+
+        if !model_ok {
+            let _ = std::fs::remove_file(&wav_path);
+            let msg = format!(
+                "No model is set for language \"{lang_code}\". \
+                 Go to Settings → Models and assign a model for \"{lang_code}\", \
+                 or switch the language to Auto-detect."
+            );
+            log::warn!("{msg}");
+            let _ = app.notification().builder()
+                .title("LocalVoice — No Model Set")
+                .body(&msg)
+                .show();
+            emit_recording_state(&app, RecordingState::Error, Some(
+                format!("No model for \"{lang_code}\". Go to Settings → Models.")
+            ));
+            schedule_idle_reset(app, Duration::from_millis(4000));
+            return;
+        }
+
+        // Secondary check: if the assigned model is en-only but language is not en/auto.
+        if lang_code != "auto" && lang_code != "en" {
+            if let Ok(Some(path)) = models_repo::get_default_path(&state.db, &lang_code) {
+                let model_key = std::path::Path::new(&path)
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_string();
+                let is_en_only = models_repo::list_installed(&state.db)
+                    .unwrap_or_default()
+                    .iter()
+                    .any(|m| m.model_key == model_key && m.language_scope == "en-only");
+                if is_en_only {
+                    let _ = std::fs::remove_file(&wav_path);
+                    let msg = format!(
+                        "The model assigned to \"{lang_code}\" only supports English. \
+                         Please assign a multilingual model in Settings → Models."
+                    );
+                    log::warn!("{msg}");
+                    let _ = app.notification().builder()
+                        .title("LocalVoice — Wrong Model")
+                        .body(&msg)
+                        .show();
+                    emit_recording_state(&app, RecordingState::Error, Some(
+                        format!("Model for \"{lang_code}\" is English-only. Check Settings → Models.")
+                    ));
+                    schedule_idle_reset(app, Duration::from_millis(4000));
+                    return;
+                }
+            }
+        }
+    }
+
     match transcribe(&app, &wav_path, None, None) {
         Ok(mut result) => {
             // ── Output step ──────────────────────────────────────────────────

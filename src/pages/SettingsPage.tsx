@@ -261,7 +261,7 @@ export default function SettingsPage() {
 
   const shortcut = settings["recording.shortcut"] || "CommandOrControl+Shift+Space";
   const outputMode = settings["output.mode"] || "clipboard";
-  const language = settings["transcription.default_language"] || "de";
+  const language = settings["transcription.default_language"] || "auto";
   const deviceId = settings["recording.device_id"] || "";
   const silenceMs = parseInt(settings["recording.silence_timeout_ms"] || "1500");
 

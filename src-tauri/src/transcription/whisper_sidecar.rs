@@ -195,7 +195,7 @@ fn dir_contains_dll(dir: &Path) -> bool {
 /// 2. `transcription.model_path` setting in the database (via `model_path_override`).
 /// 3. First `*.bin` file found in `{app_data_dir}/models/`.
 pub fn resolve_model(
-    app: &AppHandle,
+    _app: &AppHandle,
     model_path_override: Option<&str>,
 ) -> CmdResult<PathBuf> {
     // 1. Env override.
@@ -217,21 +217,10 @@ pub fn resolve_model(
         );
     }
 
-    // 3. Scan {app_data_dir}/models/ for the first .bin file.
-    if let Ok(data_dir) = app.path().app_data_dir() {
-        let models_dir = data_dir.join("models");
-        if let Ok(entries) = std::fs::read_dir(&models_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.extension().and_then(|e| e.to_str()) == Some("bin") {
-                    return Ok(path);
-                }
-            }
-        }
-    }
-
+    // 3. No model configured — hard error, no fallback.
     Err(
-        "No transcription model loaded. Please go to Settings → Models, download a model and set it as default."
+        "No transcription model configured. Please go to Settings → Models, \
+         download a model and set it as default for your language."
             .into(),
     )
 }
