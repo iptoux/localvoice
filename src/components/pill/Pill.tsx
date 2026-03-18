@@ -88,7 +88,7 @@ export function Pill() {
         data-tauri-drag-region
         onContextMenu={handleContextMenu}
         onDoubleClick={handleDoubleClick}
-        className="flex items-center gap-2 px-4 h-16 text-sm font-medium"
+        className="flex items-center gap-3 px-4 h-16 text-sm font-medium"
       >
         {recordingState === "idle" ? (
           <IdleContent />
@@ -167,7 +167,7 @@ function SuccessContent() {
     lastOutputResult?.mode === "insert" ? "Inserted" : "Copied";
 
   return (
-    <span data-tauri-drag-region className="flex items-center gap-2 min-w-0">
+    <span data-tauri-drag-region className="flex items-center gap-3 min-w-0">
       <OutputBadge label={modeLabel} success={lastOutputResult?.success ?? true} />
       <span data-tauri-drag-region className="truncate" title={text}>
         {preview}

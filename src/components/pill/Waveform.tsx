@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
 import { useAppStore } from "../../stores/app-store";
 
-const BAR_COUNT = 12;
-const BAR_WIDTH = 3;
-const BAR_GAP = 2;
-const MAX_HEIGHT = 20;
-const MIN_HEIGHT = 3;
+const BAR_COUNT = 20;
+const BAR_WIDTH = 4;
+const BAR_GAP = 3;
+const MAX_HEIGHT = 24;
+const MIN_HEIGHT = 4;
 
 /**
  * Simple audio level waveform visualization.
@@ -49,10 +49,18 @@ export function Waveform() {
         const x = i * (BAR_WIDTH + BAR_GAP);
         const y = (canvas.height - height) / 2;
 
-        ctx.fillStyle = `rgba(255, 255, 255, ${0.5 + barLevel * 0.5})`;
+        const alpha = 0.7 + barLevel * 0.3;
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
         ctx.beginPath();
         ctx.roundRect(x, y, BAR_WIDTH, height, 1.5);
         ctx.fill();
+
+        if (barLevel > 0.3) {
+          ctx.shadowColor = "rgba(255, 255, 255, 0.5)";
+          ctx.shadowBlur = 4;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
       }
 
       // Slowly rotate offsets for organic feel.

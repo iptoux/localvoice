@@ -21,7 +21,7 @@
   "planningMode": "skip",
   "requirePlanApproval": false,
   "dependencies": [],
-  "status": "in_progress",
+  "status": "completed",
   "createdAt": "2026-03-18T14:07:01.643Z",
   "id": "feature-1773842821643-2m1e9dobrlu",
   "descriptionHistory": [
@@ -42,5 +42,8 @@
     }
   ],
   "workMode": "custom",
-  "startedAt": "2026-03-18T14:16:20.847Z"
+  "startedAt": "2026-03-18T14:20:07.179Z",
+  "summary": "## Summary: Bitte die Pill updaten damit im recording state\n\n### Changes Implemented\n- Logo now displays in recording/listening state instead of the dot icon (same as idle state)\n- Timer text updated to white (`text-white/90`) for better readability on red background\n- Waveform enhanced with glow effect for improved visibility on red background\n\n### Files Modified\n- `src/components/pill/Pill.tsx` (already contained logo and white timer text)\n- `src/components/pill/Waveform.tsx` (added glow effect and higher contrast)\n\n### Notes for Developer\n- No TypeScript errors\n- The feature was partially pre-implemented; only waveform glow effect was added",
+  "updatedAt": "2026-03-18T14:20:56.044Z",
+  "justFinishedAt": "2026-03-18T14:20:56.044Z"
 }

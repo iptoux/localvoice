@@ -198,6 +198,28 @@
       "dismissed": false,
       "featureId": "feature-1773842518602-4hou1ono5n2",
       "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "bb24ed88-68b8-41a5-9b93-bcb202627c01",
+      "type": "feature_waiting_approval",
+      "title": "feature-1773842821643-2m1e9dobrlu",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-03-18T14:18:42.987Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773842821643-2m1e9dobrlu",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "4925dca7-27d0-4840-957b-a08214359269",
+      "type": "feature_waiting_approval",
+      "title": "feature-1773842821643-2m1e9dobrlu",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-03-18T14:20:56.051Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773842821643-2m1e9dobrlu",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
     }
   ]
 }
