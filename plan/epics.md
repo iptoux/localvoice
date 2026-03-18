@@ -44,7 +44,7 @@
 
 | Epic | Title | Depends on | Status |
 |------|-------|-----------|--------|
-| [MS-14](tasks/ms14_reprocess_pipeline.md) | Session Reprocessing & Pipeline Config | MS-12 | `todo` |
+| [MS-14](tasks/ms14_reprocess_pipeline.md) | Session Reprocessing & Pipeline Config | MS-12 | `done` |
 | [MS-15](tasks/ms15_dashboard_confidence.md) | Stronger Dashboard & Confidence Viz | MS-14 | `todo` |
 | [MS-16](tasks/ms16_history_ptt_audio.md) | Advanced History, Push-to-Talk & Audio Playback | MS-14 | `todo` |
 

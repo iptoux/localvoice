@@ -1,9 +1,9 @@
-use tauri::State;
+use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::db::models::{Session, SessionFilter, SessionWithSegments};
 use crate::db::repositories::sessions_repo;
 use crate::errors::{AppError, CmdResult};
-use crate::history::export;
+use crate::history::{export, reprocess};
 use crate::state::AppState;
 
 /// Returns a filtered, paginated list of sessions (newest first).
@@ -61,4 +61,31 @@ pub fn export_sessions(
         .map_err(|e| AppError(format!("Failed to write export file: {e}")))?;
 
     Ok(path.to_string_lossy().to_string())
+}
+
+/// Re-transcribes a session using its stored audio file.
+///
+/// Optionally overrides the language and/or model. Emits `session-reprocessed`
+/// on success so the frontend can refresh the detail view.
+#[tauri::command]
+pub fn reprocess_session(
+    app: AppHandle,
+    session_id: String,
+    language: Option<String>,
+    model_id: Option<String>,
+) -> CmdResult<SessionWithSegments> {
+    reprocess::reprocess_session(
+        &app,
+        &session_id,
+        language.as_deref(),
+        model_id.as_deref(),
+    )?;
+
+    // Re-read the updated session to return it.
+    let state = app.state::<AppState>();
+    let detail = sessions_repo::get_session(&state.db, &session_id)?;
+
+    let _ = app.emit("session-reprocessed", &detail.session.id);
+
+    Ok(detail)
 }

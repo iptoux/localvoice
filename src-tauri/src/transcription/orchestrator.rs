@@ -92,8 +92,7 @@ pub fn transcribe(
     if let Some(json_path) = &output.json_path {
         let _ = std::fs::remove_file(json_path);
     }
-    // Also remove the WAV temp file now that we have the transcription.
-    let _ = std::fs::remove_file(wav_path);
+    // NOTE: WAV cleanup / persistence is handled by the caller (transcribe_and_emit).
 
     let raw_text = parser::segments_to_text(&segments);
 
@@ -162,6 +161,27 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
 
             result.output = Some(output_result.clone());
 
+            // ── Optionally keep audio for reprocessing (TASK-204) ─────────────
+            let persisted_audio_path = {
+                let keep = settings
+                    .get("recording.keep_audio")
+                    .map(|v| v == "true")
+                    .unwrap_or(false);
+                if keep {
+                    match persist_audio_file(&app, &wav_path) {
+                        Ok(p) => Some(p),
+                        Err(e) => {
+                            log::warn!("Failed to persist audio file: {e}");
+                            let _ = std::fs::remove_file(&wav_path);
+                            None
+                        }
+                    }
+                } else {
+                    let _ = std::fs::remove_file(&wav_path);
+                    None
+                }
+            };
+
             // ── Persist session to DB ─────────────────────────────────────────
             let now = chrono::Utc::now();
             let started_at = state
@@ -210,6 +230,9 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                 inserted_successfully: output_result.success,
                 error_message: output_result.error.clone(),
                 created_at: now.to_rfc3339(),
+                audio_path: persisted_audio_path,
+                original_raw_text: None,
+                reprocessed_count: 0,
             };
             if let Err(e) = sessions_repo::insert_session(&state.db, &session) {
                 log::error!("Failed to persist session: {e}");
@@ -287,6 +310,8 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
             schedule_idle_reset(app, Duration::from_millis(2000));
         }
         Err(e) => {
+            // Clean up temp WAV on error.
+            let _ = std::fs::remove_file(&wav_path);
             log::error!("Transcription failed: {e}");
             let friendly = crate::errors::user_friendly_message(&e.to_string());
 
@@ -358,6 +383,26 @@ fn perform_output(text: &str, mode: &str, insert_delay_ms: u64) -> OutputResult 
             },
         },
     }
+}
+
+/// Copies the temporary WAV file into the app data directory for later reprocessing.
+/// Returns the persisted file path as a string.
+fn persist_audio_file(app: &AppHandle, wav_path: &str) -> CmdResult<String> {
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
+    let audio_dir = app_dir.join("audio");
+    std::fs::create_dir_all(&audio_dir)
+        .map_err(|e| format!("Failed to create audio dir: {e}"))?;
+
+    let filename = format!("{}.wav", Uuid::new_v4());
+    let dest = audio_dir.join(&filename);
+    std::fs::copy(wav_path, &dest)
+        .map_err(|e| format!("Failed to copy audio file: {e}"))?;
+    // Remove the original temp file after copying.
+    let _ = std::fs::remove_file(wav_path);
+    Ok(dest.to_string_lossy().into_owned())
 }
 
 /// Spawns an async task that transitions the recording state back to `Idle`

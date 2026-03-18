@@ -49,6 +49,17 @@ export const expandPill = (): Promise<void> =>
 export const collapsePill = (): Promise<void> =>
   invoke<void>("collapse_pill");
 
+export const reprocessSession = (
+  sessionId: string,
+  language?: string,
+  modelId?: string
+): Promise<SessionWithSegments> =>
+  invoke<SessionWithSegments>("reprocess_session", {
+    sessionId,
+    language: language ?? null,
+    modelId: modelId ?? null,
+  });
+
 // ── Recording ─────────────────────────────────────────────────────────────────
 
 export const startRecording = (): Promise<void> =>

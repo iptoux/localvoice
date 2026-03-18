@@ -186,4 +186,19 @@ static MIGRATIONS: &[(i64, &str)] = &[(
     INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES
         ('output.insert_delay_ms', '100', datetime('now'));
     ",
+),
+(
+    5,
+    "
+    -- Session reprocessing columns (TASK-203)
+    ALTER TABLE sessions ADD COLUMN audio_path TEXT;
+    ALTER TABLE sessions ADD COLUMN original_raw_text TEXT;
+    ALTER TABLE sessions ADD COLUMN reprocessed_count INTEGER NOT NULL DEFAULT 0;
+
+    -- Audio retention and post-processing settings (TASK-210)
+    INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES
+        ('recording.keep_audio',           'false', datetime('now')),
+        ('recording.audio_retention_days', '7',     datetime('now')),
+        ('recording.max_audio_storage_mb', '500',   datetime('now'));
+    ",
 )];

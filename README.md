@@ -19,6 +19,7 @@ Offline-first desktop voice dictation. Record with a global shortcut, transcribe
 | MS-11 | Expanded Pill & Animations | ✅ done |
 | MS-12 | Improved Insert Flow | ✅ done |
 | MS-13 | Theme & Custom Shortcuts | ✅ done |
+| MS-14 | Session Reprocessing & Pipeline Config | ✅ done |
 
 ## Prerequisites
 

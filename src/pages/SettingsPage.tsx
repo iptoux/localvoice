@@ -39,6 +39,10 @@ import {
   ScrollText,
   Trash2,
   Palette,
+  HardDrive,
+  Calendar,
+  Database,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -386,6 +390,87 @@ export default function SettingsPage() {
           onCheckedChange={(v) => set("transcription.remove_fillers", String(v))}
         />
       </SettingRow>
+
+      <SettingRow
+        icon={BookOpen}
+        iconClass="text-purple-400"
+        label="Auto-apply dictionary rules"
+        description="Automatically replace words using your correction rules."
+      >
+        <Switch
+          checked={bool("dictionary.auto_apply_rules", true)}
+          onCheckedChange={(v) => set("dictionary.auto_apply_rules", String(v))}
+        />
+      </SettingRow>
+
+      {/* ── Audio Storage ── */}
+      <div className="mt-10">
+        <SectionHeader title="Audio Storage" />
+      </div>
+      <Separator className="bg-border mb-1" />
+
+      <SettingRow
+        icon={HardDrive}
+        iconClass="text-blue-400"
+        label="Keep audio files"
+        description="Save recorded audio for reprocessing with a different model later."
+      >
+        <Switch
+          checked={bool("recording.keep_audio")}
+          onCheckedChange={(v) => set("recording.keep_audio", String(v))}
+        />
+      </SettingRow>
+
+      {bool("recording.keep_audio") && (
+        <>
+          <SettingRow
+            icon={Calendar}
+            iconClass="text-green-400"
+            label="Retention period"
+            description="Automatically delete audio files older than this."
+          >
+            <Select
+              value={settings["recording.audio_retention_days"] || "7"}
+              onValueChange={setVal("recording.audio_retention_days")}
+            >
+              <SelectTrigger className="w-32 bg-card border-border text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                <SelectItem value="1">1 day</SelectItem>
+                <SelectItem value="3">3 days</SelectItem>
+                <SelectItem value="7">7 days</SelectItem>
+                <SelectItem value="14">14 days</SelectItem>
+                <SelectItem value="30">30 days</SelectItem>
+                <SelectItem value="90">90 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+
+          <SettingRow
+            icon={Database}
+            iconClass="text-yellow-400"
+            label="Max storage"
+            description="Maximum disk space for audio files."
+          >
+            <Select
+              value={settings["recording.max_audio_storage_mb"] || "500"}
+              onValueChange={setVal("recording.max_audio_storage_mb")}
+            >
+              <SelectTrigger className="w-32 bg-card border-border text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                <SelectItem value="100">100 MB</SelectItem>
+                <SelectItem value="250">250 MB</SelectItem>
+                <SelectItem value="500">500 MB</SelectItem>
+                <SelectItem value="1000">1 GB</SelectItem>
+                <SelectItem value="2000">2 GB</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+        </>
+      )}
 
       {/* ── Output ── */}
       <div className="mt-10">

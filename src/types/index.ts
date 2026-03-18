@@ -22,6 +22,9 @@ export interface Session {
   insertedSuccessfully: boolean;
   errorMessage?: string;
   createdAt: string;
+  audioPath?: string;
+  originalRawText?: string;
+  reprocessedCount: number;
 }
 
 export interface SessionSegment {

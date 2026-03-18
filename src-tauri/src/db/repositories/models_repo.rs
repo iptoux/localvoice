@@ -2,7 +2,7 @@ use rusqlite::params;
 use serde::{Deserialize, Serialize};
 
 use crate::db::DbConn;
-use crate::errors::AppError;
+use crate::errors::{AppError, CmdResult};
 
 /// A row from the `model_installations` table, with install state.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -162,6 +162,21 @@ pub fn get_default_path(db: &DbConn, language: &str) -> Result<Option<String>, A
     let mut rows = stmt.query([])?;
     if let Some(row) = rows.next()? {
         let path: String = row.get(0)?;
+        Ok(Some(path))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Returns the `local_path` of an installed model identified by `model_key`.
+pub fn get_model_path(db: &DbConn, model_key: &str) -> CmdResult<Option<String>> {
+    let conn = db.lock().unwrap();
+    let mut stmt = conn
+        .prepare("SELECT local_path FROM model_installations WHERE model_key = ?1 AND installed = 1 LIMIT 1")
+        .map_err(AppError::from)?;
+    let mut rows = stmt.query(rusqlite::params![model_key]).map_err(AppError::from)?;
+    if let Some(row) = rows.next().map_err(AppError::from)? {
+        let path: String = row.get(0).map_err(AppError::from)?;
         Ok(Some(path))
     } else {
         Ok(None)

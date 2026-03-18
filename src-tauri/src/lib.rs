@@ -51,6 +51,14 @@ pub fn run() {
             // Register shared state.
             app.manage(AppState::new(db));
 
+            // Clean up old audio files (TASK-209).
+            if let Ok(data_dir) = app.path().app_data_dir() {
+                audio::cleanup::cleanup_old_audio(
+                    &app.state::<AppState>().db,
+                    &data_dir.join("audio"),
+                );
+            }
+
             // Build system tray.
             os::tray::setup(app.handle())
                 .map_err(|e| Box::<dyn std::error::Error>::from(e.to_string()))?;
@@ -157,6 +165,7 @@ pub fn run() {
             cmd_history::get_session,
             cmd_history::delete_session,
             cmd_history::export_sessions,
+            cmd_history::reprocess_session,
             // Stats
             cmd_stats::get_dashboard_stats,
             cmd_stats::get_usage_timeseries,
