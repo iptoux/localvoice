@@ -1,0 +1,157 @@
+import { useAppStore } from "../../stores/app-store";
+import {
+  startRecording,
+  stopRecording,
+  openMainWindow,
+  updateSetting,
+} from "../../lib/tauri";
+import { useSettingsStore } from "../../stores/settings-store";
+import { useEffect } from "react";
+
+export function ExpandedPill() {
+  const recordingState = useAppStore((s) => s.recordingState);
+  const lastTranscription = useAppStore((s) => s.lastTranscription);
+  const lastOutputResult = useAppStore((s) => s.lastOutputResult);
+  const { settings, load } = useSettingsStore();
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const language = settings["transcription.default_language"] || "de";
+  const modelId = lastTranscription?.modelId ?? "—";
+  const wordCount = lastTranscription?.cleanedText.split(/\s+/).filter(Boolean).length ?? 0;
+  const transcript = lastTranscription?.cleanedText ?? "";
+
+  const isRecording = recordingState === "listening";
+  const isProcessing = recordingState === "processing";
+  const isIdle = recordingState === "idle";
+
+  const handleToggleRecord = () => {
+    if (isRecording) {
+      stopRecording().catch(console.error);
+    } else if (isIdle) {
+      startRecording().catch(console.error);
+    }
+  };
+
+  const handleLanguageChange = (lang: string) => {
+    updateSetting("transcription.default_language", lang).then(load);
+  };
+
+  const handleCopyAgain = () => {
+    if (transcript) {
+      navigator.clipboard.writeText(transcript).catch(console.error);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 px-3 pt-1 pb-2 text-white text-xs select-none overflow-hidden">
+      {/* Transcript preview */}
+      <div className="bg-white/10 rounded-md px-2.5 py-2 max-h-20 overflow-y-auto text-[11px] leading-relaxed text-white/90">
+        {transcript || (
+          <span className="text-white/40 italic">No transcript yet</span>
+        )}
+      </div>
+
+      {/* Metadata row */}
+      <div className="flex items-center gap-2">
+        <LanguageBadge language={language} />
+        <span className="text-white/40 truncate text-[10px]">{modelId}</span>
+        {wordCount > 0 && (
+          <span className="text-white/40 text-[10px] ml-auto">
+            {wordCount} {wordCount === 1 ? "word" : "words"}
+          </span>
+        )}
+      </div>
+
+      {/* Language quick-switch */}
+      <div className="flex items-center gap-1">
+        {["de", "en"].map((lang) => (
+          <button
+            key={lang}
+            onClick={() => handleLanguageChange(lang)}
+            className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase transition-colors ${
+              language === lang
+                ? "bg-white/20 text-white"
+                : "bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70"
+            }`}
+          >
+            {lang}
+          </button>
+        ))}
+      </div>
+
+      {/* Start/Stop button */}
+      <button
+        onClick={handleToggleRecord}
+        disabled={isProcessing}
+        className={`w-full py-1.5 rounded-md text-[11px] font-semibold transition-all ${
+          isRecording
+            ? "bg-red-500 hover:bg-red-400 text-white"
+            : isProcessing
+              ? "bg-white/10 text-white/30 cursor-not-allowed"
+              : "bg-white/15 hover:bg-white/25 text-white"
+        }`}
+      >
+        {isRecording ? "Stop Recording" : isProcessing ? "Transcribing…" : "Start Recording"}
+      </button>
+
+      {/* Quick actions */}
+      <div className="flex items-center gap-1.5">
+        <QuickAction
+          label="Copy"
+          disabled={!transcript}
+          onClick={handleCopyAgain}
+        />
+        <QuickAction label="History" onClick={() => openMainWindow()} />
+        <QuickAction label="Settings" onClick={() => openMainWindow()} />
+      </div>
+
+      {/* Output status */}
+      {lastOutputResult && (
+        <div
+          className={`text-center text-[10px] py-0.5 rounded ${
+            lastOutputResult.success
+              ? "text-green-300/70"
+              : "text-rose-300/70"
+          }`}
+        >
+          {lastOutputResult.success
+            ? lastOutputResult.mode === "insert"
+              ? "Inserted into app"
+              : "Copied to clipboard"
+            : "Output failed"}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LanguageBadge({ language }: { language: string }) {
+  return (
+    <span className="bg-white/15 text-white/80 px-1.5 py-0.5 rounded text-[10px] font-mono uppercase">
+      {language}
+    </span>
+  );
+}
+
+function QuickAction({
+  label,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex-1 py-1 rounded bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 text-[10px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+    >
+      {label}
+    </button>
+  );
+}

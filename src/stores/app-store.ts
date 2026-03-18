@@ -29,6 +29,10 @@ interface AppStore {
   /** Result of the most recent output step (clipboard / insert). */
   lastOutputResult: OutputResult | null;
   setLastOutputResult: (result: OutputResult | null) => void;
+
+  /** Whether the pill is in expanded mode. */
+  isPillExpanded: boolean;
+  setIsPillExpanded: (expanded: boolean) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -49,4 +53,7 @@ export const useAppStore = create<AppStore>((set) => ({
 
   lastOutputResult: null,
   setLastOutputResult: (lastOutputResult) => set({ lastOutputResult }),
+
+  isPillExpanded: false,
+  setIsPillExpanded: (isPillExpanded) => set({ isPillExpanded }),
 }));

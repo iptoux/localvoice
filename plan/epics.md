@@ -34,7 +34,7 @@
 
 | Epic | Title | Depends on | Status |
 |------|-------|-----------|--------|
-| [MS-11](tasks/ms11_expanded_pill.md) | Expanded Pill & Animations | MS-10a | `todo` |
+| [MS-11](tasks/ms11_expanded_pill.md) | Expanded Pill & Animations | MS-10a | `done` |
 | [MS-12](tasks/ms12_insert_silence.md) | Insert Flow & Silence Detection | MS-10a | `todo` |
 | [MS-13](tasks/ms13_theme_shortcuts.md) | Theme System & Custom Shortcuts | MS-10a | `todo` |
 

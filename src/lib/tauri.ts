@@ -40,6 +40,12 @@ export const openMainWindow = (): Promise<void> =>
 export const setPillPosition = (x: number, y: number): Promise<void> =>
   invoke<void>("set_pill_position", { x, y });
 
+export const expandPill = (): Promise<void> =>
+  invoke<void>("expand_pill");
+
+export const collapsePill = (): Promise<void> =>
+  invoke<void>("collapse_pill");
+
 // ── Recording ─────────────────────────────────────────────────────────────────
 
 export const startRecording = (): Promise<void> =>

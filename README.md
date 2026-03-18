@@ -16,6 +16,7 @@ Offline-first desktop voice dictation. Record with a global shortcut, transcribe
 | MS-08 | Dictionary v1 | ✅ done |
 | MS-09 | Ambiguity v1 | ✅ done |
 | MS-10 | Polish | ✅ done |
+| MS-11 | Expanded Pill & Animations | ✅ done |
 
 ## Prerequisites
 

@@ -38,6 +38,34 @@ pub fn open_main_window(app: AppHandle) -> CmdResult<()> {
     Ok(())
 }
 
+/// Expands the pill window to show the expanded view.
+#[tauri::command]
+pub fn expand_pill(app: AppHandle) -> CmdResult<()> {
+    if let Some(w) = app.get_webview_window("pill") {
+        w.set_size(tauri::LogicalSize::new(300.0, 280.0))
+            .map_err(|e| e.to_string())?;
+        w.set_max_size(Some(tauri::LogicalSize::new(300.0, 280.0)))
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err("Pill window not found".into())
+    }
+}
+
+/// Collapses the pill window back to compact mode.
+#[tauri::command]
+pub fn collapse_pill(app: AppHandle) -> CmdResult<()> {
+    if let Some(w) = app.get_webview_window("pill") {
+        w.set_max_size(Some(tauri::LogicalSize::new(300.0, 64.0)))
+            .map_err(|e| e.to_string())?;
+        w.set_size(tauri::LogicalSize::new(300.0, 64.0))
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err("Pill window not found".into())
+    }
+}
+
 /// Moves the pill window to the given screen coordinates.
 #[tauri::command]
 pub fn set_pill_position(x: i32, y: i32, app: AppHandle) -> CmdResult<()> {

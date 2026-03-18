@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "../../stores/app-store";
-import { openMainWindow } from "../../lib/tauri";
+import { expandPill, collapsePill, openMainWindow } from "../../lib/tauri";
+import { Waveform } from "./Waveform";
+import { ExpandedPill } from "./ExpandedPill";
 import type { RecordingState } from "../../types";
 
 const STATE_COLOR: Record<RecordingState, string> = {
@@ -11,41 +13,106 @@ const STATE_COLOR: Record<RecordingState, string> = {
   error: "bg-rose-700",
 };
 
+/** Duration (ms) before the success state fades back to idle. */
+const SUCCESS_DISPLAY_MS = 3000;
+
 export function Pill() {
   const recordingState = useAppStore((s) => s.recordingState);
+  const setRecordingState = useAppStore((s) => s.setRecordingState);
   const recordingError = useAppStore((s) => s.recordingError);
+  const isPillExpanded = useAppStore((s) => s.isPillExpanded);
+  const setIsPillExpanded = useAppStore((s) => s.setIsPillExpanded);
+
+  // Track whether we're fading out from success → idle.
+  const [isFadingOut, setIsFadingOut] = useState(false);
+
+  // Auto-transition: success → idle after 3 seconds with opacity fade.
+  useEffect(() => {
+    if (recordingState !== "success") {
+      setIsFadingOut(false);
+      return;
+    }
+
+    // Start the fade-out slightly before resetting to idle.
+    const fadeTimer = setTimeout(() => setIsFadingOut(true), SUCCESS_DISPLAY_MS - 300);
+    const resetTimer = setTimeout(() => {
+      setRecordingState("idle");
+      setIsFadingOut(false);
+    }, SUCCESS_DISPLAY_MS);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(resetTimer);
+    };
+  }, [recordingState, setRecordingState]);
+
+  const handleClick = () => {
+    if (isPillExpanded) {
+      collapsePill().then(() => setIsPillExpanded(false));
+    } else {
+      expandPill().then(() => setIsPillExpanded(true));
+    }
+  };
+
+  const handleDoubleClick = () => {
+    if (isPillExpanded) {
+      collapsePill().then(() => setIsPillExpanded(false));
+    }
+    openMainWindow();
+  };
+
+  // Collapse on window blur.
+  useEffect(() => {
+    const handleBlur = () => {
+      if (isPillExpanded) {
+        collapsePill().then(() => setIsPillExpanded(false));
+      }
+    };
+    window.addEventListener("blur", handleBlur);
+    return () => window.removeEventListener("blur", handleBlur);
+  }, [isPillExpanded, setIsPillExpanded]);
 
   return (
     <div
-      data-tauri-drag-region
-      onDoubleClick={() => openMainWindow()}
       className={`
-        flex items-center gap-2 px-4 h-16 w-full rounded-full select-none cursor-default
+        w-full rounded-2xl select-none cursor-default overflow-hidden
         ${STATE_COLOR[recordingState]}
-        text-white text-sm font-medium shadow-lg
-        transition-colors duration-200
+        text-white shadow-lg
+        transition-all duration-300 ease-in-out
+        ${isFadingOut ? "opacity-80" : "opacity-100"}
       `}
     >
-      <StateIcon state={recordingState} />
-      <span data-tauri-drag-region className="flex-1 truncate">
-        {recordingState === "error" && recordingError ? (
-          recordingError
-        ) : recordingState === "success" ? (
-          <SuccessContent />
-        ) : recordingState === "listening" ? (
-          "Listening…"
-        ) : recordingState === "processing" ? (
-          "Transcribing…"
-        ) : (
-          "Ready"
-        )}
-      </span>
-      {recordingState === "listening" && <ElapsedTimer />}
+      {/* Compact pill bar — always visible */}
+      <div
+        data-tauri-drag-region
+        onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
+        className="flex items-center gap-2 px-4 h-16 text-sm font-medium"
+      >
+        <StateIcon state={recordingState} />
+        <span data-tauri-drag-region className="flex-1 truncate">
+          {recordingState === "error" && recordingError ? (
+            recordingError
+          ) : recordingState === "success" ? (
+            <SuccessContent />
+          ) : recordingState === "listening" ? (
+            <Waveform />
+          ) : recordingState === "processing" ? (
+            "Transcribing…"
+          ) : (
+            "Ready"
+          )}
+        </span>
+        {recordingState === "listening" && <ElapsedTimer />}
+      </div>
+
+      {/* Expanded content — shown below the bar when expanded */}
+      {isPillExpanded && <ExpandedPill />}
     </div>
   );
 }
 
-// ── Success content (TASK-059, TASK-061) ─────────────────────────────────────
+// ── Success content ──────────────────────────────────────────────────────────
 
 function SuccessContent() {
   const lastTranscription = useAppStore((s) => s.lastTranscription);
@@ -87,7 +154,7 @@ function OutputBadge({
   );
 }
 
-// ── State icon ────────────────────────────────────────────────────────────────
+// ── State icon ───────────────────────────────────────────────────────────────
 
 function StateIcon({ state }: { state: RecordingState }) {
   switch (state) {
@@ -95,7 +162,7 @@ function StateIcon({ state }: { state: RecordingState }) {
       return (
         <div
           data-tauri-drag-region
-          className="w-4 h-4 rounded-full border-2 border-white/80 flex-shrink-0 animate-pulse"
+          className="w-4 h-4 rounded-full bg-white/80 flex-shrink-0 animate-pulse"
         />
       );
     case "processing":
@@ -136,7 +203,6 @@ function StateIcon({ state }: { state: RecordingState }) {
         </svg>
       );
     default:
-      // idle — mic circle
       return (
         <div
           data-tauri-drag-region
@@ -146,7 +212,7 @@ function StateIcon({ state }: { state: RecordingState }) {
   }
 }
 
-// ── Elapsed timer (shown only in Listening state) ─────────────────────────────
+// ── Elapsed timer ────────────────────────────────────────────────────────────
 
 function ElapsedTimer() {
   const [elapsed, setElapsed] = useState(0);
