@@ -24,17 +24,5 @@
       "source": "initial"
     }
   ],
-  "startedAt": "2026-03-18T15:39:31.999Z",
-  "planSpec": {
-    "status": "approved",
-    "version": 2,
-    "reviewedByUser": true,
-    "content": "🔧 Tool: glob\nInput: {\n  \"pattern\": \"*\"\n}\n\n🔧 Tool: glob\nInput: {\n  \"pattern\": \".github/**/*\"\n}\n\n🔧 Tool: read\nInput: {\n  \"filePath\": \"C:\\\\Users\\\\Maik Roland Damm\\\\Entwicklung\\\\localvoice\\\\package.json\"\n}\n\n🔧 Tool: glob\nInput: {\n  \"pattern\": \".gitignore\"\n}\n\n🔧 Tool: glob\nInput: {\n  \"pattern\": \"LICENSE*\"\n}\n\n🔧 Tool: glob\nInput: {\n  \"pattern\": \"*.env*\"\n}\n\n🔧 Tool: read\nInput: {\n  \"filePath\": \"C:\\\\Users\\\\Maik Roland Damm\\\\Entwicklung\\\\localvoice\\\\README.md\"\n}\n\n🔧 Tool: read\nInput: {\n  \"filePath\": \"C:\\\\Users\\\\Maik Roland Damm\\\\Entwicklung\\\\localvoice\\\\.gitignore\"\n}\n\n🔧 Tool: read\nInput: {\n  \"filePath\": \"C:\\\\Users\\\\Maik Roland Damm\\\\Entwicklung\\\\localvoice\\\\src-tauri\\\\Cargo.toml\"\n}\n\n🔧 Tool: read\nInput: {\n  \"filePath\": \"C:\\\\Users\\\\Maik Roland Damm\\\\Entwicklung\\\\localvoice\\\\docs\\\\changelog.md\"\n}\n\n🔧 Tool: glob\nInput: {\n  \"pattern\": \"*.md\"\n}\n\n🔧 Tool: read\nInput: {\n  \"filePath\": \"C:\\\\Users\\\\Maik Roland Damm\\\\Entwicklung\\\\localvoice\\\\src-tauri\\\\tauri.conf.json\"\n}\n\n🔧 Tool: grep\nInput: {\n  \"pattern\": \"(api[_-]?key|secret|password|token|credential)\",\n  \"include\": \"*.ts,*.tsx,*.rs,*.json\"\n}\n\n🔧 Tool: glob\nInput: {\n  \"pattern\": \".env*\"\n}\n\n🔧 Tool: bash\nInput: {\n  \"command\": \"npm audit --audit-level=high 2>&1 | head -50\",\n  \"description\": \"Check for npm vulnerabilities\"\n}\n\n\n## Planning Outline\n\n**Goal:** Prepare LocalVoice repository for open source publication on GitHub by adding required documentation, cleaning configuration, and ensuring security.\n\n**Approach:** \n1. Add LICENSE (MIT - appropriate for this project with permissive dependencies)\n2. Create CONTRIBUTING.md with PR workflow and coding standards\n3. Add CODE_OF_CONDUCT.md (Contributor Covenant)\n4. Create .github/ folder with issue and PR templates\n5. Update package.json with public metadata (repository, author, license)\n6. Create .env.example documenting environment variables\n7. Enhance .gitignore with additional exclusions\n8. Verify build succeeds\n\n**Files to Touch:**\n- `LICENSE` - create new MIT license\n- `CONTRIBUTING.md` - create new\n- `CODE_OF_CONDUCT.md` - create new\n- `.github/` - create folder with templates\n- `package.json` - add repository, author, license fields\n- `.env.example` - create new\n- `.gitignore` - add additional exclusions\n- `README.md` - add badge and quick links\n\n**Tasks:**\n1. Create LICENSE (MIT) file\n2. Create CONTRIBUTING.md with PR workflow, standards, testing\n3. Create CODE_OF_CONDUCT.md (Contributor Covenant)\n4. Add .github/ISSUE_TEMPLATE.md and .github/PULL_REQUEST_TEMPLATE.md\n5. Update package.json with public metadata\n6. Create .env.example for environment variables\n7. Enhance .gitignore (add coverage, storybook-static, etc.)\n8. Verify build succeeds with `npm run build`\n\n**Risks:**\n- Ensure no credentials or sensitive data in git history\n- Verify all links in docs work",
-    "generatedAt": "2026-03-18T15:40:04.002Z",
-    "tasks": [],
-    "tasksTotal": 0,
-    "tasksCompleted": 0,
-    "approvedAt": "2026-03-18T15:55:39.176Z"
-  },
-  "updatedAt": "2026-03-18T15:55:39.194Z"
+  "startedAt": "2026-03-18T15:39:31.999Z"
 }

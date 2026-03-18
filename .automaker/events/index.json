@@ -2,6 +2,13 @@
   "version": 1,
   "events": [
     {
+      "id": "evt-1773848364591-4058d575",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T15:39:24.591Z",
+      "featureName": "Frontend-Backend Event Contract Registry",
+      "featureId": "feature-1773848074442-tet3lqw02"
+    },
+    {
       "id": "evt-1773848336005-64c1a724",
       "trigger": "feature_created",
       "timestamp": "2026-03-18T15:38:56.005Z",

@@ -150,3 +150,40 @@ Input: {
   "command": "npm run 2>&1",
   "description": "List available npm scripts"
 }
+
+🔧 Tool: bash
+Input: {
+  "command": "npx tsc --noEmit 2>&1",
+  "description": "Run TypeScript type check"
+}
+
+🔧 Tool: bash
+Input: {
+  "command": "npx tsc --noEmit src/lib/events.ts 2>&1",
+  "description": "Type check the new events file"
+}
+The Event Contract Registry has been created. Let me verify it works correctly:
+
+🔧 Tool: read
+Input: {
+  "filePath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice\\src\\lib\\events.ts"
+}
+<summary>
+## Summary: Frontend-Backend Event Contract Registry
+
+### Changes Implemented
+- Created centralized `src/lib/events.ts` with:
+  - `EventChannels` const object with all 8 Tauri event channel names (recording-state-changed, audio-level, output-result, transcription-completed, silence-detected, session-reprocessed, model-download-progress, navigate-to)
+  - `EventPayloads` interface mapping each channel to its TypeScript payload type
+  - `EventChannel` type for type-safe channel name inference
+  - `listenEvent()` helper for low-frequency events with automatic type inference
+  - `listenThrottledEvent()` helper for high-frequency events (audio level, download progress) with RAF throttling
+
+### Files Modified
+- `src/lib/events.ts` (new file - 120 lines)
+
+### Notes for Developer
+- All event payloads reference existing types from `src/types/index.ts`
+- Channel names match exactly what Rust emits in: `app_state.rs:58`, `audio/capture.rs:354`, `transcription/orchestrator.rs:240,387`, `commands/recording.rs:76`, `commands/history.rs:88`, `models/downloader.rs:79`
+- Pre-existing TypeScript errors in `src/i18n/index.ts` and `src/mocks/tauri.ts` are unrelated to this feature
+</summary>
