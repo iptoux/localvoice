@@ -60,14 +60,6 @@ export default function Dashboard() {
         <WordsChart data={timeseries} loading={loading} />
       </section>
 
-      {/* Language breakdown (TASK-091) */}
-      <section className="bg-neutral-900 rounded-xl border border-neutral-800 p-5">
-        <h2 className="text-sm font-semibold text-neutral-300 mb-4">
-          Language breakdown
-        </h2>
-        <LanguageChart stats={stats} loading={loading} />
-      </section>
-
       {/* Top models */}
       <section className="bg-neutral-900 rounded-xl border border-neutral-800 p-5">
         <h2 className="text-sm font-semibold text-neutral-300 mb-4">
