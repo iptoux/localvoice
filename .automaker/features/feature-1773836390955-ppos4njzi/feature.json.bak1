@@ -1,0 +1,17 @@
+{
+  "category": "enhancement",
+  "description": "Replace any scrollable lists of transcription results or session history with a virtualized list (e.g., TanStack Virtual). Only render DOM nodes for visible items plus a small overscan buffer. This is essential for sessions with hundreds of transcription segments.\n\n**Rationale:** Long transcription outputs rendered as full DOM trees cause slow paints and janky scrolling. Virtualization reduces DOM node count from potentially thousands to ~30–50, dramatically improving scroll performance and memory usage.",
+  "title": "Virtual List for Long Transcription / History Views",
+  "status": "verified",
+  "id": "feature-1773836390955-ppos4njzi",
+  "createdAt": "2026-03-18T12:19:50.958Z",
+  "descriptionHistory": [
+    {
+      "description": "Replace any scrollable lists of transcription results or session history with a virtualized list (e.g., TanStack Virtual). Only render DOM nodes for visible items plus a small overscan buffer. This is essential for sessions with hundreds of transcription segments.\n\n**Rationale:** Long transcription outputs rendered as full DOM trees cause slow paints and janky scrolling. Virtualization reduces DOM node count from potentially thousands to ~30–50, dramatically improving scroll performance and memory usage.",
+      "timestamp": "2026-03-18T12:19:50.958Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-03-18T13:04:58.603Z",
+  "summary": "## Summary: Virtual List for Long Transcription / History Views\n\n### Changes Implemented\n- Installed `@tanstack/react-virtual` (v3.13.23) as a dependency\n- Created a generic, reusable `VirtualList<T>` component that wraps `@tanstack/react-virtual`'s `useVirtualizer` hook — supports configurable `estimateSize`, `overscan`, `gap`, and dynamic element measurement via `measureElement`\n- Replaced the History page session list (`.map()` over up to 50 sessions) with `VirtualList`, reducing DOM nodes from up to 50 full session rows to only ~15–20 visible + overscan\n- Replaced the transcription segments list inside the session detail drawer with `VirtualList` (capped at `max-h-64`), preventing hundreds of segment DOM nodes from rendering simultaneously\n- Replaced the Logs page entry list with `VirtualList`, converting the page layout to `flex flex-col h-full` so the virtual list fills available vertical space\n- All three virtualized lists use `measureElement` for accurate dynamic row heights (no fixed-height assumption)\n\n### Files Modified\n- `package.json` — added `@tanstack/react-virtual` dependency\n- `src/components/VirtualList.tsx` — **new file** — generic virtualized list component\n- `src/pages/History.tsx` — virtualized session list and transcription segments list\n- `src/pages/Logs.tsx` — virtualized log entry list, updated to flex column layout\n\n### Notes for Developer\n- The `VirtualList` component is generic and can be reused for Dictionary entries, correction rules, ambiguous terms, or any other scrollable list that grows large\n- `estimateSize` is a hint for initial layout; actual sizes are measured dynamically via `measureElement`, so variable-height rows work correctly\n- Default overscan is 8 items; segments use 10 for smoother scrolling in the constrained drawer\n- The Logs page layout changed from `div.p-8` to `div.flex.flex-col.h-full.p-8` to allow the virtual list to fill available space — this depends on the parent container providing a bounded height (which it does via the existing app layout)"
+}

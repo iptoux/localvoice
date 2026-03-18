@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { emit, emitTo } from "@tauri-apps/api/event";
+import { useShallow } from "zustand/react/shallow";
 import { useAppStore } from "../stores/app-store";
 import { useSettingsStore } from "../stores/settings-store";
 import {
@@ -202,8 +203,20 @@ function ShortcutRecorder({
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const { settings, loading, load, update } = useSettingsStore();
-  const { audioDevices, setAudioDevices } = useAppStore();
+  const { settings, loading, load, update } = useSettingsStore(
+    useShallow((s) => ({
+      settings: s.settings,
+      loading: s.loading,
+      load: s.load,
+      update: s.update,
+    }))
+  );
+  const { audioDevices, setAudioDevices } = useAppStore(
+    useShallow((s) => ({
+      audioDevices: s.audioDevices,
+      setAudioDevices: s.setAudioDevices,
+    }))
+  );
   const [autostart, setAutostartState] = useState(false);
   const [clearingLogs, setClearingLogs] = useState(false);
 

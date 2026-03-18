@@ -46,6 +46,18 @@ export const hidePill = (): Promise<void> => invoke<void>("hide_pill");
 export const openMainWindow = (): Promise<void> =>
   invoke<void>("open_main_window");
 
+export const openMainWindowAt = async (path: string): Promise<void> => {
+  const { emit } = await import("@tauri-apps/api/event");
+  await invoke<void>("open_main_window");
+  // Small delay to ensure the window is focused before emitting navigation.
+  setTimeout(() => emit("navigate-to", path), 100);
+};
+
+export const sendNotification = async (title: string, body: string): Promise<void> => {
+  const { sendNotification: tauriNotify } = await import("@tauri-apps/plugin-notification");
+  tauriNotify({ title, body });
+};
+
 export const setPillPosition = (x: number, y: number): Promise<void> =>
   invoke<void>("set_pill_position", { x, y });
 

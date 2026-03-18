@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { RefreshCw, Download, Trash2, AlertTriangle, Info, AlertCircle, List } from "lucide-react";
 import { listLogs, exportLogs, clearLogs } from "../lib/tauri";
 import type { LogEntry } from "../types";
+import { VirtualList } from "../components/VirtualList";
 
 type LevelFilter = "all" | "info" | "warn" | "error";
 
@@ -57,7 +58,7 @@ export default function Logs() {
   };
 
   return (
-    <div className="p-8">
+    <div className="flex flex-col h-full p-8">
       <h1 className="text-2xl font-semibold text-foreground mb-1">Logs</h1>
       <p className="text-muted-foreground text-sm mb-6">
         Application logs captured during this session. Filter by level to focus on what matters.
@@ -105,7 +106,7 @@ export default function Logs() {
         {entries.length} {entries.length === 1 ? "entry" : "entries"}
       </p>
 
-      {/* List */}
+      {/* List — virtualized */}
       {loading ? (
         <p className="text-muted-foreground text-sm">Loading…</p>
       ) : entries.length === 0 ? (
@@ -113,10 +114,12 @@ export default function Logs() {
           No log entries for this filter. Logs will appear here as they occur.
         </div>
       ) : (
-        <div className="flex flex-col gap-1.5">
-          {entries.map((entry) => (
+        <VirtualList
+          items={entries}
+          estimateSize={48}
+          className="flex-1 min-h-0"
+          renderItem={(entry) => (
             <div
-              key={entry.id}
               className={`px-4 py-2.5 rounded-lg border text-sm ${
                 LEVEL_COLORS[entry.level] ?? "text-foreground/70 bg-muted border-border"
               }`}
@@ -137,8 +140,8 @@ export default function Logs() {
                 <span className="flex-1 break-words">{entry.message}</span>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        />
       )}
     </div>
   );

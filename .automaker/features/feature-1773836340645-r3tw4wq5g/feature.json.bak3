@@ -1,0 +1,18 @@
+{
+  "category": "enhancement",
+  "description": "Split the frontend bundle by route/view so each page only loads its required JavaScript on demand. Implement React.lazy() and Suspense boundaries at the router level with skeleton screens as fallbacks. This prevents loading dashboard, settings, and recorder modules all at once on startup.\n\n**Rationale:** Tauri apps still parse and execute JavaScript bundles eagerly. With multiple milestone views (MS-01–05 already done), the bundle has grown significantly. Splitting by route reduces Time-to-Interactive for the initial window load.",
+  "title": "Route-Based Code Splitting with Lazy Loading",
+  "status": "verified",
+  "id": "feature-1773836340645-r3tw4wq5g",
+  "createdAt": "2026-03-18T12:19:00.646Z",
+  "descriptionHistory": [
+    {
+      "description": "Split the frontend bundle by route/view so each page only loads its required JavaScript on demand. Implement React.lazy() and Suspense boundaries at the router level with skeleton screens as fallbacks. This prevents loading dashboard, settings, and recorder modules all at once on startup.\n\n**Rationale:** Tauri apps still parse and execute JavaScript bundles eagerly. With multiple milestone views (MS-01–05 already done), the bundle has grown significantly. Splitting by route reduces Time-to-Interactive for the initial window load.",
+      "timestamp": "2026-03-18T12:19:00.646Z",
+      "source": "initial"
+    }
+  ],
+  "startedAt": "2026-03-18T12:42:14.115Z",
+  "updatedAt": "2026-03-18T13:10:46.868Z",
+  "summary": "## Summary: Route-Based Code Splitting with Lazy Loading\n\n### Changes Implemented\n- Replaced all 6 static page imports with `React.lazy()` dynamic imports (Dashboard, History, Dictionary, Models, Logs, SettingsPage)\n- Added a `<Suspense>` boundary around the `<Routes>` component with the existing `<PageSpinner />` as the fallback\n- Reused the existing `PageSpinner` component from `src/components/Spinner.tsx` — no new skeleton components needed since pages already handle their own data-loading states internally\n\n### Files Modified\n- `src/MainApp.tsx` — Converted static imports to `React.lazy()`, added `Suspense` wrapper with `PageSpinner` fallback\n\n### Notes for Developer\n- All 6 page components already had `export default` — no changes were needed to individual page files\n- Vite automatically splits each lazy-loaded page into its own chunk, plus shared dependency chunks (VirtualList, reselect, filler-words-store)\n- The Dashboard chunk (385 kB) and SettingsPage chunk (201 kB) are the largest — these no longer block initial page load for other routes\n- The core shared bundle is 268 kB (85 kB gzipped), down from the previous monolithic bundle\n- TypeScript type-check (`tsc --noEmit`) and Vite production build both pass cleanly\n- The `PageSpinner` fallback shows a centered spinner during chunk loading, which is brief in a Tauri desktop app (local filesystem load)"
+}

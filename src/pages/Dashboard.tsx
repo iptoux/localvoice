@@ -12,6 +12,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import { useShallow } from "zustand/react/shallow";
 import { useDashboardStore, type RangePreset } from "../stores/dashboard-store";
 import { useFillerWordsStore } from "../stores/filler-words-store";
 import type {
@@ -48,9 +49,28 @@ export default function Dashboard() {
     error,
     setRange,
     fetch,
-  } = useDashboardStore();
+  } = useDashboardStore(
+    useShallow((s) => ({
+      stats: s.stats,
+      timeseries: s.timeseries,
+      languageBreakdown: s.languageBreakdown,
+      correctionStats: s.correctionStats,
+      wpmTrend: s.wpmTrend,
+      range: s.range,
+      loading: s.loading,
+      error: s.error,
+      setRange: s.setRange,
+      fetch: s.fetch,
+    }))
+  );
 
-  const { stats: fillerStats, totalRemoved, fetchStats: fetchFillerStats } = useFillerWordsStore();
+  const { stats: fillerStats, totalRemoved, fetchStats: fetchFillerStats } = useFillerWordsStore(
+    useShallow((s) => ({
+      stats: s.stats,
+      totalRemoved: s.totalRemoved,
+      fetchStats: s.fetchStats,
+    }))
+  );
 
   useEffect(() => {
     fetch(range);

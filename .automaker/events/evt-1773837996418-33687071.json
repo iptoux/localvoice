@@ -1,0 +1,11 @@
+{
+  "id": "evt-1773837996418-33687071",
+  "trigger": "feature_error",
+  "timestamp": "2026-03-18T12:46:36.418Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773836390955-ppos4njzi",
+  "featureName": "Virtual List for Long Transcription / History Views",
+  "error": "Claude Code process exited with code 1",
+  "errorType": "execution"
+}

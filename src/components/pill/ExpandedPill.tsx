@@ -1,24 +1,21 @@
+import { useEffect } from "react";
 import { useAppStore } from "../../stores/app-store";
 import {
   startRecording,
   stopRecording,
-  openMainWindow,
+  openMainWindowAt,
   updateSetting,
 } from "../../lib/tauri";
 import { useSettingsStore } from "../../stores/settings-store";
-import { useEffect } from "react";
 
 export function ExpandedPill() {
   const recordingState = useAppStore((s) => s.recordingState);
   const lastTranscription = useAppStore((s) => s.lastTranscription);
   const lastOutputResult = useAppStore((s) => s.lastOutputResult);
-  const { settings, load } = useSettingsStore();
+  const load = useSettingsStore((s) => s.load);
+  const language = useSettingsStore((s) => s.settings["transcription.default_language"] || "de");
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const language = settings["transcription.default_language"] || "de";
+  useEffect(() => { load(); }, [load]);
   const modelId = lastTranscription?.modelId ?? "—";
   const wordCount = lastTranscription?.cleanedText.split(/\s+/).filter(Boolean).length ?? 0;
   const transcript = lastTranscription?.cleanedText ?? "";
@@ -46,20 +43,20 @@ export function ExpandedPill() {
   };
 
   return (
-    <div className="flex flex-col gap-2 px-3 pt-1 pb-2 text-white text-xs select-none overflow-hidden">
+    <div className="flex flex-col gap-2 px-3 pt-1 pb-2 text-foreground text-xs select-none overflow-hidden">
       {/* Transcript preview */}
-      <div className="bg-white/10 rounded-md px-2.5 py-2 max-h-20 overflow-y-auto text-[11px] leading-relaxed text-white/90">
+      <div className="bg-foreground/10 rounded-md px-2.5 py-2 max-h-20 overflow-y-auto text-[11px] leading-relaxed text-foreground/90">
         {transcript || (
-          <span className="text-white/40 italic">No transcript yet</span>
+          <span className="text-foreground/40 italic">No transcript yet</span>
         )}
       </div>
 
       {/* Metadata row */}
       <div className="flex items-center gap-2">
         <LanguageBadge language={language} />
-        <span className="text-white/40 truncate text-[10px]">{modelId}</span>
+        <span className="text-foreground/40 truncate text-[10px]">{modelId}</span>
         {wordCount > 0 && (
-          <span className="text-white/40 text-[10px] ml-auto">
+          <span className="text-foreground/40 text-[10px] ml-auto">
             {wordCount} {wordCount === 1 ? "word" : "words"}
           </span>
         )}
@@ -73,8 +70,8 @@ export function ExpandedPill() {
             onClick={() => handleLanguageChange(lang)}
             className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase transition-colors ${
               language === lang
-                ? "bg-white/20 text-white"
-                : "bg-white/5 text-white/40 hover:bg-white/10 hover:text-white/70"
+                ? "bg-foreground/20 text-foreground"
+                : "bg-foreground/5 text-foreground/40 hover:bg-foreground/10 hover:text-foreground/70"
             }`}
           >
             {lang}
@@ -90,8 +87,8 @@ export function ExpandedPill() {
           isRecording
             ? "bg-red-500 hover:bg-red-400 text-white"
             : isProcessing
-              ? "bg-white/10 text-white/30 cursor-not-allowed"
-              : "bg-white/15 hover:bg-white/25 text-white"
+              ? "bg-foreground/10 text-foreground/30 cursor-not-allowed"
+              : "bg-foreground/15 hover:bg-foreground/25 text-foreground"
         }`}
       >
         {isRecording ? "Stop Recording" : isProcessing ? "Transcribing…" : "Start Recording"}
@@ -104,8 +101,8 @@ export function ExpandedPill() {
           disabled={!transcript}
           onClick={handleCopyAgain}
         />
-        <QuickAction label="History" onClick={() => openMainWindow()} />
-        <QuickAction label="Settings" onClick={() => openMainWindow()} />
+        <QuickAction label="History" onClick={() => openMainWindowAt("/history")} />
+        <QuickAction label="Settings" onClick={() => openMainWindowAt("/settings")} />
       </div>
 
       {/* Output status */}
@@ -113,8 +110,8 @@ export function ExpandedPill() {
         <div
           className={`text-center text-[10px] py-0.5 rounded ${
             lastOutputResult.success
-              ? "text-green-300/70"
-              : "text-rose-300/70"
+              ? "text-green-600 dark:text-green-300/70"
+              : "text-rose-600 dark:text-rose-300/70"
           }`}
         >
           {lastOutputResult.success
@@ -130,7 +127,7 @@ export function ExpandedPill() {
 
 function LanguageBadge({ language }: { language: string }) {
   return (
-    <span className="bg-white/15 text-white/80 px-1.5 py-0.5 rounded text-[10px] font-mono uppercase">
+    <span className="bg-foreground/15 text-foreground/80 px-1.5 py-0.5 rounded text-[10px] font-mono uppercase">
       {language}
     </span>
   );
@@ -149,7 +146,7 @@ function QuickAction({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex-1 py-1 rounded bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 text-[10px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+      className="flex-1 py-1 rounded bg-foreground/5 text-foreground/50 hover:bg-foreground/10 hover:text-foreground/80 text-[10px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
     >
       {label}
     </button>

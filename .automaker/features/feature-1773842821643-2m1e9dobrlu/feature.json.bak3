@@ -1,0 +1,35 @@
+{
+  "category": "Uncategorized",
+  "description": "",
+  "title": "",
+  "images": [],
+  "imagePaths": [
+    {
+      "id": "img-1773842648110-7f9o4nb64",
+      "path": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice\\.automaker\\features\\feature-1773842821643-2m1e9dobrlu\\images\\pasted-image-2026-03-18T14-04-08-079Z-1773842648107.png",
+      "filename": "pasted-image-2026-03-18T14-04-08-079Z.png",
+      "mimeType": "image/png"
+    }
+  ],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "dependencies": [],
+  "status": "backlog",
+  "createdAt": "2026-03-18T14:07:01.643Z",
+  "id": "feature-1773842821643-2m1e9dobrlu",
+  "descriptionHistory": [
+    {
+      "description": "Based on my search, there's no \"Voice state pill\" component found in the codebase. This appears to be a feature request for a new component rather than an enhancement of existing code.\n\nHere's my interpretation of the task:\n\n---\n\n**Voice Recording State UI Component**\n\nCreate a voice recording status pill/badge component that displays the current recording state with waveform visualization.\n\nRequirements:\n- Create a `VoiceStatePill` component that displays recording state\n- Show elapsed time in a readable format during recording\n- Display an animated waveform visualization that is clearly visible and prominent\n- Replace the generic icon/dot in recording state with the application logo (matching idle state design)\n- Support at least two states: `idle` and `recording`\n- Ensure text contrast and visibility in recording state\n- Waveform should be large enough to be easily recognizable\n- Consistent visual styling with the rest of the application",
+      "timestamp": "2026-03-18T14:07:01.766Z",
+      "source": "initial"
+    }
+  ],
+  "workMode": "custom"
+}

@@ -1,15 +1,24 @@
 import { useNavigate } from "react-router-dom";
+import { sendNotification } from "../lib/tauri";
 
 interface Props {
   onDismiss: () => void;
 }
 
+const PILL_TIP_TITLE = "Tip: Expand the Pill";
+const PILL_TIP_BODY = "Right-click the pill to expand it — start recording, copy your last transcript, and more.";
+
 export function Onboarding({ onDismiss }: Props) {
   const navigate = useNavigate();
 
+  const dismiss = () => {
+    sendNotification(PILL_TIP_TITLE, PILL_TIP_BODY).catch(() => {});
+    onDismiss();
+  };
+
   const goToModels = () => {
     navigate("/models");
-    onDismiss();
+    dismiss();
   };
 
   return (
@@ -37,7 +46,7 @@ export function Onboarding({ onDismiss }: Props) {
             Download a Model
           </button>
           <button
-            onClick={onDismiss}
+            onClick={dismiss}
             className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Skip for now

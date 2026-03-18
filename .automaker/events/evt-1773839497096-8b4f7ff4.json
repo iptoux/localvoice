@@ -1,0 +1,9 @@
+{
+  "id": "evt-1773839497096-8b4f7ff4",
+  "trigger": "feature_created",
+  "timestamp": "2026-03-18T13:11:37.096Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773839497002-6ix6kma0ga2",
+  "featureName": "Es scheint einen Bug bei der Aufnahme der Voice zu geben, dies, wenn ich die Audio abspiele zum test"
+}

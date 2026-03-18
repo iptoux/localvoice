@@ -1,0 +1,30 @@
+{
+  "category": "enhancement",
+  "description": "Audit all Zustand store subscriptions and replace broad state selections with fine-grained selectors using shallow equality checks. Use zustand's `subscribeWithSelector` middleware and `useShallow` to prevent components from re-rendering when unrelated slices update. Identify the top 10 most-subscribed components first.\n\n**Rationale:** With multiple Zustand slices already in place, components subscribing to entire slices will re-render on any slice change — even unrelated fields. This is a common and impactful source of unnecessary renders in slice-based stores.",
+  "title": "Zustand Slice Selector Memoization",
+  "status": "verified",
+  "id": "feature-1773836413214-u71c43xwn",
+  "createdAt": "2026-03-18T12:20:13.216Z",
+  "descriptionHistory": [
+    {
+      "description": "Audit all Zustand store subscriptions and replace broad state selections with fine-grained selectors using shallow equality checks. Use zustand's `subscribeWithSelector` middleware and `useShallow` to prevent components from re-rendering when unrelated slices update. Identify the top 10 most-subscribed components first.\n\n**Rationale:** With multiple Zustand slices already in place, components subscribing to entire slices will re-render on any slice change — even unrelated fields. This is a common and impactful source of unnecessary renders in slice-based stores.",
+      "timestamp": "2026-03-18T12:20:13.216Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-03-18T13:56:02.228Z",
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "lite",
+  "requirePlanApproval": true,
+  "workMode": "current",
+  "dependencies": [],
+  "startedAt": "2026-03-18T13:53:30.905Z",
+  "summary": "## Summary: Zustand Slice Selector Memoization\n\n### Changes Implemented\n- **Sidebar.tsx**: Replaced broad `useSettingsStore()` destructuring with fine-grained selectors:\n  - `load`:单独订阅 `s.load` 函数\n  - `loggingEnabled`: 使用 `useShallow` 订阅 `s.settings[\"logging.enabled\"]` 比较结果\n  \n- **ExpandedPill.tsx**: Replaced broad `useSettingsStore()` destructuring with fine-grained selector:\n  - `load`: 单独订阅 `s.load` 函数  \n  - `language`: 直接订阅 `s.settings[\"transcription.default_language\"]` 原始字符串值\n\n### Files Modified\n- `src/components/layout/Sidebar.tsx`\n- `src/components/pill/ExpandedPill.tsx`\n\n### Notes for Developer\n- Most components (Dashboard, Models, Dictionary, SettingsPage) were already using `useShallow` correctly\n- Pill.tsx already used fine-grained individual selectors\n- `useShallow` is only needed for object/array comparisons; primitive values (strings, numbers) use reference equality and don't need it\n- These changes ensure components only re-render when their specific subscribed values change, not when unrelated store slices update"
+}

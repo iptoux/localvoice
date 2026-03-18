@@ -1,0 +1,11 @@
+{
+  "id": "evt-1773840330512-000974f8",
+  "trigger": "feature_error",
+  "timestamp": "2026-03-18T13:25:30.512Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773839497002-6ix6kma0ga2",
+  "featureName": "Es scheint einen Bug bei der Aufnahme der Voice zu geben, dies, wenn ich die Audio abspiele zum test",
+  "error": "Claude Code process exited with code 1",
+  "errorType": "execution"
+}

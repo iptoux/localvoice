@@ -205,9 +205,11 @@ function StateIcon({ state }: { state: RecordingState }) {
   switch (state) {
     case "listening":
       return (
-        <div
+        <img
           data-tauri-drag-region
-          className="w-4 h-4 rounded-full bg-white/80 flex-shrink-0 animate-pulse"
+          src="/localvoice_appiconbadge_transparent.png.png"
+          alt="LocalVoice"
+          className="w-8 h-8 flex-shrink-0 object-contain"
         />
       );
     case "processing":
@@ -283,7 +285,7 @@ function ElapsedTimer() {
   return (
     <span
       data-tauri-drag-region
-      className="text-muted-foreground text-xs tabular-nums flex-shrink-0"
+      className="text-white/90 text-xs tabular-nums flex-shrink-0 font-medium"
     >
       {formatted}
     </span>

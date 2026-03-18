@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
 import { Download, Trash2, CheckCircle, Globe } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import type { ModelInfo, DownloadProgress } from "../types";
 import { useModelsStore } from "../stores/models-store";
+import { useThrottledEvent } from "../hooks/use-throttled-event";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -227,19 +228,29 @@ function sortModels(models: ModelInfo[], sort: SortKey): ModelInfo[] {
 
 export default function Models() {
   const { models, loading, downloading, error, fetch, startDownload, removeModel, setDefault, setDownloadProgress } =
-    useModelsStore();
+    useModelsStore(
+      useShallow((s) => ({
+        models: s.models,
+        loading: s.loading,
+        downloading: s.downloading,
+        error: s.error,
+        fetch: s.fetch,
+        startDownload: s.startDownload,
+        removeModel: s.removeModel,
+        setDefault: s.setDefault,
+        setDownloadProgress: s.setDownloadProgress,
+      }))
+    );
   const [filter, setFilter] = useState<CategoryFilter>("all");
   const [sort, setSort] = useState<SortKey>("default");
 
   useEffect(() => { fetch(); }, [fetch]);
 
-  useEffect(() => {
-    const unlisten = listen<DownloadProgress>("model-download-progress", (event) => {
-      const { key, percent, bytesDownloaded, totalBytes } = event.payload;
-      setDownloadProgress(key, { percent, bytesDownloaded, totalBytes });
-    });
-    return () => { unlisten.then((fn) => fn()); };
-  }, [setDownloadProgress]);
+  // Throttle download progress updates to one per animation frame.
+  useThrottledEvent<DownloadProgress>("model-download-progress", (payload) => {
+    const { key, percent, bytesDownloaded, totalBytes } = payload;
+    setDownloadProgress(key, { percent, bytesDownloaded, totalBytes });
+  });
 
   // Build a map: language → model key from defaultForLanguages
   const defaultsByLang: Record<string, string> = {};

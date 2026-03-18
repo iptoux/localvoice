@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, RefreshCw, BookOpen, Wand2, Lightbulb, Filter, X } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import type { AmbiguousTerm, CorrectionRule, DictionaryEntry, FillerWord } from "../types";
 import { useAmbiguityStore } from "../stores/ambiguity-store";
 import { useDictionaryStore } from "../stores/dictionary-store";
@@ -247,7 +248,14 @@ function RuleForm({ initial, onSave, onClose }: RuleFormProps) {
 // ── Terms tab ─────────────────────────────────────────────────────────────────
 
 function TermsTab() {
-  const { entries, addEntry, editEntry, removeEntry } = useDictionaryStore();
+  const { entries, addEntry, editEntry, removeEntry } = useDictionaryStore(
+    useShallow((s) => ({
+      entries: s.entries,
+      addEntry: s.addEntry,
+      editEntry: s.editEntry,
+      removeEntry: s.removeEntry,
+    }))
+  );
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<DictionaryEntry | undefined>();
 
@@ -333,7 +341,15 @@ function TermsTab() {
 // ── Rules tab ─────────────────────────────────────────────────────────────────
 
 function RulesTab() {
-  const { rules, addRule, editRule, toggleRule, removeRule } = useDictionaryStore();
+  const { rules, addRule, editRule, toggleRule, removeRule } = useDictionaryStore(
+    useShallow((s) => ({
+      rules: s.rules,
+      addRule: s.addRule,
+      editRule: s.editRule,
+      toggleRule: s.toggleRule,
+      removeRule: s.removeRule,
+    }))
+  );
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<CorrectionRule | undefined>();
 
@@ -450,7 +466,16 @@ function RulesTab() {
 // ── Suggestions tab ───────────────────────────────────────────────────────────
 
 function SuggestionsTab() {
-  const { terms, loading, error, fetch, accept, dismiss } = useAmbiguityStore();
+  const { terms, loading, error, fetch, accept, dismiss } = useAmbiguityStore(
+    useShallow((s) => ({
+      terms: s.terms,
+      loading: s.loading,
+      error: s.error,
+      fetch: s.fetch,
+      accept: s.accept,
+      dismiss: s.dismiss,
+    }))
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [customTarget, setCustomTarget] = useState("");
 
@@ -640,7 +665,17 @@ const FILLER_LANGUAGES = [
 ];
 
 function FillerWordsTab() {
-  const { words, loading, error, fetch, add, remove, reset } = useFillerWordsStore();
+  const { words, loading, error, fetch, add, remove, reset } = useFillerWordsStore(
+    useShallow((s) => ({
+      words: s.words,
+      loading: s.loading,
+      error: s.error,
+      fetch: s.fetch,
+      add: s.add,
+      remove: s.remove,
+      reset: s.reset,
+    }))
+  );
   const [lang, setLang] = useState("de");
   const [newWord, setNewWord] = useState("");
 
@@ -744,7 +779,9 @@ type Tab = "terms" | "rules" | "suggestions" | "fillers";
 
 export default function Dictionary() {
   const [activeTab, setActiveTab] = useState<Tab>("rules");
-  const { fetchAll, error } = useDictionaryStore();
+  const { fetchAll, error } = useDictionaryStore(
+    useShallow((s) => ({ fetchAll: s.fetchAll, error: s.error }))
+  );
 
   useEffect(() => {
     fetchAll();

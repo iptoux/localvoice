@@ -1,0 +1,10 @@
+{
+  "id": "evt-1773840061755-7d147454",
+  "trigger": "feature_success",
+  "timestamp": "2026-03-18T13:21:01.756Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773836357428-erot9bn98",
+  "featureName": "Tauri Event Debouncing for High-Frequency Sidecar Events",
+  "passes": true
+}

@@ -1,0 +1,71 @@
+{
+  "category": "Uncategorized",
+  "description": "Cross-Platform Monorepo Version Bump Script\n\nCreate a shell script (bash/sh) that increments the version number across all packages in the npm workspace.\n\nRequirements:\n- Must work on Windows (Git Bash, WSL, PowerShell), Linux, and macOS\n- Support semantic versioning: `--major`, `--minor`, `--patch` flags (default: patch)\n- Update version in all package.json files in apps/ and libs/ directories\n- Update inter-package dependencies (e.g., @automaker/utils from \"1.0.0\" to \"1.0.1\")\n- Read current version from root workspace package.json or specified package\n- Validate version format (semver)\n- Print summary of changes made\n- Optional dry-run flag to preview changes without modifying files\n\nFiles to update:\n- apps/ui/package.json\n- apps/server/package.json\n- libs/utils/package.json\n- libs/types/package.json\n- libs/spec-parser/package.json\n- libs/prompts/package.json\n- libs/platform/package.json\n- libs/model-resolver/package.json\n- libs/git-utils/package.json\n- libs/dependency-resolver/package.json\n\nEdge cases:\n- Handle packages that don't have the target version (skip with warning)\n- Preserve formatting and comments in package.json files\n- Handle npm workspace peer dependencies if present",
+  "title": "",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "lite",
+  "requirePlanApproval": true,
+  "dependencies": [],
+  "status": "waiting_approval",
+  "createdAt": "2026-03-18T14:01:58.602Z",
+  "id": "feature-1773842518602-4hou1ono5n2",
+  "descriptionHistory": [
+    {
+      "description": "Ein Scripts (windows, linux, mac) mit dem ich die versions nummer anheben kann. Das script soll dann in allen benötigten files (package.json, tauri.config,ts, cargo.toml, etc) die versions nummer anpassen.",
+      "timestamp": "2026-03-18T14:01:59.016Z",
+      "source": "initial"
+    },
+    {
+      "description": "Cross-Platform Monorepo Version Bump Script\n\nCreate a shell script (bash/sh) that increments the version number across all packages in the npm workspace.\n\nRequirements:\n- Must work on Windows (Git Bash, WSL, PowerShell), Linux, and macOS\n- Support semantic versioning: `--major`, `--minor`, `--patch` flags (default: patch)\n- Update version in all package.json files in apps/ and libs/ directories\n- Update inter-package dependencies (e.g., @automaker/utils from \"1.0.0\" to \"1.0.1\")\n- Read current version from root workspace package.json or specified package\n- Validate version format (semver)\n- Print summary of changes made\n- Optional dry-run flag to preview changes without modifying files\n\nFiles to update:\n- apps/ui/package.json\n- apps/server/package.json\n- libs/utils/package.json\n- libs/types/package.json\n- libs/spec-parser/package.json\n- libs/prompts/package.json\n- libs/platform/package.json\n- libs/model-resolver/package.json\n- libs/git-utils/package.json\n- libs/dependency-resolver/package.json\n\nEdge cases:\n- Handle packages that don't have the target version (skip with warning)\n- Preserve formatting and comments in package.json files\n- Handle npm workspace peer dependencies if present",
+      "timestamp": "2026-03-18T14:09:02.906Z",
+      "source": "enhance",
+      "enhancementMode": "improve"
+    }
+  ],
+  "workMode": "custom",
+  "startedAt": "2026-03-18T14:09:10.599Z",
+  "planSpec": {
+    "status": "approved",
+    "version": 3,
+    "reviewedByUser": true,
+    "content": "## Revised Planning Outline\n\n**Goal**: Create cross-platform version bump scripts for a monorepo structure (bash/sh + PowerShell).\n\n**Approach**: Create two scripts that work identically across platforms:\n1. `scripts/version-bump.sh` - bash/sh script for Linux/macOS/Git Bash/WSL\n2. `scripts/version-bump.ps1` - PowerShell script for Windows native\n\nBoth scripts will:\n- Support `--major`, `--minor`, `--patch` flags (default: patch)\n- Update version in all package.json files in apps/ and libs/ directories\n- Update inter-package dependencies\n- Include `--dry-run` preview mode\n- Validate semver format\n- Print change summary\n\n**Files to Touch**:\n- `scripts/version-bump.sh` (new)\n- `scripts/version-bump.ps1` (new)\n\n```tasks\n- [ ] T001: Create scripts/ directory | File: scripts/\n- [ ] T002: Write cross-platform version-bump.sh (bash) | File: scripts/version-bump.sh\n- [ ] T003: Write cross-platform version-bump.ps1 (PowerShell) | File: scripts/version-bump.ps1\n```\n\n**Risks**:\n- `jq` dependency for bash script (use Node.js JSON parsing as fallback)\n- PowerShell JSON handling is native, no extra deps needed\n- Cross-platform line endings (LF vs CRLF)\n\n---",
+    "generatedAt": "2026-03-18T14:09:31.925Z",
+    "tasks": [
+      {
+        "id": "T001",
+        "description": "Create scripts/ directory",
+        "filePath": "scripts/",
+        "status": "completed",
+        "summary": "Created scripts/ directory at the root of the project."
+      },
+      {
+        "id": "T002",
+        "description": "Write cross-platform version-bump.sh (bash)",
+        "filePath": "scripts/version-bump.sh",
+        "status": "completed",
+        "summary": "Created `scripts/version-bump.sh` with:"
+      },
+      {
+        "id": "T003",
+        "description": "Write cross-platform version-bump.ps1 (PowerShell)",
+        "filePath": "scripts/version-bump.ps1",
+        "status": "completed",
+        "summary": "Created `scripts/version-bump.ps1` with:"
+      }
+    ],
+    "tasksTotal": 3,
+    "tasksCompleted": 3,
+    "approvedAt": "2026-03-18T14:10:35.234Z"
+  },
+  "updatedAt": "2026-03-18T14:15:03.342Z",
+  "summary": "## Summary: Cross-Platform Monorepo Version Bump Script\n\n### Changes Implemented\n- Created `scripts/` directory\n- Implemented `scripts/version-bump.sh` (bash) with:\n  - `--major`, `--minor`, `--patch` flags (default: patch)\n  - `--dry-run` preview mode\n  - Cross-platform Windows path handling via `cygpath -m`\n  - Semver validation\n  - Inter-package dependency updates\n  - Help documentation\n- Implemented `scripts/version-bump.ps1` (PowerShell) with:\n  - `-BumpType` parameter and shortcut flags (`--major/--minor/--patch`)\n  - `-DryRun` switch for preview mode\n  - PowerShell 5.1 and 7+ compatibility\n  - Native JSON handling\n  - Inter-package dependency updates\n  - Help documentation\n\n### Files Modified\n- `scripts/` (directory created)\n- `scripts/version-bump.sh` (new)\n- `scripts/version-bump.ps1` (new)\n- `package.json` (version reset to 0.1.0 after testing)\n\n### Notes for Developer\n- Run bash script: `bash scripts/version-bump.sh [--major|--minor|--patch] [--dry-run]`\n- Run PowerShell script: `powershell -File scripts/version-bump.ps1 [-BumpType Major|Minor|Patch] [-DryRun]`\n- Both scripts scan `apps/` and `libs/` directories for package.json files\n- Scripts update inter-package dependencies for all @automaker/* packages",
+  "justFinishedAt": "2026-03-18T14:15:03.342Z"
+}

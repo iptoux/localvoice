@@ -1,0 +1,235 @@
+{
+  "version": 1,
+  "events": [
+    {
+      "id": "evt-1773843315981-2328fb66",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T14:15:15.981Z",
+      "featureName": "",
+      "featureId": "feature-1773842518602-4hou1ono5n2"
+    },
+    {
+      "id": "evt-1773843303380-3905c05d",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T14:15:03.380Z",
+      "featureId": "feature-1773842518602-4hou1ono5n2"
+    },
+    {
+      "id": "evt-1773842899636-13ad1318",
+      "trigger": "feature_created",
+      "timestamp": "2026-03-18T14:08:19.636Z",
+      "featureName": "Untitled Feature",
+      "featureId": "feature-1773842899336-1y47y8afme1"
+    },
+    {
+      "id": "evt-1773842821770-199c0c1d",
+      "trigger": "feature_created",
+      "timestamp": "2026-03-18T14:07:01.770Z",
+      "featureName": "Untitled Feature",
+      "featureId": "feature-1773842821643-2m1e9dobrlu"
+    },
+    {
+      "id": "evt-1773842519021-1fe90045",
+      "trigger": "feature_created",
+      "timestamp": "2026-03-18T14:01:59.021Z",
+      "featureName": "Untitled Feature",
+      "featureId": "feature-1773842518602-4hou1ono5n2"
+    },
+    {
+      "id": "evt-1773842173161-2ce1722c",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:56:13.162Z",
+      "featureName": "Zustand Slice Selector Memoization",
+      "featureId": "feature-1773836413214-u71c43xwn"
+    },
+    {
+      "id": "evt-1773842162259-dc0ca134",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:56:02.259Z",
+      "featureName": "Zustand Slice Selector Memoization",
+      "featureId": "feature-1773836413214-u71c43xwn"
+    },
+    {
+      "id": "evt-1773841263076-7c317371",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:41:03.076Z",
+      "featureName": "Web Worker for Heavy Text Post-Processing",
+      "featureId": "feature-1773836410468-oimqgfaqs"
+    },
+    {
+      "id": "evt-1773841262476-7bd5d2de",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:41:02.476Z",
+      "featureName": "Virtual List for Long Transcription / History Views",
+      "featureId": "feature-1773836390955-ppos4njzi"
+    },
+    {
+      "id": "evt-1773841261839-c2694c48",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:41:01.839Z",
+      "featureName": "Tauri Event Debouncing for High-Frequency Sidecar Events",
+      "featureId": "feature-1773836357428-erot9bn98"
+    },
+    {
+      "id": "evt-1773841261065-463c5295",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:41:01.065Z",
+      "featureName": "Route-Based Code Splitting with Lazy Loading",
+      "featureId": "feature-1773836340645-r3tw4wq5g"
+    },
+    {
+      "id": "evt-1773840392321-0592754d",
+      "trigger": "feature_error",
+      "timestamp": "2026-03-18T13:26:32.321Z",
+      "featureName": "Es scheint einen Bug bei der Aufnahme der Voice zu geben, dies, wenn ich die Audio abspiele zum test",
+      "featureId": "feature-1773839497002-6ix6kma0ga2"
+    },
+    {
+      "id": "evt-1773840330512-000974f8",
+      "trigger": "feature_error",
+      "timestamp": "2026-03-18T13:25:30.512Z",
+      "featureName": "Es scheint einen Bug bei der Aufnahme der Voice zu geben, dies, wenn ich die Audio abspiele zum test",
+      "featureId": "feature-1773839497002-6ix6kma0ga2"
+    },
+    {
+      "id": "evt-1773840328751-81d57aa0",
+      "trigger": "feature_error",
+      "timestamp": "2026-03-18T13:25:28.751Z",
+      "featureName": "Zustand Slice Selector Memoization",
+      "featureId": "feature-1773836413214-u71c43xwn"
+    },
+    {
+      "id": "evt-1773840320700-c6dd63d6",
+      "trigger": "feature_error",
+      "timestamp": "2026-03-18T13:25:20.700Z",
+      "featureName": "Es scheint einen Bug bei der Aufnahme der Voice zu geben, dies, wenn ich die Audio abspiele zum test",
+      "featureId": "feature-1773839497002-6ix6kma0ga2"
+    },
+    {
+      "id": "evt-1773840320208-7aec577e",
+      "trigger": "feature_error",
+      "timestamp": "2026-03-18T13:25:20.208Z",
+      "featureName": "Zustand Slice Selector Memoization",
+      "featureId": "feature-1773836413214-u71c43xwn"
+    },
+    {
+      "id": "evt-1773840282524-61a7fac4",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:24:42.524Z",
+      "featureName": "Virtual List for Long Transcription / History Views",
+      "featureId": "feature-1773836390955-ppos4njzi"
+    },
+    {
+      "id": "evt-1773840279515-d24eaa1d",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:24:39.515Z",
+      "featureName": "Route-Based Code Splitting with Lazy Loading",
+      "featureId": "feature-1773836340645-r3tw4wq5g"
+    },
+    {
+      "id": "evt-1773840061783-91436463",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:21:01.783Z",
+      "featureName": "Tauri Event Debouncing for High-Frequency Sidecar Events",
+      "featureId": "feature-1773836357428-erot9bn98"
+    },
+    {
+      "id": "evt-1773840061755-7d147454",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:21:01.756Z",
+      "featureName": "Tauri Event Debouncing for High-Frequency Sidecar Events",
+      "featureId": "feature-1773836357428-erot9bn98"
+    },
+    {
+      "id": "evt-1773840032013-d64e680d",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:20:32.013Z",
+      "featureName": "Web Worker for Heavy Text Post-Processing",
+      "featureId": "feature-1773836410468-oimqgfaqs"
+    },
+    {
+      "id": "evt-1773840031998-212a941a",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:20:31.998Z",
+      "featureName": "Web Worker for Heavy Text Post-Processing",
+      "featureId": "feature-1773836410468-oimqgfaqs"
+    },
+    {
+      "id": "evt-1773839545680-42b83e97",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:12:25.680Z",
+      "featureName": "Route-Based Code Splitting with Lazy Loading",
+      "featureId": "feature-1773836340645-r3tw4wq5g"
+    },
+    {
+      "id": "evt-1773839497096-8b4f7ff4",
+      "trigger": "feature_created",
+      "timestamp": "2026-03-18T13:11:37.096Z",
+      "featureName": "Es scheint einen Bug bei der Aufnahme der Voice zu geben, dies, wenn ich die Audio abspiele zum test",
+      "featureId": "feature-1773839497002-6ix6kma0ga2"
+    },
+    {
+      "id": "evt-1773839446895-d4457656",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:10:46.895Z",
+      "featureName": "Route-Based Code Splitting with Lazy Loading",
+      "featureId": "feature-1773836340645-r3tw4wq5g"
+    },
+    {
+      "id": "evt-1773839240150-6bc6214c",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:07:20.150Z",
+      "featureName": "Virtual List for Long Transcription / History Views",
+      "featureId": "feature-1773836390955-ppos4njzi"
+    },
+    {
+      "id": "evt-1773839098632-a64cd97b",
+      "trigger": "feature_success",
+      "timestamp": "2026-03-18T13:04:58.632Z",
+      "featureName": "Virtual List for Long Transcription / History Views",
+      "featureId": "feature-1773836390955-ppos4njzi"
+    },
+    {
+      "id": "evt-1773839065239-2c01fa98",
+      "trigger": "feature_error",
+      "timestamp": "2026-03-18T13:04:25.239Z",
+      "featureName": "Route-Based Code Splitting with Lazy Loading",
+      "featureId": "feature-1773836340645-r3tw4wq5g"
+    },
+    {
+      "id": "evt-1773838193635-e8627bce",
+      "trigger": "feature_error",
+      "timestamp": "2026-03-18T12:49:53.635Z",
+      "featureName": "Route-Based Code Splitting with Lazy Loading",
+      "featureId": "feature-1773836340645-r3tw4wq5g"
+    },
+    {
+      "id": "evt-1773837996418-33687071",
+      "trigger": "feature_error",
+      "timestamp": "2026-03-18T12:46:36.418Z",
+      "featureName": "Virtual List for Long Transcription / History Views",
+      "featureId": "feature-1773836390955-ppos4njzi"
+    },
+    {
+      "id": "evt-1773837958831-ace877d8",
+      "trigger": "feature_error",
+      "timestamp": "2026-03-18T12:45:58.831Z",
+      "featureName": "Route-Based Code Splitting with Lazy Loading",
+      "featureId": "feature-1773836340645-r3tw4wq5g"
+    },
+    {
+      "id": "evt-1773837662493-cdfd2f61",
+      "trigger": "feature_error",
+      "timestamp": "2026-03-18T12:41:02.493Z",
+      "featureName": "Route-Based Code Splitting with Lazy Loading",
+      "featureId": "feature-1773836340645-r3tw4wq5g"
+    },
+    {
+      "id": "evt-1773836746151-118b1e04",
+      "trigger": "feature_error",
+      "timestamp": "2026-03-18T12:25:46.151Z",
+      "featureName": "Route-Based Code Splitting with Lazy Loading",
+      "featureId": "feature-1773836340645-r3tw4wq5g"
+    }
+  ]
+}

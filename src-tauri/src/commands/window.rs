@@ -42,9 +42,9 @@ pub fn open_main_window(app: AppHandle) -> CmdResult<()> {
 #[tauri::command]
 pub fn expand_pill(app: AppHandle) -> CmdResult<()> {
     if let Some(w) = app.get_webview_window("pill") {
-        w.set_size(tauri::LogicalSize::new(300.0, 280.0))
+        w.set_max_size(Some(tauri::LogicalSize::new(220.0, 280.0)))
             .map_err(|e| e.to_string())?;
-        w.set_max_size(Some(tauri::LogicalSize::new(300.0, 280.0)))
+        w.set_size(tauri::LogicalSize::new(220.0, 280.0))
             .map_err(|e| e.to_string())?;
         Ok(())
     } else {
@@ -56,9 +56,10 @@ pub fn expand_pill(app: AppHandle) -> CmdResult<()> {
 #[tauri::command]
 pub fn collapse_pill(app: AppHandle) -> CmdResult<()> {
     if let Some(w) = app.get_webview_window("pill") {
-        w.set_max_size(Some(tauri::LogicalSize::new(300.0, 64.0)))
+        // Set size first, then constrain — avoids max_size blocking the resize on Windows.
+        w.set_size(tauri::LogicalSize::new(220.0, 70.0))
             .map_err(|e| e.to_string())?;
-        w.set_size(tauri::LogicalSize::new(300.0, 64.0))
+        w.set_max_size(Some(tauri::LogicalSize::new(220.0, 70.0)))
             .map_err(|e| e.to_string())?;
         Ok(())
     } else {

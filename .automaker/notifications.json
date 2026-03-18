@@ -1,0 +1,203 @@
+{
+  "version": 1,
+  "notifications": [
+    {
+      "id": "55135c14-fc91-4b2e-8c49-a525821624ca",
+      "type": "auto_mode_error",
+      "title": "Route-Based Code Splitting with Lazy Loading",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T12:25:46.154Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836340645-r3tw4wq5g",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "c23e73ca-37cf-4a0b-9075-fc59785c8f3b",
+      "type": "auto_mode_error",
+      "title": "Route-Based Code Splitting with Lazy Loading",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T12:25:46.154Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836340645-r3tw4wq5g",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "98c01044-42d8-4efc-90c1-9b52dde54042",
+      "type": "auto_mode_error",
+      "title": "Route-Based Code Splitting with Lazy Loading",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T12:41:02.494Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836340645-r3tw4wq5g",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "ab50b31c-74c7-49ef-be9a-91d98c891fef",
+      "type": "auto_mode_error",
+      "title": "Route-Based Code Splitting with Lazy Loading",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T12:45:58.832Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836340645-r3tw4wq5g",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "8a1ec5dc-e14d-472d-aaac-0197391773b1",
+      "type": "auto_mode_error",
+      "title": "Virtual List for Long Transcription / History Views",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T12:46:36.421Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836390955-ppos4njzi",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "7de2e673-37a2-4805-8d72-337b447d118f",
+      "type": "auto_mode_error",
+      "title": "Route-Based Code Splitting with Lazy Loading",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T12:49:53.639Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836340645-r3tw4wq5g",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "939657e9-aa3c-41de-a628-6de5c1b2774b",
+      "type": "auto_mode_error",
+      "title": "Route-Based Code Splitting with Lazy Loading",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T13:04:25.248Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836340645-r3tw4wq5g",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "9d7a8821-413c-44bd-a5b1-e62427059ce5",
+      "type": "feature_verified",
+      "title": "Virtual List for Long Transcription / History Views",
+      "message": "Feature Verified",
+      "createdAt": "2026-03-18T13:04:58.610Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836390955-ppos4njzi",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "926efe19-f353-454a-9e54-6918298a9f3c",
+      "type": "feature_verified",
+      "title": "Route-Based Code Splitting with Lazy Loading",
+      "message": "Feature Verified",
+      "createdAt": "2026-03-18T13:10:46.875Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836340645-r3tw4wq5g",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "f6077673-5998-45c9-973b-4978519a5803",
+      "type": "feature_verified",
+      "title": "Web Worker for Heavy Text Post-Processing",
+      "message": "Feature Verified",
+      "createdAt": "2026-03-18T13:20:31.965Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836410468-oimqgfaqs",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "e6ca21a5-ccc2-49b5-8697-30bd76d6564f",
+      "type": "feature_verified",
+      "title": "Tauri Event Debouncing for High-Frequency Sidecar Events",
+      "message": "Feature Verified",
+      "createdAt": "2026-03-18T13:21:01.721Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836357428-erot9bn98",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "34985217-3e9f-4a4b-a3cc-9893dabddee8",
+      "type": "auto_mode_error",
+      "title": "Zustand Slice Selector Memoization",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T13:25:20.211Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836413214-u71c43xwn",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "ce149edb-07c4-461e-926f-799172ce0145",
+      "type": "auto_mode_error",
+      "title": "Es scheint einen Bug bei der Aufnahme der Voice zu geben, dies, wenn ich die Audio abspiele zum test",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T13:25:20.706Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773839497002-6ix6kma0ga2",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "e7dcdc15-5678-4a13-a8d9-62d69b43d00e",
+      "type": "auto_mode_error",
+      "title": "Zustand Slice Selector Memoization",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T13:25:28.752Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836413214-u71c43xwn",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "dbfc8eb1-5bbe-45a3-ad4c-bd496f21631e",
+      "type": "auto_mode_error",
+      "title": "Es scheint einen Bug bei der Aufnahme der Voice zu geben, dies, wenn ich die Audio abspiele zum test",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T13:25:30.526Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773839497002-6ix6kma0ga2",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "3af5df39-f7e2-4479-810f-25665bae4c38",
+      "type": "auto_mode_error",
+      "title": "Es scheint einen Bug bei der Aufnahme der Voice zu geben, dies, wenn ich die Audio abspiele zum test",
+      "message": "Auto Mode Error: Claude Code process exited with code 1",
+      "createdAt": "2026-03-18T13:26:32.336Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773839497002-6ix6kma0ga2",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "490a15bc-b250-4a7f-8040-9cbf9f95bfc0",
+      "type": "feature_verified",
+      "title": "Zustand Slice Selector Memoization",
+      "message": "Feature Verified",
+      "createdAt": "2026-03-18T13:56:02.235Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773836413214-u71c43xwn",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    },
+    {
+      "id": "0bc038c4-3732-4898-b410-8ee689f745f9",
+      "type": "feature_waiting_approval",
+      "title": "feature-1773842518602-4hou1ono5n2",
+      "message": "Feature Ready for Review",
+      "createdAt": "2026-03-18T14:15:03.349Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1773842518602-4hou1ono5n2",
+      "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice"
+    }
+  ]
+}

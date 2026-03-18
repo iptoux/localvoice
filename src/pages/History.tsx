@@ -10,6 +10,8 @@ import {
   listAvailableModels,
 } from "../lib/tauri";
 import type { ModelInfo } from "../types";
+import { VirtualList } from "../components/VirtualList";
+import { useWordDiff } from "../hooks/use-text-processor";
 
 const PAGE_SIZE = 50;
 
@@ -180,28 +182,32 @@ export default function History() {
           </div>
         </div>
 
-        {/* Session list (TASK-074) */}
-        <div className="flex-1 overflow-y-auto min-h-0 space-y-1">
-          {loading && (
-            <p className="text-muted-foreground text-sm py-8 text-center">Loading…</p>
-          )}
-          {error && (
-            <p className="text-rose-400 text-sm py-8 text-center">{error}</p>
-          )}
-          {!loading && !error && sessions.length === 0 && (
-            <p className="text-muted-foreground text-sm py-8 text-center">
-              No sessions found.
-            </p>
-          )}
-          {sessions.map((session) => (
-            <SessionRow
-              key={session.id}
-              session={session}
-              active={selected?.session.id === session.id}
-              onClick={() => openDetail(session)}
-            />
-          ))}
-        </div>
+        {/* Session list (TASK-074) — virtualized */}
+        {loading && (
+          <p className="text-muted-foreground text-sm py-8 text-center">Loading…</p>
+        )}
+        {error && (
+          <p className="text-rose-400 text-sm py-8 text-center">{error}</p>
+        )}
+        {!loading && !error && sessions.length === 0 && (
+          <p className="text-muted-foreground text-sm py-8 text-center">
+            No sessions found.
+          </p>
+        )}
+        {!loading && !error && sessions.length > 0 && (
+          <VirtualList
+            items={sessions}
+            estimateSize={72}
+            className="flex-1 min-h-0"
+            renderItem={(session) => (
+              <SessionRow
+                session={session}
+                active={selected?.session.id === session.id}
+                onClick={() => openDetail(session)}
+              />
+            )}
+          />
+        )}
 
         {/* Pagination (TASK-079) */}
         <Pagination
@@ -454,16 +460,20 @@ function SessionDrawer({
           </p>
         )}
 
-        {/* Confidence-colored segments (TASK-219) */}
+        {/* Confidence-colored segments (TASK-219) — virtualized for large lists */}
         {tab === "cleaned" && segments.length > 0 && (
           <details className="mt-4" open>
             <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground/70 select-none">
               {segments.length} segments
             </summary>
-            <ol className="mt-2 space-y-1.5">
-              {segments.map((seg) => (
-                <li
-                  key={seg.id}
+            <VirtualList
+              items={segments}
+              estimateSize={28}
+              overscan={10}
+              gap={6}
+              className="mt-2 max-h-64"
+              renderItem={(seg) => (
+                <div
                   className="text-xs flex items-start gap-2 group"
                   title={
                     seg.confidence !== undefined
@@ -481,9 +491,9 @@ function SessionDrawer({
                       {Math.round(seg.confidence * 100)}%
                     </span>
                   )}
-                </li>
-              ))}
-            </ol>
+                </div>
+              )}
+            />
           </details>
         )}
       </div>
@@ -666,14 +676,21 @@ function OutputBadge({ mode, ok }: { mode: string; ok: boolean }) {
   );
 }
 
-// ── Word diff (TASK-220) ──────────────────────────────────────────────────
+// ── Word diff (TASK-220) — offloaded to Web Worker ────────────────────────
 
 function WordDiff({ rawText, cleanedText }: { rawText: string; cleanedText: string }) {
-  const rawWords = rawText.split(/\s+/).filter(Boolean);
-  const cleanedWords = cleanedText.split(/\s+/).filter(Boolean);
+  const tokens = useWordDiff(rawText, cleanedText);
 
-  // Simple LCS-based word diff.
-  const diff = computeWordDiff(rawWords, cleanedWords);
+  if (!tokens) {
+    return (
+      <div className="text-sm leading-relaxed">
+        <p className="text-xs text-muted-foreground mb-2">
+          Raw → Cleaned comparison
+        </p>
+        <p className="text-xs text-muted-foreground italic">Computing diff…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="text-sm leading-relaxed">
@@ -681,7 +698,7 @@ function WordDiff({ rawText, cleanedText }: { rawText: string; cleanedText: stri
         Raw → Cleaned comparison
       </p>
       <p className="whitespace-pre-wrap">
-        {diff.map((token, i) => {
+        {tokens.map((token, i) => {
           if (token.type === "equal") {
             return <span key={i}>{token.value} </span>;
           }
@@ -701,52 +718,6 @@ function WordDiff({ rawText, cleanedText }: { rawText: string; cleanedText: stri
       </p>
     </div>
   );
-}
-
-interface DiffToken {
-  type: "equal" | "added" | "removed";
-  value: string;
-}
-
-function computeWordDiff(a: string[], b: string[]): DiffToken[] {
-  // Build LCS table.
-  const m = a.length;
-  const n = b.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] =
-        a[i - 1] === b[j - 1]
-          ? dp[i - 1][j - 1] + 1
-          : Math.max(dp[i - 1][j], dp[i][j - 1]);
-    }
-  }
-
-  // Backtrack to produce diff tokens.
-  const tokens: DiffToken[] = [];
-  let i = m;
-  let j = n;
-  const stack: DiffToken[] = [];
-
-  while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && a[i - 1] === b[j - 1]) {
-      stack.push({ type: "equal", value: a[i - 1] });
-      i--;
-      j--;
-    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-      stack.push({ type: "added", value: b[j - 1] + " " });
-      j--;
-    } else {
-      stack.push({ type: "removed", value: a[i - 1] + " " });
-      i--;
-    }
-  }
-
-  // Reverse since we built it backwards.
-  for (let k = stack.length - 1; k >= 0; k--) {
-    tokens.push(stack[k]);
-  }
-  return tokens;
 }
 
 // ── Confidence indicator (TASK-219) ───────────────────────────────────────

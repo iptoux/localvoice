@@ -1,17 +1,20 @@
 import "./index.css";
-import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { listen } from "@tauri-apps/api/event";
 import { Sidebar } from "./components/layout/Sidebar";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Onboarding } from "./components/Onboarding";
-import Dashboard from "./pages/Dashboard";
-import History from "./pages/History";
-import Dictionary from "./pages/Dictionary";
-import Logs from "./pages/Logs";
-import Models from "./pages/Models";
-import SettingsPage from "./pages/SettingsPage";
+import { PageSpinner } from "./components/Spinner";
 import { checkFirstRun, getSettings } from "./lib/tauri";
 import { applyTheme, watchSystemTheme, type Theme } from "./lib/theme";
+
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const History = lazy(() => import("./pages/History"));
+const Dictionary = lazy(() => import("./pages/Dictionary"));
+const Logs = lazy(() => import("./pages/Logs"));
+const Models = lazy(() => import("./pages/Models"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 
 export function MainApp() {
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -40,17 +43,20 @@ export function MainApp() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
+        <NavigationListener />
         <div className="flex h-screen bg-background text-foreground">
           <Sidebar />
           <main className="flex-1 overflow-auto">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/dictionary" element={<Dictionary />} />
-              <Route path="/models" element={<Models />} />
-              <Route path="/logs" element={<Logs />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Routes>
+            <Suspense fallback={<PageSpinner />}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/dictionary" element={<Dictionary />} />
+                <Route path="/models" element={<Models />} />
+                <Route path="/logs" element={<Logs />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Routes>
+            </Suspense>
           </main>
         </div>
         {showOnboarding && (
@@ -59,4 +65,17 @@ export function MainApp() {
       </BrowserRouter>
     </ErrorBoundary>
   );
+}
+
+function NavigationListener() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const unlisten = listen<string>("navigate-to", (event) => {
+      navigate(event.payload);
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, [navigate]);
+
+  return null;
 }

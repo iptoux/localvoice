@@ -1,0 +1,16 @@
+{
+  "category": "enhancement",
+  "description": "Offload CPU-intensive text processing tasks — such as transcript formatting, punctuation restoration, or keyword extraction — to a dedicated Web Worker. Use a message queue with transferable objects to avoid serialization overhead. Keep the main thread free for UI interactions.\n\n**Rationale:** Text post-processing on the main thread blocks the event loop, causing UI freezes during active transcription. Moving this work off-thread ensures the UI stays responsive even during intensive processing bursts.",
+  "title": "Web Worker for Heavy Text Post-Processing",
+  "status": "in_progress",
+  "id": "feature-1773836410468-oimqgfaqs",
+  "createdAt": "2026-03-18T12:20:10.469Z",
+  "descriptionHistory": [
+    {
+      "description": "Offload CPU-intensive text processing tasks — such as transcript formatting, punctuation restoration, or keyword extraction — to a dedicated Web Worker. Use a message queue with transferable objects to avoid serialization overhead. Keep the main thread free for UI interactions.\n\n**Rationale:** Text post-processing on the main thread blocks the event loop, causing UI freezes during active transcription. Moving this work off-thread ensures the UI stays responsive even during intensive processing bursts.",
+      "timestamp": "2026-03-18T12:20:10.469Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-03-18T13:04:58.808Z"
+}

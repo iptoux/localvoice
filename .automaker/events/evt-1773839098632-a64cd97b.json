@@ -1,0 +1,10 @@
+{
+  "id": "evt-1773839098632-a64cd97b",
+  "trigger": "feature_success",
+  "timestamp": "2026-03-18T13:04:58.632Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773836390955-ppos4njzi",
+  "featureName": "Virtual List for Long Transcription / History Views",
+  "passes": true
+}
