@@ -38,7 +38,12 @@ Alternatively, set `WHISPER_MODEL_PATH` to the full path of the model file, or u
 2. Select the language that matches your speech.
 3. "Auto-detect" works for any language but is slightly slower.
 
+## Troubleshooting
+
+If transcription fails, see the [developer debugging guide](../dev/transcription-pipeline.md#debugging-transcription-issues).
+
 ## Related
 
 - [Recording](recording.md) — how to record audio
 - [Developer notes: MS-03 Transcription](../dev/ms03-transcription.md)
+- [Whisper Sidecar Pipeline](../dev/transcription-pipeline.md)

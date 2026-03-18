@@ -1,0 +1,11 @@
+{
+  "id": "evt-1773846111441-d0c40f06",
+  "trigger": "feature_error",
+  "timestamp": "2026-03-18T15:01:51.441Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773845870966-1yh9k7kpe",
+  "featureName": "CSS Containment for Independent UI Panels",
+  "error": "Model not found: opencode/glm-5-free.",
+  "errorType": "model_not_found"
+}

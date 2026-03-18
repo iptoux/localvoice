@@ -1,4 +1,5 @@
 mod audio;
+pub mod benchmark;
 mod commands;
 mod db;
 mod dictionary;
@@ -13,6 +14,7 @@ mod stats;
 mod transcription;
 
 use commands::{
+    benchmark as cmd_benchmark,
     dictionary as cmd_dictionary, filler_words as cmd_filler_words, history as cmd_history,
     logs as cmd_logs, models as cmd_models, recording, settings, stats as cmd_stats,
     system as cmd_system, transcription as cmd_transcription, window,
@@ -174,6 +176,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            // Benchmark
+            cmd_benchmark::run_transcription_benchmark,
             // Settings
             settings::get_settings,
             settings::update_setting,

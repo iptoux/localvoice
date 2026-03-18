@@ -1,0 +1,30 @@
+{
+  "category": "chore",
+  "description": "Create a docs/adrs/ directory with markdown files documenting key architectural decisions such as the sidecar approach for whisper.cpp, the dual-window design, and SQLite over other databases. Each ADR follows a standard template with context, decision, and consequences sections.\n\n**Rationale:** Preserves institutional knowledge about why specific technical choices were made. Helps new developers understand the reasoning behind non-obvious decisions and prevents accidental re-architecting during future work.",
+  "title": "Architecture Decision Records (ADRs)",
+  "status": "in_progress",
+  "id": "feature-1773847052228-q1wwlzwc4",
+  "createdAt": "2026-03-18T15:17:32.229Z",
+  "descriptionHistory": [
+    {
+      "description": "Create a docs/adrs/ directory with markdown files documenting key architectural decisions such as the sidecar approach for whisper.cpp, the dual-window design, and SQLite over other databases. Each ADR follows a standard template with context, decision, and consequences sections.\n\n**Rationale:** Preserves institutional knowledge about why specific technical choices were made. Helps new developers understand the reasoning behind non-obvious decisions and prevents accidental re-architecting during future work.",
+      "timestamp": "2026-03-18T15:17:32.229Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-03-18T15:19:19.564Z",
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": [],
+  "startedAt": "2026-03-18T15:18:06.312Z",
+  "summary": "## Summary: Architecture Decision Records (ADRs)\n\n### Changes Implemented\n- Created `docs/adrs/` directory with 4 markdown files:\n  - `001-whispercpp-sidecar.md` - Documents using whisper.cpp as a sidecar process instead of FFI bindings\n  - `002-dual-window-design.md` - Documents the dual-window design (pill + main window)\n  - `003-sqlite-database.md` - Documents using SQLite as the single local database\n  - `index.md` - Index file with ADR list and guidance for adding new ADRs\n\n### Files Modified\n- Created: `docs/adrs/index.md`\n- Created: `docs/adrs/001-whispercpp-sidecar.md`\n- Created: `docs/adrs/002-dual-window-design.md`\n- Created: `docs/adrs/003-sqlite-database.md`\n\n### Notes for Developer\n- Each ADR follows the standard template with Context, Decision, and Consequences sections\n- ADRs are numbered sequentially (001, 002, 003)\n- Index file provides guidance for adding future ADRs"
+}

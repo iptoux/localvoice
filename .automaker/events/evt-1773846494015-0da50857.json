@@ -1,0 +1,10 @@
+{
+  "id": "evt-1773846494015-0da50857",
+  "trigger": "feature_success",
+  "timestamp": "2026-03-18T15:08:14.016Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773845870929-2wp46cz88",
+  "featureName": "Preload Critical Assets with Link Rel Hints",
+  "passes": true
+}

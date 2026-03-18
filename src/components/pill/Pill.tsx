@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "../../stores/app-store";
 import { expandPill, collapsePill, openMainWindow } from "../../lib/tauri";
@@ -95,7 +96,7 @@ export function Pill() {
         ) : (
           <>
             <StateIcon state={recordingState} />
-            <span data-tauri-drag-region className="flex-1 truncate">
+            <span data-tauri-drag-region className="flex-1 truncate contain-layout-paint">
               {recordingState === "error" && recordingError ? (
                 recordingError
               ) : recordingState === "success" ? (
@@ -121,9 +122,14 @@ export function Pill() {
 
 function IdleContent() {
   const lastTranscription = useAppStore((s) => s.lastTranscription);
-  const wordCount = lastTranscription?.cleanedText
-    ? lastTranscription.cleanedText.trim().split(/\s+/).filter(Boolean).length
-    : undefined;
+  // < 0.1ms — split + filter word count, memoized to prevent re-computation on every render
+  const wordCount = useMemo(
+    () =>
+      lastTranscription?.cleanedText
+        ? lastTranscription.cleanedText.trim().split(/\s+/).filter(Boolean).length
+        : undefined,
+    [lastTranscription?.cleanedText]
+  );
 
   return (
     <div
@@ -161,14 +167,18 @@ function SuccessContent() {
   const lastOutputResult = useAppStore((s) => s.lastOutputResult);
 
   const text = lastTranscription?.cleanedText ?? "Done";
-  const preview = text.length > 32 ? text.slice(0, 30) + "…" : text;
+  // < 0.1ms — string slice for preview, memoized to prevent re-computation on every render
+  const preview = useMemo(
+    () => (text.length > 32 ? text.slice(0, 30) + "…" : text),
+    [text]
+  );
 
   const modeLabel =
     lastOutputResult?.mode === "insert" ? "Inserted" : "Copied";
 
   return (
     <span data-tauri-drag-region className="flex items-center gap-3 min-w-0">
-      <OutputBadge label={modeLabel} success={lastOutputResult?.success ?? true} />
+      <MemoizedOutputBadge label={modeLabel} success={lastOutputResult?.success ?? true} />
       <span data-tauri-drag-region className="truncate" title={text}>
         {preview}
       </span>
@@ -196,9 +206,13 @@ function OutputBadge({
   );
 }
 
+const MemoizedOutputBadge = memo(OutputBadge, (prev, next) =>
+  prev.label === next.label && prev.success === next.success
+);
+
 // ── State icon ───────────────────────────────────────────────────────────────
 
-function StateIcon({ state }: { state: RecordingState }) {
+const StateIcon = memo(function StateIcon({ state }: { state: RecordingState }) {
   const isColored = state !== "idle";
   const strokeColor = isColored ? "white" : "currentColor";
 
@@ -259,7 +273,7 @@ function StateIcon({ state }: { state: RecordingState }) {
         />
       );
   }
-}
+});
 
 // ── Elapsed timer ────────────────────────────────────────────────────────────
 

@@ -1,0 +1,29 @@
+{
+  "category": "enhancement",
+  "description": "Wrap stable, frequently-re-rendered leaf components (buttons, status indicators, waveform displays) with React.memo and provide custom comparison functions for complex prop types like objects and arrays. Audit with React DevTools Profiler to identify the highest-render-count components first.\n\n**Rationale:** Without memoization, parent re-renders cascade down to all children regardless of whether their props changed. In a real-time audio/transcription UI, parent state changes frequently, making memoized leaves essential for smooth performance.",
+  "title": "Component-Level React.memo with Custom Comparators",
+  "status": "completed",
+  "id": "feature-1773845870899-6s02dadhz",
+  "createdAt": "2026-03-18T14:57:50.901Z",
+  "descriptionHistory": [
+    {
+      "description": "Wrap stable, frequently-re-rendered leaf components (buttons, status indicators, waveform displays) with React.memo and provide custom comparison functions for complex prop types like objects and arrays. Audit with React DevTools Profiler to identify the highest-render-count components first.\n\n**Rationale:** Without memoization, parent re-renders cascade down to all children regardless of whether their props changed. In a real-time audio/transcription UI, parent state changes frequently, making memoized leaves essential for smooth performance.",
+      "timestamp": "2026-03-18T14:57:50.901Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-03-18T15:10:56.706Z",
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": [],
+  "summary": "## Summary: Component-Level React.memo with Custom Comparators\n\n### Changes Implemented\n- Wrapped stable, frequently-re-rendering leaf components with `React.memo` and custom comparison functions across multiple files\n- Added `useMemo` to `IdleContent` and `SuccessContent` in Pill.tsx for derived values\n- Created utility file `src/lib/react-utils.ts` with comparison helper functions for future use\n- Components memoized:\n  - **Pill.tsx**: `OutputBadge`, `StateIcon`\n  - **ExpandedPill.tsx**: `LanguageBadge`, `QuickAction`\n  - **Dashboard.tsx**: `StatCard`, `ChartPlaceholder`\n  - **History.tsx**: `SessionRow`, `LanguageBadge`, `OutputBadge`, `ConfidenceDot`\n\n### Files Modified\n- `src/lib/react-utils.ts` (created)\n- `src/components/pill/Pill.tsx` (added memo to components, useMemo to content)\n- `src/components/pill/ExpandedPill.tsx` (added memo to components)\n- `src/pages/Dashboard.tsx` (added memo to StatCard, ChartPlaceholder)\n- `src/pages/History.tsx` (added memo to SessionRow, LanguageBadge, OutputBadge, ConfidenceDot)\n- `plan/tasks/ms10_polish.md` (added TASK-170)\n\n### Notes for Developer\n- Build passes successfully (`npm run build`)\n- Custom comparators avoid deep object equality checks; compare only relevant props\n- `useMemo` added in Pill.tsx for word count and preview text derivation to prevent recomputation on every render"
+}

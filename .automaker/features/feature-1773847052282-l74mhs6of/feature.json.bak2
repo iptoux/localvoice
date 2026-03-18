@@ -1,0 +1,29 @@
+{
+  "category": "chore",
+  "description": "A single bootstrap script (bash/pwsh) that installs Rust, Node.js dependencies, whisper-sidecar binaries, SQLite tools, and configures pre-commit hooks. Includes a verification step that confirms the app launches successfully.\n\n**Rationale:** Onboarding new developers currently requires reading multiple docs and manually running installation steps. A single command to full local setup dramatically reduces friction for contributors.",
+  "title": "Automated Dev Environment Setup Script",
+  "status": "backlog",
+  "id": "feature-1773847052282-l74mhs6of",
+  "createdAt": "2026-03-18T15:17:32.284Z",
+  "descriptionHistory": [
+    {
+      "description": "A single bootstrap script (bash/pwsh) that installs Rust, Node.js dependencies, whisper-sidecar binaries, SQLite tools, and configures pre-commit hooks. Includes a verification step that confirms the app launches successfully.\n\n**Rationale:** Onboarding new developers currently requires reading multiple docs and manually running installation steps. A single command to full local setup dramatically reduces friction for contributors.",
+      "timestamp": "2026-03-18T15:17:32.284Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-03-18T15:19:24.599Z",
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": [],
+  "startedAt": "2026-03-18T15:18:22.447Z"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "evt-1773847061996-57ad593e",
+  "trigger": "feature_error",
+  "timestamp": "2026-03-18T15:17:41.996Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773847052249-syimgvrop",
+  "featureName": "Component Storybook with Tauri Mocking",
+  "error": "Claude Code process exited with code 1",
+  "errorType": "execution"
+}

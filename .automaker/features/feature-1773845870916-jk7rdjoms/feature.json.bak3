@@ -1,0 +1,28 @@
+{
+  "category": "enhancement",
+  "description": "Integrate rollup-plugin-visualizer into the Vite build to generate a visual bundle map. Identify and eliminate unused exports, replace heavy utility libraries with lightweight alternatives (e.g., date-fns instead of moment), and ensure all icon imports use individual named imports rather than barrel imports.\n\n**Rationale:** Accumulated dependencies across milestones often include dead code that inflates bundle size. A targeted audit typically finds 15–30% size reduction opportunities without any feature changes, directly improving parse and execution time in the Webview.",
+  "title": "Vite Bundle Analysis and Tree-Shaking Audit",
+  "status": "backlog",
+  "id": "feature-1773845870916-jk7rdjoms",
+  "createdAt": "2026-03-18T14:57:50.917Z",
+  "descriptionHistory": [
+    {
+      "description": "Integrate rollup-plugin-visualizer into the Vite build to generate a visual bundle map. Identify and eliminate unused exports, replace heavy utility libraries with lightweight alternatives (e.g., date-fns instead of moment), and ensure all icon imports use individual named imports rather than barrel imports.\n\n**Rationale:** Accumulated dependencies across milestones often include dead code that inflates bundle size. A targeted audit typically finds 15–30% size reduction opportunities without any feature changes, directly improving parse and execution time in the Webview.",
+      "timestamp": "2026-03-18T14:57:50.917Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "custom",
+  "dependencies": [],
+  "updatedAt": "2026-03-18T15:02:35.502Z"
+}

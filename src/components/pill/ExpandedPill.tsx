@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { memo, useEffect, useMemo } from "react";
 import { useAppStore } from "../../stores/app-store";
 import {
   startRecording,
@@ -17,7 +17,11 @@ export function ExpandedPill() {
 
   useEffect(() => { load(); }, [load]);
   const modelId = lastTranscription?.modelId ?? "—";
-  const wordCount = lastTranscription?.cleanedText.split(/\s+/).filter(Boolean).length ?? 0;
+  // < 0.1ms — split + filter word count, memoized to prevent re-computation on every render
+  const wordCount = useMemo(
+    () => lastTranscription?.cleanedText.split(/\s+/).filter(Boolean).length ?? 0,
+    [lastTranscription?.cleanedText]
+  );
   const transcript = lastTranscription?.cleanedText ?? "";
 
   const isRecording = recordingState === "listening";
@@ -45,7 +49,7 @@ export function ExpandedPill() {
   return (
     <div className="flex flex-col gap-2 px-3 pt-1 pb-2 text-foreground text-xs select-none overflow-hidden">
       {/* Transcript preview */}
-      <div className="bg-foreground/10 rounded-md px-2.5 py-2 max-h-20 overflow-y-auto text-[11px] leading-relaxed text-foreground/90">
+      <div className="bg-foreground/10 rounded-md px-2.5 py-2 max-h-20 overflow-y-auto text-[11px] leading-relaxed text-foreground/90 contain-layout-paint">
         {transcript || (
           <span className="text-foreground/40 italic">No transcript yet</span>
         )}
@@ -125,15 +129,15 @@ export function ExpandedPill() {
   );
 }
 
-function LanguageBadge({ language }: { language: string }) {
+const LanguageBadge = memo(function LanguageBadge({ language }: { language: string }) {
   return (
     <span className="bg-foreground/15 text-foreground/80 px-1.5 py-0.5 rounded text-[10px] font-mono uppercase">
       {language}
     </span>
   );
-}
+}, (prev, next) => prev.language === next.language);
 
-function QuickAction({
+const QuickAction = memo(function QuickAction({
   label,
   onClick,
   disabled,
@@ -151,4 +155,4 @@ function QuickAction({
       {label}
     </button>
   );
-}
+}, (prev, next) => prev.label === next.label && prev.disabled === next.disabled);

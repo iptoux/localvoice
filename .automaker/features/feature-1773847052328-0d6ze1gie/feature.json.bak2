@@ -1,0 +1,28 @@
+{
+  "category": "chore",
+  "description": "Document the project's conventions for Rust error handling (Result types, custom error enums, anyhow usage) and how frontend code should handle error events from Tauri. Include code examples for common patterns.\n\n**Rationale:** Consistent error handling across the codebase improves reliability and makes debugging easier. Currently each developer invents their own approach, leading to inconsistent error propagation.",
+  "title": "Error Handling Pattern Guide",
+  "status": "backlog",
+  "id": "feature-1773847052328-0d6ze1gie",
+  "createdAt": "2026-03-18T15:17:32.329Z",
+  "descriptionHistory": [
+    {
+      "description": "Document the project's conventions for Rust error handling (Result types, custom error enums, anyhow usage) and how frontend code should handle error events from Tauri. Include code examples for common patterns.\n\n**Rationale:** Consistent error handling across the codebase improves reliability and makes debugging easier. Currently each developer invents their own approach, leading to inconsistent error propagation.",
+      "timestamp": "2026-03-18T15:17:32.328Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": [],
+  "updatedAt": "2026-03-18T15:19:24.624Z"
+}

@@ -1,3 +1,4 @@
+pub mod benchmark;
 pub mod dictionary;
 pub mod filler_words;
 pub mod history;

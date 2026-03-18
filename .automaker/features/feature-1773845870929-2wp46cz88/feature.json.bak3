@@ -1,0 +1,28 @@
+{
+  "category": "enhancement",
+  "description": "Add `<link rel='preload'>` directives for critical fonts, the main JS chunk, and frequently-accessed Wasm modules in the Tauri window's HTML template. Use `<link rel='prefetch'>` for secondary routes that are likely to be visited after the initial view. Configure this in tauri.conf.json's window HTML.\n\n**Rationale:** Tauri's Webview follows standard browser resource loading heuristics. Preloading critical resources eliminates waterfall delays where secondary resources block on the main bundle completing, shaving hundreds of milliseconds off perceived load time.",
+  "title": "Preload Critical Assets with Link Rel Hints",
+  "status": "backlog",
+  "id": "feature-1773845870929-2wp46cz88",
+  "createdAt": "2026-03-18T14:57:50.930Z",
+  "descriptionHistory": [
+    {
+      "description": "Add `<link rel='preload'>` directives for critical fonts, the main JS chunk, and frequently-accessed Wasm modules in the Tauri window's HTML template. Use `<link rel='prefetch'>` for secondary routes that are likely to be visited after the initial view. Configure this in tauri.conf.json's window HTML.\n\n**Rationale:** Tauri's Webview follows standard browser resource loading heuristics. Preloading critical resources eliminates waterfall delays where secondary resources block on the main bundle completing, shaving hundreds of milliseconds off perceived load time.",
+      "timestamp": "2026-03-18T14:57:50.930Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": [],
+  "updatedAt": "2026-03-18T15:02:35.508Z"
+}

@@ -201,3 +201,7 @@ body {
   overflow: hidden;
   background: transparent;
 }
+
+@utility contain-layout-paint {
+  contain: layout paint;
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Search, Copy, Check, Trash2, Upload, ChevronLeft, ChevronRight, X, RefreshCw, Calendar } from "lucide-react";
 import type { Session, SessionFilter, SessionWithSegments } from "../types";
 import {
@@ -236,7 +236,7 @@ export default function History() {
 
 // ── Session row ───────────────────────────────────────────────────────────────
 
-function SessionRow({
+const SessionRow = memo(function SessionRow({
   session,
   active,
   onClick,
@@ -246,10 +246,14 @@ function SessionRow({
   onClick: () => void;
 }) {
   const date = formatDate(session.startedAt);
-  const preview =
-    session.cleanedText.length > 80
-      ? session.cleanedText.slice(0, 78) + "…"
-      : session.cleanedText;
+  // < 0.1ms — string slice operation, memoized to prevent re-computation on every render
+  const preview = useMemo(
+    () =>
+      session.cleanedText.length > 80
+        ? session.cleanedText.slice(0, 78) + "…"
+        : session.cleanedText,
+    [session.cleanedText]
+  );
 
   const [copied, setCopied] = useState(false);
 
@@ -291,7 +295,7 @@ function SessionRow({
       <p className="text-sm text-foreground/70 leading-snug">{preview}</p>
     </button>
   );
-}
+});
 
 // ── Detail drawer ─────────────────────────────────────────────────────────────
 
@@ -315,6 +319,9 @@ function SessionDrawer({
   const [reprocessLang, setReprocessLang] = useState("");
   const [reprocessModel, setReprocessModel] = useState("");
   const [models, setModels] = useState<ModelInfo[]>([]);
+
+  // < 0.2ms — filter installed models, memoized to prevent re-computation on every render
+  const installedModels = useMemo(() => models.filter((m) => m.installed), [models]);
 
   // Reset tabs & confirm state when session changes.
   useEffect(() => {
@@ -521,13 +528,11 @@ function SessionDrawer({
               className="flex-1 bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1.5"
             >
               <option value="">Default model</option>
-              {models
-                .filter((m) => m.installed)
-                .map((m) => (
-                  <option key={m.key} value={m.key}>
-                    {m.displayName}
-                  </option>
-                ))}
+              {installedModels.map((m) => (
+                <option key={m.key} value={m.key}>
+                  {m.displayName}
+                </option>
+              ))}
             </select>
           </div>
           {session.originalRawText && (
@@ -654,15 +659,15 @@ function Pagination({
 
 // ── Small reusable bits ───────────────────────────────────────────────────────
 
-function LanguageBadge({ lang }: { lang: string }) {
+const LanguageBadge = memo(function LanguageBadge({ lang }: { lang: string }) {
   return (
     <span className="text-xs bg-blue-600 text-white px-1.5 py-0.5 rounded font-mono uppercase">
       {lang}
     </span>
   );
-}
+}, (prev, next) => prev.lang === next.lang);
 
-function OutputBadge({ mode, ok }: { mode: string; ok: boolean }) {
+const OutputBadge = memo(function OutputBadge({ mode, ok }: { mode: string; ok: boolean }) {
   return (
     <span
       className={`text-xs px-1.5 py-0.5 rounded ${
@@ -674,7 +679,7 @@ function OutputBadge({ mode, ok }: { mode: string; ok: boolean }) {
       {mode === "insert" ? "inserted" : "copied"}
     </span>
   );
-}
+}, (prev, next) => prev.mode === next.mode && prev.ok === next.ok);
 
 // ── Word diff (TASK-220) — offloaded to Web Worker ────────────────────────
 
@@ -722,7 +727,7 @@ function WordDiff({ rawText, cleanedText }: { rawText: string; cleanedText: stri
 
 // ── Confidence indicator (TASK-219) ───────────────────────────────────────
 
-function ConfidenceDot({ confidence }: { confidence?: number }) {
+const ConfidenceDot = memo(function ConfidenceDot({ confidence }: { confidence?: number }) {
   if (confidence === undefined) {
     return <span className="w-2 h-2 rounded-full bg-muted-foreground/30 mt-1 shrink-0" />;
   }
@@ -733,7 +738,7 @@ function ConfidenceDot({ confidence }: { confidence?: number }) {
         ? "bg-yellow-500"
         : "bg-red-500";
   return <span className={`w-2 h-2 rounded-full ${color} mt-1 shrink-0`} />;
-}
+}, (prev, next) => prev.confidence === next.confidence);
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 

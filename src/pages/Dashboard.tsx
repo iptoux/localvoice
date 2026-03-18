@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { useEffect } from "react";
 import {
   LineChart,
@@ -196,25 +197,34 @@ function StatCards({
   stats: DashboardStats | null;
   loading: boolean;
 }) {
-  const durationLabel = stats ? formatDuration(stats.totalDurationMs) : "—";
-  const wpmLabel = stats
-    ? stats.avgWpm > 0
-      ? `${Math.round(stats.avgWpm)} wpm`
-      : "—"
-    : "—";
+  // < 0.1ms — simple string formatting, memoized to avoid re-computation on every render
+  const durationLabel = useMemo(
+    () => (stats ? formatDuration(stats.totalDurationMs) : "—"),
+    [stats?.totalDurationMs]
+  );
+  // < 0.1ms — conditional string building, memoized to avoid re-computation on every render
+  const wpmLabel = useMemo(
+    () =>
+      stats
+        ? stats.avgWpm > 0
+          ? `${Math.round(stats.avgWpm)} wpm`
+          : "—"
+        : "—",
+    [stats?.avgWpm]
+  );
 
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-      <StatCard
+      <MemoizedStatCard
         label="Total Words"
         value={loading ? "…" : (stats?.totalWordCount ?? 0).toLocaleString()}
       />
-      <StatCard
+      <MemoizedStatCard
         label="Sessions"
         value={loading ? "…" : (stats?.totalSessionCount ?? 0).toLocaleString()}
       />
-      <StatCard label="Avg WPM" value={loading ? "…" : wpmLabel} />
-      <StatCard label="Recording Time" value={loading ? "…" : durationLabel} />
+      <MemoizedStatCard label="Avg WPM" value={loading ? "…" : wpmLabel} />
+      <MemoizedStatCard label="Recording Time" value={loading ? "…" : durationLabel} />
     </div>
   );
 }
@@ -228,6 +238,10 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
+const MemoizedStatCard = memo(StatCard, (prev, next) =>
+  prev.label === next.label && prev.value === next.value
+);
+
 // ── Words-over-time line chart ──────────────────────────────────────────────
 
 function WordsChart({
@@ -237,9 +251,9 @@ function WordsChart({
   data: TimeseriesPoint[];
   loading: boolean;
 }) {
-  if (loading) return <ChartPlaceholder label="Loading…" />;
+  if (loading) return <MemoizedChartPlaceholder label="Loading…" />;
   if (data.length === 0)
-    return <ChartPlaceholder label="No data yet. Record a few sessions to see trends." />;
+    return <MemoizedChartPlaceholder label="No data yet. Record a few sessions to see trends." />;
 
   return (
     <ResponsiveContainer width="100%" height={200}>
@@ -285,15 +299,20 @@ function LanguagePie({
   data: LanguageBreakdown[];
   loading: boolean;
 }) {
-  if (loading) return <ChartPlaceholder label="Loading…" />;
-  if (data.length === 0) return <ChartPlaceholder label="No sessions yet." />;
+  if (loading) return <MemoizedChartPlaceholder label="Loading…" />;
+  if (data.length === 0) return <MemoizedChartPlaceholder label="No sessions yet." />;
 
-  const total = data.reduce((sum, d) => sum + d.wordCount, 0);
-  const chartData = data.map((d) => ({
-    name: d.language.toUpperCase(),
-    value: d.wordCount,
-    sessions: d.sessionCount,
-  }));
+  // < 0.5ms — reduce + map over data array, memoized to prevent re-computation on every render
+  const total = useMemo(() => data.reduce((sum, d) => sum + d.wordCount, 0), [data]);
+  const chartData = useMemo(
+    () =>
+      data.map((d) => ({
+        name: d.language.toUpperCase(),
+        value: d.wordCount,
+        sessions: d.sessionCount,
+      })),
+    [data]
+  );
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -347,8 +366,8 @@ function WpmTrendChart({
   data: WpmPoint[];
   loading: boolean;
 }) {
-  if (loading) return <ChartPlaceholder label="Loading…" />;
-  if (data.length === 0) return <ChartPlaceholder label="No WPM data yet." />;
+  if (loading) return <MemoizedChartPlaceholder label="Loading…" />;
+  if (data.length === 0) return <MemoizedChartPlaceholder label="No WPM data yet." />;
 
   return (
     <ResponsiveContainer width="100%" height={200}>
@@ -394,15 +413,23 @@ function CorrectionFrequency({
   data: CorrectionStat[];
   loading: boolean;
 }) {
-  if (loading) return <ChartPlaceholder label="Loading…" />;
+  if (loading) return <MemoizedChartPlaceholder label="Loading…" />;
   if (data.length === 0)
-    return <ChartPlaceholder label="No correction rules used yet." />;
+    return <MemoizedChartPlaceholder label="No correction rules used yet." />;
 
-  const maxCount = Math.max(...data.map((d) => d.usageCount), 1);
-  const chartData = data.slice(0, 10).map((d) => ({
-    name: `${d.sourcePhrase} → ${d.targetPhrase}`,
-    count: d.usageCount,
-  }));
+  // < 0.5ms — Math.max with spread + slice/map, memoized to prevent re-computation on every render
+  const maxCount = useMemo(
+    () => Math.max(...data.map((d) => d.usageCount), 1),
+    [data]
+  );
+  const chartData = useMemo(
+    () =>
+      data.slice(0, 10).map((d) => ({
+        name: `${d.sourcePhrase} → ${d.targetPhrase}`,
+        count: d.usageCount,
+      })),
+    [data]
+  );
 
   if (chartData.length <= 5) {
     // Simple bar list for few items.
@@ -462,12 +489,16 @@ function TopModels({
   stats: DashboardStats | null;
   loading: boolean;
 }) {
-  if (loading) return <ChartPlaceholder label="Loading…" />;
+  if (loading) return <MemoizedChartPlaceholder label="Loading…" />;
 
   const models = stats?.topModels ?? [];
-  if (models.length === 0) return <ChartPlaceholder label="No sessions yet." />;
+  if (models.length === 0) return <MemoizedChartPlaceholder label="No sessions yet." />;
 
-  const maxSessions = Math.max(...models.map((m) => m.sessionCount), 1);
+  // < 0.3ms — Math.max with spread over models array, memoized to prevent re-computation on every render
+  const maxSessions = useMemo(
+    () => Math.max(...models.map((m) => m.sessionCount), 1),
+    [models]
+  );
 
   return (
     <div className="flex flex-col gap-3">
@@ -514,9 +545,13 @@ function TopModels({
 
 function FillerStatsChart({ data }: { data: FillerStat[] }) {
   if (data.length === 0)
-    return <ChartPlaceholder label="No filler words removed yet. Enable filler removal in settings." />;
+    return <MemoizedChartPlaceholder label="No filler words removed yet. Enable filler removal in settings." />;
 
-  const maxCount = Math.max(...data.map((d) => d.count), 1);
+  // < 0.3ms — Math.max with spread over data array, memoized to prevent re-computation on every render
+  const maxCount = useMemo(
+    () => Math.max(...data.map((d) => d.count), 1),
+    [data]
+  );
 
   return (
     <div className="flex flex-col gap-2.5">
@@ -553,6 +588,10 @@ function ChartPlaceholder({ label }: { label: string }) {
     </div>
   );
 }
+
+const MemoizedChartPlaceholder = memo(ChartPlaceholder, (prev, next) =>
+  prev.label === next.label
+);
 
 function formatDuration(ms: number): string {
   if (ms <= 0) return "0:00";

@@ -1,0 +1,30 @@
+{
+  "category": "chore",
+  "description": "Generate structured API documentation for all Tauri commands using custom doc comments in Rust that describe parameters, return types, error codes, and usage examples. Export as a browsable HTML doc site.\n\n**Rationale:** Frontend developers need clear contract documentation for the invoke() API. Currently they must read Rust source to understand what commands accept and return, creating a bottleneck in the development loop.",
+  "title": "Tauri Command API Reference Docs",
+  "status": "backlog",
+  "id": "feature-1773847052267-bk216we61",
+  "createdAt": "2026-03-18T15:17:32.268Z",
+  "descriptionHistory": [
+    {
+      "description": "Generate structured API documentation for all Tauri commands using custom doc comments in Rust that describe parameters, return types, error codes, and usage examples. Export as a browsable HTML doc site.\n\n**Rationale:** Frontend developers need clear contract documentation for the invoke() API. Currently they must read Rust source to understand what commands accept and return, creating a bottleneck in the development loop.",
+      "timestamp": "2026-03-18T15:17:32.268Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-03-18T15:26:36.263Z",
+  "skipTests": false,
+  "model": "opencode-minimax-m2.5-free",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": [],
+  "startedAt": "2026-03-18T15:18:30.790Z",
+  "summary": "## Summary: Tauri Command API Reference Docs\n\n### Changes Implemented\n- Created `docs/dev/tauri-commands.md` — comprehensive Markdown reference for all 42 Tauri commands across 10 command groups (Recording, Transcription, History, Dictionary, Correction Rules, Ambiguity, Filler Words, Models, Settings, Window, System, Stats, Logs), including parameters, return types, error codes, and TypeScript usage examples\n- Created `docs/dev/tauri-commands.html` — browsable HTML version with sidebar navigation, search/filter, keyboard shortcuts (/ to search, Esc to clear), back-to-top button, dark theme, and responsive layout\n- Fixed TypeScript `TranscriptionResult` type missing the `removedFillers` field\n- Updated `docs/dev/index.md` to mark `tauri-commands.md` as done\n\n### Files Modified\n- `docs/dev/tauri-commands.md` (created)\n- `docs/dev/tauri-commands.html` (created)\n- `docs/dev/index.md` (updated)\n- `src/types/index.ts` (added `removedFillers` field to `TranscriptionResult`)\n\n### Notes for Developer\n- The HTML doc (`tauri-commands.html`) can be served directly or opened as a local file — it has no dependencies and works offline\n- All 42 Tauri commands are documented with camelCase TypeScript signatures matching `src/lib/tauri.ts`\n- Backend events (6 events: `recording-state-changed`, `transcription-complete`, `transcription-error`, `session-reprocessed`, `model-download-progress`, `silence-detected`) and frontend events (2: `insert-text`, `clipboard-copied`) are included at the bottom of both docs files\n- Some Rust types have slightly more permissive types than the stricter TS types (e.g., `languageScope: string` vs `\"multilingual\" | \"en-only\"`); the TS types are authoritative for the frontend"
+}

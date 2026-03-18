@@ -27,6 +27,7 @@
 - [x] TASK-167: React: `pages/Logs.tsx` — filterable list (All/Warn/Error), newest-first, export + clear buttons; added to sidebar nav
 - [x] TASK-168: Native OS notifications for errors via `tauri-plugin-notification`; pill still shows "Error – see notification" (friendly message replaces raw error); opt-out via `notifications.on_error` setting (default: true)
 - [x] TASK-169: Success notifications opt-in — `notifications.on_success` (default: false); body shows word count + first 80 chars
+- [x] TASK-170: React: Component-level memoization — wrapped stable, frequently-re-rendering leaf components with React.memo and custom comparison functions; includes `OutputBadge`, `StateIcon` (Pill.tsx), `LanguageBadge`, `QuickAction` (ExpandedPill.tsx), `StatCard`, `ChartPlaceholder` (Dashboard.tsx), `SessionRow`, `LanguageBadge`, `OutputBadge`, `ConfidenceDot` (History.tsx); added `lib/react-utils.ts` with comparison helpers
 
 ## Product/UX Tasks
 

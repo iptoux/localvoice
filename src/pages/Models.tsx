@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Download, Trash2, CheckCircle, Globe } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import type { ModelInfo, DownloadProgress } from "../types";
@@ -73,7 +73,8 @@ interface DefaultSelectorProps {
 }
 
 function DefaultSelector({ label, language, models, currentKey, onSelect }: DefaultSelectorProps) {
-  const installed = models.filter((m) => m.installed);
+  // < 0.2ms — filter installed models, memoized to prevent re-computation on every render
+  const installed = useMemo(() => models.filter((m) => m.installed), [models]);
   return (
     <div className="flex items-center gap-3">
       <span className="text-sm text-muted-foreground w-36 shrink-0">{label}</span>
@@ -252,22 +253,25 @@ export default function Models() {
     setDownloadProgress(key, { percent, bytesDownloaded, totalBytes });
   });
 
-  // Build a map: language → model key from defaultForLanguages
-  const defaultsByLang: Record<string, string> = {};
-  for (const m of models) {
-    for (const lang of m.defaultForLanguages ?? []) {
-      defaultsByLang[lang] = m.key;
+  // < 1ms — build language→model lookup map, memoized to prevent re-computation on every render
+  const defaultsByLang = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const m of models) {
+      for (const lang of m.defaultForLanguages ?? []) {
+        map[lang] = m.key;
+      }
     }
-  }
-  // Fallback to legacy fields for de/en
-  if (!defaultsByLang["de"]) {
-    const legacyDe = models.find((m) => m.isDefaultForDe);
-    if (legacyDe) defaultsByLang["de"] = legacyDe.key;
-  }
-  if (!defaultsByLang["en"]) {
-    const legacyEn = models.find((m) => m.isDefaultForEn);
-    if (legacyEn) defaultsByLang["en"] = legacyEn.key;
-  }
+    // Fallback to legacy fields for de/en
+    if (!map["de"]) {
+      const legacyDe = models.find((m) => m.isDefaultForDe);
+      if (legacyDe) map["de"] = legacyDe.key;
+    }
+    if (!map["en"]) {
+      const legacyEn = models.find((m) => m.isDefaultForEn);
+      if (legacyEn) map["en"] = legacyEn.key;
+    }
+    return map;
+  }, [models]);
 
   const handleDelete = (key: string) => {
     if (confirm(`Delete model "${key}"? The file will be removed from disk.`)) {
@@ -275,9 +279,10 @@ export default function Models() {
     }
   };
 
-  const visible = sortModels(
-    filter === "all" ? models : models.filter((m) => m.category === filter),
-    sort
+  // < 1ms — filter + sort visible models, memoized to prevent re-computation on every render
+  const visible = useMemo(
+    () => sortModels(filter === "all" ? models : models.filter((m) => m.category === filter), sort),
+    [models, filter, sort]
   );
 
   if (loading && models.length === 0) {

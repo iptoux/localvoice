@@ -1,0 +1,29 @@
+{
+  "category": "enhancement",
+  "description": "Integrate rollup-plugin-visualizer into the Vite build to generate a visual bundle map. Identify and eliminate unused exports, replace heavy utility libraries with lightweight alternatives (e.g., date-fns instead of moment), and ensure all icon imports use individual named imports rather than barrel imports.\n\n**Rationale:** Accumulated dependencies across milestones often include dead code that inflates bundle size. A targeted audit typically finds 15–30% size reduction opportunities without any feature changes, directly improving parse and execution time in the Webview.",
+  "title": "Vite Bundle Analysis and Tree-Shaking Audit",
+  "status": "completed",
+  "id": "feature-1773845870916-jk7rdjoms",
+  "createdAt": "2026-03-18T14:57:50.917Z",
+  "descriptionHistory": [
+    {
+      "description": "Integrate rollup-plugin-visualizer into the Vite build to generate a visual bundle map. Identify and eliminate unused exports, replace heavy utility libraries with lightweight alternatives (e.g., date-fns instead of moment), and ensure all icon imports use individual named imports rather than barrel imports.\n\n**Rationale:** Accumulated dependencies across milestones often include dead code that inflates bundle size. A targeted audit typically finds 15–30% size reduction opportunities without any feature changes, directly improving parse and execution time in the Webview.",
+      "timestamp": "2026-03-18T14:57:50.917Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "custom",
+  "dependencies": [],
+  "updatedAt": "2026-03-18T15:09:03.709Z",
+  "summary": "## Summary: Vite Bundle Analysis and Tree-Shaking Audit\n\n### Changes Implemented\n- Added `rollup-plugin-visualizer` as a dev dependency\n- Configured visualizer in `vite.config.ts` with treemap template and gzip size reporting\n- Removed unused `badge.tsx` component (dead code elimination)\n- Removed unused `Spinner` export from `Spinner.tsx` (kept only `PageSpinner`)\n- Removed unused `buttonVariants` export from `button.tsx`\n\n### Files Modified\n- `package.json` - Added `rollup-plugin-visualizer` to devDependencies\n- `vite.config.ts` - Integrated visualizer plugin with treemap template and gzipSize option\n- `src/components/ui/badge.tsx` - Deleted (unused component)\n- `src/components/ui/button.tsx` - Removed unused `buttonVariants` export\n- `src/components/Spinner.tsx` - Removed unused `Spinner` export\n\n### Notes for Developer\n- The visualizer generates `dist/stats.html` on each production build\n- Open `dist/stats.html` in a browser to see an interactive treemap of bundle sizes\n- All icon imports already use individual named imports (tree-shakeable) - no changes needed\n- No `moment.js` or heavy date libraries found - codebase is clean\n- The codebase uses modern, lightweight dependencies already (lucide-react, zustand, clsx)\n- Build produces well-split chunks with code splitting per page (Dashboard, Settings, History, etc.)"
+}

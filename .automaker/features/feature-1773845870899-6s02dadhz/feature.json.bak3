@@ -1,0 +1,28 @@
+{
+  "category": "enhancement",
+  "description": "Wrap stable, frequently-re-rendered leaf components (buttons, status indicators, waveform displays) with React.memo and provide custom comparison functions for complex prop types like objects and arrays. Audit with React DevTools Profiler to identify the highest-render-count components first.\n\n**Rationale:** Without memoization, parent re-renders cascade down to all children regardless of whether their props changed. In a real-time audio/transcription UI, parent state changes frequently, making memoized leaves essential for smooth performance.",
+  "title": "Component-Level React.memo with Custom Comparators",
+  "status": "backlog",
+  "id": "feature-1773845870899-6s02dadhz",
+  "createdAt": "2026-03-18T14:57:50.901Z",
+  "descriptionHistory": [
+    {
+      "description": "Wrap stable, frequently-re-rendered leaf components (buttons, status indicators, waveform displays) with React.memo and provide custom comparison functions for complex prop types like objects and arrays. Audit with React DevTools Profiler to identify the highest-render-count components first.\n\n**Rationale:** Without memoization, parent re-renders cascade down to all children regardless of whether their props changed. In a real-time audio/transcription UI, parent state changes frequently, making memoized leaves essential for smooth performance.",
+      "timestamp": "2026-03-18T14:57:50.901Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-03-18T15:02:35.495Z",
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": []
+}

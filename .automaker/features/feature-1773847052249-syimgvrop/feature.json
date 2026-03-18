@@ -1,0 +1,30 @@
+{
+  "category": "chore",
+  "description": "Set up Storybook configured with mock Tauri invoke() wrappers that return realistic fixture data. Stories exist for each UI component (Pill states, Dashboard charts, History list items) with controls for every state variant.\n\n**Rationale:** Enables visual regression testing and allows frontend iteration without running the full Rust backend. New developers can see component behavior in isolation before understanding the full system.",
+  "title": "Component Storybook with Tauri Mocking",
+  "status": "verified",
+  "id": "feature-1773847052249-syimgvrop",
+  "createdAt": "2026-03-18T15:17:32.250Z",
+  "descriptionHistory": [
+    {
+      "description": "Set up Storybook configured with mock Tauri invoke() wrappers that return realistic fixture data. Stories exist for each UI component (Pill states, Dashboard charts, History list items) with controls for every state variant.\n\n**Rationale:** Enables visual regression testing and allows frontend iteration without running the full Rust backend. New developers can see component behavior in isolation before understanding the full system.",
+      "timestamp": "2026-03-18T15:17:32.250Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-03-18T15:32:56.577Z",
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": [],
+  "startedAt": "2026-03-18T15:18:14.288Z",
+  "summary": "## Summary: Component Storybook with Tauri Mocking\n\n### Changes Implemented\n- Installed Storybook 10.3.0 with React/Vite framework\n- Created `.storybook/` configuration (main.ts, preview.ts)\n- Created comprehensive mock Tauri invoke system in `src/mocks/tauri.ts` with:\n  - Fixture data for all types (sessions, models, dashboard stats, etc.)\n  - `mockInvoke()` function that returns realistic mock data for all 50+ Tauri commands\n- Created stories for all major UI components:\n  - **Pill**: Idle, IdleWithLastTranscription, Listening, Processing, Success, SuccessInsert, Error, ErrorOutputFailed, ExpandedIdle, ExpandedListening, AllStates\n  - **Waveform**: Default, HighLevel, LowLevel, Silent, DynamicLevel, AllLevels\n  - **Dashboard/Charts**: WordsOverTimeChart, LanguagePieChart, WpmTrendChart, CorrectionFrequencyChart, StatCards, DashboardGrid\n  - **History**: Default, Empty, Loading (with SessionRow, SessionDrawer, SearchFilters, Pagination)\n  - **UI/Button**: All variants (default, outline, secondary, ghost, destructive), sizes, with icons, disabled states\n- Updated `package.json` with Storybook scripts\n\n### Files Modified\n- `package.json` - Added storybook and build-storybook scripts\n- `.storybook/main.ts` - Storybook configuration\n- `.storybook/preview.ts` - Preview configuration with dark background default\n- `src/mocks/tauri.ts` - Complete mock Tauri invoke system with all fixtures\n- `src/stories/Pill.stories.tsx` - Pill component stories\n- `src/stories/Waveform.stories.tsx` - Waveform component stories\n- `src/stories/Dashboard.stories.tsx` - Dashboard chart stories\n- `src/stories/History.stories.tsx` - History page stories\n- `src/stories/Button.stories.tsx` - Button UI component stories\n\n### Notes for Developer\n- Run `npm run storybook` to start the Storybook dev server on port 6006\n- Run `npm run build-storybook` to build static Storybook output\n- Mock Tauri commands are automatically used in stories via decorators that override `window.invoke`\n- Stories use realistic fixture data that matches production API shapes\n- All components can be viewed in isolation without running the Tauri backend"
+}

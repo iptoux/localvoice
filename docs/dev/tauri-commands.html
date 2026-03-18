@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LocalVoice — Tauri Command API</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e4e6ef;
+    --muted: #8b8fa3;
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --green: #34d399;
+    --red: #f87171;
+    --yellow: #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 { font-size: 18px; font-weight: 600; color: var(--accent-light); }
+  header p { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  .layout { display: flex; min-height: calc(100vh - 60px); }
+
+  nav {
+    width: 220px;
+    border-right: 1px solid var(--border);
+    padding: 20px 12px;
+    position: sticky;
+    top: 60px;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  nav h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 0 8px; margin-bottom: 8px; }
+  nav a {
+    display: block;
+    padding: 5px 8px;
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  nav a:hover { background: var(--surface); color: var(--accent-light); }
+  nav a.active { color: var(--accent-light); background: rgba(99,102,241,0.1); }
+  nav .section { margin-bottom: 20px; }
+
+  main { flex: 1; max-width: 900px; padding: 32px 48px; }
+
+  h1.page-title { font-size: 28px; margin-bottom: 8px; }
+  .subtitle { color: var(--muted); margin-bottom: 32px; }
+
+  h2.group { font-size: 22px; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); scroll-margin-top: 80px; }
+  h2.group:first-of-type { margin-top: 0; }
+
+  h3.cmd { font-size: 15px; margin: 24px 0 8px; scroll-margin-top: 80px; }
+  h3.cmd code { color: var(--accent-light); font-family: 'Fira Code', 'Cascadia Code', monospace; font-size: 13px; background: rgba(99,102,241,0.1); padding: 2px 6px; border-radius: 4px; }
+
+  .invoke { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 8px 0; font-family: 'Fira Code', 'Cascadia Code', monospace; font-size: 12px; color: #e4e6ef; overflow-x: auto; }
+  .invoke .fn { color: var(--green); }
+  .invoke .str { color: var(--yellow); }
+
+  .desc { color: var(--muted); margin: 4px 0 12px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td code { color: var(--accent-light); font-size: 12px; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+  .badge-ok { background: rgba(52,211,153,0.15); color: var(--green); }
+  .badge-err { background: rgba(248,113,113,0.15); color: var(--red); }
+  .badge-async { background: rgba(251,191,36,0.15); color: var(--yellow); }
+
+  .interface-block { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 8px 0; }
+  .interface-block code { color: var(--accent-light); font-size: 12px; }
+  .interface-block .prop { display: flex; padding: 4px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+  .interface-block .prop:last-child { border-bottom: none; }
+  .interface-block .prop-name { color: var(--text); min-width: 140px; }
+  .interface-block .prop-type { color: var(--green); min-width: 100px; }
+  .interface-block .prop-desc { color: var(--muted); }
+
+  .behavior { background: rgba(99,102,241,0.06); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 10px 16px; margin: 8px 0 16px; font-size: 13px; color: var(--muted); }
+
+  .event-section { margin: 32px 0; scroll-margin-top: 80px; }
+  h2.event-title { font-size: 20px; margin-bottom: 16px; color: var(--yellow); }
+
+  #search { position: fixed; top: 16px; right: 32px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; width: 240px; outline: none; }
+  #search:focus { border-color: var(--accent); }
+
+  .cmd.hidden { display: none; }
+  h2.group.hidden { display: none; }
+  .event-section.hidden { display: none; }
+  .no-results { color: var(--muted); font-size: 13px; margin: 16px 0; display: none; }
+
+  .back-to-top { position: fixed; bottom: 24px; right: 32px; background: var(--accent); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 18px; display: none; }
+  .back-to-top.visible { display: flex; align-items: center; justify-content: center; }
+
+  @media (max-width: 700px) {
+    .layout { flex-direction: column; }
+    nav { width: 100%; height: auto; position: static; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<input type="text" id="search" placeholder="Search commands, params, types...">
+
+<header>
+  <h1>LocalVoice — Tauri Command API Reference</h1>
+  <p>All invoke() targets documented with parameters, return types, error codes, and examples</p>
+</header>
+
+<div class="layout">
+<nav>
+  <div class="section">
+    <h2>Recording</h2>
+    <a href="#recording-start">start_recording</a>
+    <a href="#recording-stop">stop_recording</a>
+    <a href="#recording-cancel">cancel_recording</a>
+    <a href="#recording-state">get_recording_state</a>
+    <a href="#recording-devices">list_input_devices</a>
+  </div>
+  <div class="section">
+    <h2>Transcription</h2>
+    <a href="#transcribe-last">transcribe_last_recording</a>
+    <a href="#transcribe-get">get_last_transcription</a>
+  </div>
+  <div class="section">
+    <h2>History</h2>
+    <a href="#history-list">list_sessions</a>
+    <a href="#history-get">get_session</a>
+    <a href="#history-delete">delete_session</a>
+    <a href="#history-export">export_sessions</a>
+    <a href="#history-reprocess">reprocess_session</a>
+  </div>
+  <div class="section">
+    <h2>Dictionary</h2>
+    <a href="#dict-list">list_dictionary_entries</a>
+    <a href="#dict-create">create_dictionary_entry</a>
+    <a href="#dict-update">update_dictionary_entry</a>
+    <a href="#dict-delete">delete_dictionary_entry</a>
+  </div>
+  <div class="section">
+    <h2>Correction Rules</h2>
+    <a href="#rules-list">list_correction_rules</a>
+    <a href="#rules-create">create_correction_rule</a>
+    <a href="#rules-update">update_correction_rule</a>
+    <a href="#rules-delete">delete_correction_rule</a>
+  </div>
+  <div class="section">
+    <h2>Ambiguity</h2>
+    <a href="#ambig-list">list_ambiguous_terms</a>
+    <a href="#ambig-accept">accept_ambiguity_suggestion</a>
+    <a href="#ambig-dismiss">dismiss_ambiguity_suggestion</a>
+  </div>
+  <div class="section">
+    <h2>Filler Words</h2>
+    <a href="#filler-list">list_filler_words</a>
+    <a href="#filler-add">add_filler_word</a>
+    <a href="#filler-delete">delete_filler_word</a>
+    <a href="#filler-reset">reset_filler_words</a>
+    <a href="#filler-stats">get_filler_stats</a>
+    <a href="#filler-count">get_filler_total_count</a>
+  </div>
+  <div class="section">
+    <h2>Models</h2>
+    <a href="#models-list">list_available_models</a>
+    <a href="#models-download">download_model</a>
+    <a href="#models-delete">delete_model</a>
+    <a href="#models-set-default">set_default_model</a>
+  </div>
+  <div class="section">
+    <h2>Settings</h2>
+    <a href="#settings-get">get_settings</a>
+    <a href="#settings-update">update_setting</a>
+    <a href="#settings-reset">reset_settings</a>
+    <a href="#settings-shortcut">update_shortcut</a>
+  </div>
+  <div class="section">
+    <h2>Window</h2>
+    <a href="#win-show">show_pill</a>
+    <a href="#win-hide">hide_pill</a>
+    <a href="#win-open">open_main_window</a>
+    <a href="#win-expand">expand_pill</a>
+    <a href="#win-collapse">collapse_pill</a>
+    <a href="#win-position">set_pill_position</a>
+  </div>
+  <div class="section">
+    <h2>System</h2>
+    <a href="#sys-first-run">check_first_run</a>
+    <a href="#sys-default-model">has_default_model</a>
+    <a href="#sys-autostart-set">set_autostart</a>
+    <a href="#sys-autostart-get">get_autostart</a>
+  </div>
+  <div class="section">
+    <h2>Stats</h2>
+    <a href="#stats-dashboard">get_dashboard_stats</a>
+    <a href="#stats-timeseries">get_usage_timeseries</a>
+    <a href="#stats-language">get_language_breakdown</a>
+    <a href="#stats-corrections">get_correction_stats</a>
+    <a href="#stats-wpm">get_wpm_trend</a>
+    <a href="#stats-compare">get_daily_comparison</a>
+  </div>
+  <div class="section">
+    <h2>Logs</h2>
+    <a href="#logs-list">list_logs</a>
+    <a href="#logs-export">export_logs</a>
+    <a href="#logs-clear">clear_logs</a>
+    <a href="#logs-enabled">set_logging_enabled</a>
+  </div>
+  <div class="section">
+    <h2>Events</h2>
+    <a href="#events-backend">Backend Events</a>
+    <a href="#events-frontend">Frontend Events</a>
+  </div>
+</nav>
+
+<main>
+
+<h1 class="page-title">Tauri Command API</h1>
+<p class="subtitle">Complete reference for all <code>invoke()</code> targets. Every command returns <code>CmdResult&lt;T&gt;</code> (Result&lt;T, String&gt;). Events are emitted via <code>tauri::emit()</code> and subscribed with <code>listen()</code>.</p>
+
+<p class="no-results" id="no-results">No results found for your search.</p>
+
+<h2 class="group" data-group="recording">Recording</h2>
+
+<h3 class="cmd" id="recording-start" data-search="start_recording start recording"><code>start_recording</code></h3>
+<p class="desc">Starts a new audio recording session.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'start_recording'</span>): Promise&lt;void&gt;</div>
+<span class="badge badge-async">async</span>
+<div class="behavior">Reads <code>recording.device_id</code>, <code>recording.silence_threshold</code>, <code>recording.silence_timeout_ms</code> from settings. Begins microphone capture. Transitions pill to <code>Listening</code>. Transcription runs in the background.</div>
+
+<h3 class="cmd" id="recording-stop" data-search="stop_recording stop recording"><code>stop_recording</code></h3>
+<p class="desc">Stops the active recording, saves a WAV file, and triggers background transcription.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'stop_recording'</span>): Promise&lt;string&gt; <span style="color:var(--muted)">// WAV file path</span></div>
+<span class="badge badge-async">async</span>
+
+<h3 class="cmd" id="recording-cancel" data-search="cancel_recording cancel recording"><code>cancel_recording</code></h3>
+<p class="desc">Discards the current recording buffer and returns to Idle without saving.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'cancel_recording'</span>): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="recording-state" data-search="get_recording_state recording state"><code>get_recording_state</code></h3>
+<p class="desc">Returns the current recording state.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_recording_state'</span>): Promise&lt;RecordingState&gt;</div>
+<div class="interface-block">
+  <div class="prop"><span class="prop-name">RecordingState</span><span class="prop-type">enum</span><span class="prop-desc">"idle" | "listening" | "processing" | "success" | "error"</span></div>
+</div>
+
+<h3 class="cmd" id="recording-devices" data-search="list_input_devices input devices microphones"><code>list_input_devices</code></h3>
+<p class="desc">Returns all available audio input devices.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'list_input_devices'</span>): Promise&lt;DeviceInfo[]&gt;</div>
+<div class="interface-block">
+  <div class="prop"><span class="prop-name">DeviceInfo.id</span><span class="prop-type">string</span><span class="prop-desc">cpal device identifier</span></div>
+  <div class="prop"><span class="prop-name">DeviceInfo.name</span><span class="prop-type">string</span><span class="prop-desc">human-readable name</span></div>
+  <div class="prop"><span class="prop-name">DeviceInfo.isDefault</span><span class="prop-type">boolean</span><span class="prop-desc">whether this is the system default</span></div>
+</div>
+
+<h2 class="group" data-group="transcription">Transcription</h2>
+
+<h3 class="cmd" id="transcribe-last" data-search="transcribe_last_recording transcribe last recording"><code>transcribe_last_recording</code></h3>
+<p class="desc">Re-transcribes the most recently recorded WAV file.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'transcribe_last_recording'</span>, { <span style="color:var(--muted)">language?: string</span>, <span style="color:var(--muted)">modelId?: string</span> }): Promise&lt;TranscriptionResult&gt;</div>
+<div class="interface-block">
+  <div class="prop"><span class="prop-name">TranscriptionResult.rawText</span><span class="prop-type">string</span><span class="prop-desc">raw whisper output (before post-processing)</span></div>
+  <div class="prop"><span class="prop-name">TranscriptionResult.cleanedText</span><span class="prop-type">string</span><span class="prop-desc">after normalization, filler removal, corrections</span></div>
+  <div class="prop"><span class="prop-name">TranscriptionResult.segments</span><span class="prop-type">TranscriptSegment[]</span><span class="prop-desc">time-stamped segments</span></div>
+  <div class="prop"><span class="prop-name">TranscriptionResult.language</span><span class="prop-type">string</span><span class="prop-desc">ISO 639-1 code actually used</span></div>
+  <div class="prop"><span class="prop-name">TranscriptionResult.modelId</span><span class="prop-type">string</span><span class="prop-desc">stem of the model file</span></div>
+  <div class="prop"><span class="prop-name">TranscriptionResult.durationMs</span><span class="prop-type">number</span><span class="prop-desc">wall-clock transcription time in ms</span></div>
+  <div class="prop"><span class="prop-name">TranscriptionResult.output</span><span class="prop-type">OutputResult?</span><span class="prop-desc">set by orchestrator after output step</span></div>
+  <div class="prop"><span class="prop-name">TranscriptionResult.removedFillers</span><span class="prop-type">string[]</span><span class="prop-desc">fillers removed during post-processing</span></div>
+</div>
+<div class="interface-block">
+  <div class="prop"><span class="prop-name">TranscriptSegment.startMs</span><span class="prop-type">number</span><span class="prop-desc">segment start in ms</span></div>
+  <div class="prop"><span class="prop-name">TranscriptSegment.endMs</span><span class="prop-type">number</span><span class="prop-desc">segment end in ms</span></div>
+  <div class="prop"><span class="prop-name">TranscriptSegment.text</span><span class="prop-type">string</span><span class="prop-desc">transcribed text</span></div>
+  <div class="prop"><span class="prop-name">TranscriptSegment.confidence</span><span class="prop-type">number?</span><span class="prop-desc">mean token probability [0, 1]</span></div>
+</div>
+<table>
+  <tr><th>Error</th><th>Cause</th></tr>
+  <tr><td><code>"No recording available to transcribe"</code></td><td>stop_recording was never called</td></tr>
+</table>
+
+<h3 class="cmd" id="transcribe-get" data-search="get_last_transcription get last transcription"><code>get_last_transcription</code></h3>
+<p class="desc">Returns the most recently completed transcription result.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_last_transcription'</span>): Promise&lt;TranscriptionResult | null&gt;</div>
+
+<h2 class="group" data-group="history">History</h2>
+
+<h3 class="cmd" id="history-list" data-search="list_sessions sessions"><code>list_sessions</code></h3>
+<p class="desc">Returns a filtered, paginated list of sessions (newest first).</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'list_sessions'</span>, { filter: SessionFilter }): Promise&lt;Session[]&gt;</div>
+<div class="interface-block">
+  <div class="prop"><span class="prop-name">SessionFilter.query</span><span class="prop-type">string?</span><span class="prop-desc">full-text search across rawText and cleanedText</span></div>
+  <div class="prop"><span class="prop-name">SessionFilter.language</span><span class="prop-type">string?</span><span class="prop-desc">ISO 639-1 code (e.g. "de", "en")</span></div>
+  <div class="prop"><span class="prop-name">SessionFilter.dateFrom</span><span class="prop-type">string?</span><span class="prop-desc">ISO 8601 lower bound for startedAt</span></div>
+  <div class="prop"><span class="prop-name">SessionFilter.dateTo</span><span class="prop-type">string?</span><span class="prop-desc">ISO 8601 upper bound for startedAt</span></div>
+  <div class="prop"><span class="prop-name">SessionFilter.modelId</span><span class="prop-type">string?</span><span class="prop-desc">model stem filter</span></div>
+  <div class="prop"><span class="prop-name">SessionFilter.limit</span><span class="prop-type">number?</span><span class="prop-desc">page size</span></div>
+  <div class="prop"><span class="prop-name">SessionFilter.offset</span><span class="prop-type">number?</span><span class="prop-desc">pagination offset</span></div>
+</div>
+
+<h3 class="cmd" id="history-get" data-search="get_session session"><code>get_session</code></h3>
+<p class="desc">Returns a single session together with its time-stamped segments.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_session'</span>, { sessionId: string }): Promise&lt;SessionWithSegments&gt;</div>
+
+<h3 class="cmd" id="history-delete" data-search="delete_session delete session"><code>delete_session</code></h3>
+<p class="desc">Permanently deletes a session and all its segments.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'delete_session'</span>, { sessionId: string }): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="history-export" data-search="export_sessions export sessions"><code>export_sessions</code></h3>
+<p class="desc">Exports selected sessions via native save dialog.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'export_sessions'</span>, { sessionIds: string[], format: string }): Promise&lt;string&gt; <span style="color:var(--muted)">// chosen file path</span></div>
+<table>
+  <tr><th>Error</th><th>Cause</th></tr>
+  <tr><td><code>"No sessions selected for export"</code></td><td>Empty sessionIds array</td></tr>
+  <tr><td><code>"Export cancelled"</code></td><td>User closed the dialog</td></tr>
+</table>
+
+<h3 class="cmd" id="history-reprocess" data-search="reprocess_session reprocess session"><code>reprocess_session</code></h3>
+<p class="desc">Re-transcribes a session using its stored audio file. Emits <code>session-reprocessed</code> on success.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'reprocess_session'</span>, { sessionId: string, <span style="color:var(--muted)">language?: string</span>, <span style="color:var(--muted)">modelId?: string</span> }): Promise&lt;SessionWithSegments&gt;</div>
+
+<h2 class="group" data-group="dictionary">Dictionary</h2>
+
+<h3 class="cmd" id="dict-list" data-search="list_dictionary_entries dictionary entries"><code>list_dictionary_entries</code></h3>
+<p class="desc">Returns all dictionary entries.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'list_dictionary_entries'</span>): Promise&lt;DictionaryEntry[]&gt;</div>
+
+<h3 class="cmd" id="dict-create" data-search="create_dictionary_entry create dictionary entry"><code>create_dictionary_entry</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'create_dictionary_entry'</span>, { payload: CreateEntryPayload }): Promise&lt;DictionaryEntry&gt;</div>
+<div class="interface-block">
+  <div class="prop"><span class="prop-name">CreateEntryPayload.phrase</span><span class="prop-type">string</span><span class="prop-desc">the phrase to add</span></div>
+  <div class="prop"><span class="prop-name">CreateEntryPayload.language</span><span class="prop-type">string?</span><span class="prop-desc">ISO 639-1 code or null</span></div>
+  <div class="prop"><span class="prop-name">CreateEntryPayload.entryType</span><span class="prop-type">string</span><span class="prop-desc">"term" | "name" | "acronym" | "product" | "custom"</span></div>
+  <div class="prop"><span class="prop-name">CreateEntryPayload.notes</span><span class="prop-type">string?</span><span class="prop-desc">optional notes</span></div>
+</div>
+
+<h3 class="cmd" id="dict-update" data-search="update_dictionary_entry update dictionary entry"><code>update_dictionary_entry</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'update_dictionary_entry'</span>, { id: string, payload: CreateEntryPayload }): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="dict-delete" data-search="delete_dictionary_entry delete dictionary entry"><code>delete_dictionary_entry</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'delete_dictionary_entry'</span>, { id: string }): Promise&lt;void&gt;</div>
+
+<h2 class="group" data-group="correction-rules">Correction Rules</h2>
+
+<h3 class="cmd" id="rules-list" data-search="list_correction_rules correction rules"><code>list_correction_rules</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'list_correction_rules'</span>): Promise&lt;CorrectionRule[]&gt;</div>
+
+<h3 class="cmd" id="rules-create" data-search="create_correction_rule create correction rule"><code>create_correction_rule</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'create_correction_rule'</span>, { payload: CreateRulePayload }): Promise&lt;CorrectionRule&gt;</div>
+<div class="interface-block">
+  <div class="prop"><span class="prop-name">CreateRulePayload.sourcePhrase</span><span class="prop-type">string</span><span class="prop-desc">text to replace</span></div>
+  <div class="prop"><span class="prop-name">CreateRulePayload.targetPhrase</span><span class="prop-type">string</span><span class="prop-desc">replacement text</span></div>
+  <div class="prop"><span class="prop-name">CreateRulePayload.language</span><span class="prop-type">string?</span><span class="prop-desc">optional language scope</span></div>
+  <div class="prop"><span class="prop-name">CreateRulePayload.autoApply</span><span class="prop-type">boolean</span><span class="prop-desc">whether to apply automatically in post-processing</span></div>
+</div>
+
+<h3 class="cmd" id="rules-update" data-search="update_correction_rule update correction rule"><code>update_correction_rule</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'update_correction_rule'</span>, { id: string, payload: UpdateRulePayload }): Promise&lt;void&gt;</div>
+<div class="interface-block">
+  <div class="prop"><span class="prop-name">UpdateRulePayload</span><span class="prop-type">extends CreateRulePayload</span><span class="prop-desc">+ isActive: boolean</span></div>
+</div>
+
+<h3 class="cmd" id="rules-delete" data-search="delete_correction_rule delete correction rule"><code>delete_correction_rule</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'delete_correction_rule'</span>, { id: string }): Promise&lt;void&gt;</div>
+
+<h2 class="group" data-group="ambiguity">Ambiguity</h2>
+
+<h3 class="cmd" id="ambig-list" data-search="list_ambiguous_terms ambiguous terms"><code>list_ambiguous_terms</code></h3>
+<p class="desc">Returns low-confidence terms with occurrence counts above the <code>ambiguity.min_occurrences</code> threshold.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'list_ambiguous_terms'</span>): Promise&lt;AmbiguousTerm[]&gt;</div>
+
+<h3 class="cmd" id="ambig-accept" data-search="accept_ambiguity_suggestion accept ambiguity"><code>accept_ambiguity_suggestion</code></h3>
+<p class="desc">Creates a correction rule from an ambiguity suggestion.</p>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'accept_ambiguity_suggestion'</span>, { id: string, targetPhrase: string }): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="ambig-dismiss" data-search="dismiss_ambiguity_suggestion dismiss ambiguity"><code>dismiss_ambiguity_suggestion</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'dismiss_ambiguity_suggestion'</span>, { id: string }): Promise&lt;void&gt;</div>
+
+<h2 class="group" data-group="filler-words">Filler Words</h2>
+
+<h3 class="cmd" id="filler-list" data-search="list_filler_words filler words"><code>list_filler_words</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'list_filler_words'</span>, { <span style="color:var(--muted)">language?: string</span> }): Promise&lt;FillerWord[]&gt;</div>
+
+<h3 class="cmd" id="filler-add" data-search="add_filler_word add filler word"><code>add_filler_word</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'add_filler_word'</span>, { word: string, language: string }): Promise&lt;FillerWord&gt;</div>
+
+<h3 class="cmd" id="filler-delete" data-search="delete_filler_word delete filler word"><code>delete_filler_word</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'delete_filler_word'</span>, { id: string }): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="filler-reset" data-search="reset_filler_words reset filler words"><code>reset_filler_words</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'reset_filler_words'</span>, { language: string }): Promise&lt;FillerWord[]&gt;</div>
+
+<h3 class="cmd" id="filler-stats" data-search="get_filler_stats filler stats"><code>get_filler_stats</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_filler_stats'</span>, { <span style="color:var(--muted)">language?: string</span> }): Promise&lt;FillerStat[]&gt;</div>
+
+<h3 class="cmd" id="filler-count" data-search="get_filler_total_count filler total count"><code>get_filler_total_count</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_filler_total_count'</span>): Promise&lt;number&gt;</div>
+
+<h2 class="group" data-group="models">Models</h2>
+
+<h3 class="cmd" id="models-list" data-search="list_available_models models list available"><code>list_available_models</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'list_available_models'</span>): Promise&lt;ModelInfo[]&gt;</div>
+<div class="interface-block">
+  <div class="prop"><span class="prop-name">ModelInfo.key</span><span class="prop-type">string</span><span class="prop-desc">registry key (e.g. "tiny", "base", "small")</span></div>
+  <div class="prop"><span class="prop-name">ModelInfo.displayName</span><span class="prop-type">string</span><span class="prop-desc">human-readable name</span></div>
+  <div class="prop"><span class="prop-name">ModelInfo.languageScope</span><span class="prop-type">string</span><span class="prop-desc">e.g. "German" or "English"</span></div>
+  <div class="prop"><span class="prop-name">ModelInfo.fileSizeBytes</span><span class="prop-type">number</span><span class="prop-desc">download size</span></div>
+  <div class="prop"><span class="prop-name">ModelInfo.installed</span><span class="prop-type">boolean</span><span class="prop-desc">is installed locally</span></div>
+  <div class="prop"><span class="prop-name">ModelInfo.isDefaultForDe</span><span class="prop-type">boolean</span><span class="prop-desc">default for German</span></div>
+  <div class="prop"><span class="prop-name">ModelInfo.isDefaultForEn</span><span class="prop-type">boolean</span><span class="prop-desc">default for English</span></div>
+  <div class="prop"><span class="prop-name">ModelInfo.localPath</span><span class="prop-type">string?</span><span class="prop-desc">local file path if installed</span></div>
+  <div class="prop"><span class="prop-name">ModelInfo.installedAt</span><span class="prop-type">string?</span><span class="prop-desc">ISO 8601 timestamp</span></div>
+</div>
+
+<h3 class="cmd" id="models-download" data-search="download_model model download"><code>download_model</code></h3>
+<span class="badge badge-async">async</span>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'download_model'</span>, { key: string }): Promise&lt;void&gt;</div>
+<p class="desc" style="margin-top:8px">Emits <code>model-download-progress</code> events during transfer.</p>
+
+<h3 class="cmd" id="models-delete" data-search="delete_model delete model"><code>delete_model</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'delete_model'</span>, { key: string }): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="models-set-default" data-search="set_default_model set default model"><code>set_default_model</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'set_default_model'</span>, { language: string, key: string }): Promise&lt;void&gt;</div>
+
+<h2 class="group" data-group="settings">Settings</h2>
+
+<h3 class="cmd" id="settings-get" data-search="get_settings settings get"><code>get_settings</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_settings'</span>): Promise&lt;Record&lt;string, string&gt;&gt;</div>
+<p class="desc">Keys use dot-notation (e.g. <code>"recording.device_id"</code>, <code>"transcription.default_language"</code>).</p>
+
+<h3 class="cmd" id="settings-update" data-search="update_setting update setting"><code>update_setting</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'update_setting'</span>, { key: string, value: string }): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="settings-reset" data-search="reset_settings reset settings"><code>reset_settings</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'reset_settings'</span>): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="settings-shortcut" data-search="update_shortcut shortcut"><code>update_shortcut</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'update_shortcut'</span>, { shortcut: string }): Promise&lt;void&gt;</div>
+<p class="desc" style="margin-top:8px">Format: Electron-style (e.g. <code>"Ctrl+Shift+Space"</code>, <code>"CommandOrControl+Shift+Space"</code>). Validates, unregisters old, persists, registers new.</p>
+<table>
+  <tr><th>Error</th><th>Cause</th></tr>
+  <tr><td><code>"Invalid shortcut '...'"</code></td><td>Malformed shortcut string</td></tr>
+  <tr><td><code>"Failed to register shortcut '...'"</code></td><td>Already in use by another app</td></tr>
+</table>
+
+<h2 class="group" data-group="window">Window</h2>
+
+<h3 class="cmd" id="win-show" data-search="show_pill pill show"><code>show_pill</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'show_pill'</span>): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="win-hide" data-search="hide_pill pill hide"><code>hide_pill</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'hide_pill'</span>): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="win-open" data-search="open_main_window main window open"><code>open_main_window</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'open_main_window'</span>): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="win-expand" data-search="expand_pill pill expand"><code>expand_pill</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'expand_pill'</span>): Promise&lt;void&gt;</div>
+<p class="desc" style="margin-top:8px">Expands pill to 220x280px.</p>
+
+<h3 class="cmd" id="win-collapse" data-search="collapse_pill pill collapse"><code>collapse_pill</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'collapse_pill'</span>): Promise&lt;void&gt;</div>
+<p class="desc" style="margin-top:8px">Collapses pill to 220x70px.</p>
+
+<h3 class="cmd" id="win-position" data-search="set_pill_position pill position"><code>set_pill_position</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'set_pill_position'</span>, { x: number, y: number }): Promise&lt;void&gt;</div>
+
+<h2 class="group" data-group="system">System</h2>
+
+<h3 class="cmd" id="sys-first-run" data-search="check_first_run first run onboarding"><code>check_first_run</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'check_first_run'</span>): Promise&lt;boolean&gt;</div>
+
+<h3 class="cmd" id="sys-default-model" data-search="has_default_model default model"><code>has_default_model</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'has_default_model'</span>): Promise&lt;boolean&gt;</div>
+
+<h3 class="cmd" id="sys-autostart-set" data-search="set_autostart autostart enable disable"><code>set_autostart</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'set_autostart'</span>, { enabled: boolean }): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="sys-autostart-get" data-search="get_autostart autostart"><code>get_autostart</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_autostart'</span>): Promise&lt;boolean&gt;</div>
+
+<h2 class="group" data-group="stats">Stats</h2>
+
+<h3 class="cmd" id="stats-dashboard" data-search="get_dashboard_stats dashboard stats"><code>get_dashboard_stats</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_dashboard_stats'</span>, { range: DateRange }): Promise&lt;DashboardStats&gt;</div>
+<div class="interface-block">
+  <div class="prop"><span class="prop-name">DateRange.start</span><span class="prop-type">string?</span><span class="prop-desc">ISO 8601 date (inclusive lower bound)</span></div>
+  <div class="prop"><span class="prop-name">DateRange.end</span><span class="prop-type">string?</span><span class="prop-desc">ISO 8601 date (inclusive upper bound)</span></div>
+</div>
+
+<h3 class="cmd" id="stats-timeseries" data-search="get_usage_timeseries timeseries usage"><code>get_usage_timeseries</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_usage_timeseries'</span>, { range: DateRange, bucket: string }): Promise&lt;TimeseriesPoint[]&gt;</div>
+<p class="desc"><code>bucket</code>: "day" or "week"</p>
+
+<h3 class="cmd" id="stats-language" data-search="get_language_breakdown language breakdown"><code>get_language_breakdown</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_language_breakdown'</span>, { range: DateRange }): Promise&lt;LanguageBreakdown[]&gt;</div>
+
+<h3 class="cmd" id="stats-corrections" data-search="get_correction_stats correction stats"><code>get_correction_stats</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_correction_stats'</span>): Promise&lt;CorrectionStat[]&gt;</div>
+<p class="desc">Top 10 most-used correction rules.</p>
+
+<h3 class="cmd" id="stats-wpm" data-search="get_wpm_trend wpm trend"><code>get_wpm_trend</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_wpm_trend'</span>, { range: DateRange, bucket: string }): Promise&lt;WpmPoint[]&gt;</div>
+
+<h3 class="cmd" id="stats-compare" data-search="get_daily_comparison daily comparison"><code>get_daily_comparison</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'get_daily_comparison'</span>, { dateA: string, dateB: string }): Promise&lt;[DailyStats, DailyStats]&gt;</div>
+
+<h2 class="group" data-group="logs">Logs</h2>
+
+<h3 class="cmd" id="logs-list" data-search="list_logs logs list"><code>list_logs</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'list_logs'</span>, { <span style="color:var(--muted)">levelFilter?: string</span>, <span style="color:var(--muted)">limit?: number</span> }): Promise&lt;LogEntry[]&gt;</div>
+<p class="desc"><code>levelFilter</code>: "warn" | "error" | omit for all. Default limit: 500.</p>
+
+<h3 class="cmd" id="logs-export" data-search="export_logs export logs"><code>export_logs</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'export_logs'</span>): Promise&lt;void&gt;</div>
+<p class="desc">Opens save dialog, writes <code>localvoice-logs.json</code>.</p>
+
+<h3 class="cmd" id="logs-clear" data-search="clear_logs clear logs"><code>clear_logs</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'clear_logs'</span>): Promise&lt;void&gt;</div>
+
+<h3 class="cmd" id="logs-enabled" data-search="set_logging_enabled logging enabled"><code>set_logging_enabled</code></h3>
+<div class="invoke"><span class="fn">invoke</span>(<span class="str">'set_logging_enabled'</span>, { enabled: boolean }): Promise&lt;void&gt;</div>
+
+<h2 class="group event-section" id="events-backend" data-group="events">Backend Events (Frontend Subscribes)</h2>
+
+<table>
+  <tr><th>Event</th><th>Payload</th><th>Triggered By</th></tr>
+  <tr><td><code>recording-state-changed</code></td><td><code>{ state: RecordingState, error?: string }</code></td><td>Any recording command, silence auto-stop</td></tr>
+  <tr><td><code>transcription-complete</code></td><td><code>TranscriptionResult</code></td><td>Transcription orchestrator on success</td></tr>
+  <tr><td><code>transcription-error</code></td><td><code>{ error: string }</code></td><td>Transcription orchestrator on failure</td></tr>
+  <tr><td><code>session-reprocessed</code></td><td><code>sessionId: string</code></td><td>reprocess_session command</td></tr>
+  <tr><td><code>model-download-progress</code></td><td><code>{ key: string, progress: number }</code></td><td>Model download in progress</td></tr>
+  <tr><td><code>silence-detected</code></td><td>none</td><td>Silence timeout reached during recording</td></tr>
+</table>
+
+<h2 class="group event-section" id="events-frontend" data-group="events-frontend">Frontend Events (Backend Subscribes)</h2>
+
+<table>
+  <tr><th>Event</th><th>Payload</th><th>Handled By</th></tr>
+  <tr><td><code>insert-text</code></td><td><code>{ text: string }</code></td><td>os/text_insertion.rs — auto-insert pipeline</td></tr>
+  <tr><td><code>clipboard-copied</code></td><td><code>{ text: string }</code></td><td>Logging in transcription orchestrator</td></tr>
+</table>
+
+</main>
+</div>
+
+<button class="back-to-top" id="backToTop" title="Back to top">&#8593;</button>
+
+<script>
+const searchInput = document.getElementById('search');
+const backToTop = document.getElementById('backToTop');
+const noResults = document.getElementById('no-results');
+
+function performSearch() {
+  const q = searchInput.value.toLowerCase().trim();
+  const cmds = document.querySelectorAll('h3.cmd');
+  const groups = document.querySelectorAll('h2.group');
+  const events = document.querySelectorAll('.event-section');
+  let hasResults = false;
+
+  cmds.forEach(el => el.classList.remove('hidden'));
+  groups.forEach(el => el.classList.remove('hidden'));
+  events.forEach(el => el.classList.remove('hidden'));
+
+  if (!q) {
+    document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+    noResults.style.display = 'none';
+    return;
+  }
+
+  cmds.forEach(el => {
+    const searchable = (el.dataset.search || '') + ' ' + el.textContent;
+    if (!searchable.toLowerCase().includes(q)) {
+      el.classList.add('hidden');
+    } else {
+      hasResults = true;
+    }
+  });
+
+  const visibleCmds = document.querySelectorAll('h3.cmd:not(.hidden)');
+  const visibleGroups = new Set();
+  visibleCmds.forEach(el => {
+    let prev = el.previousElementSibling;
+    while (prev) {
+      if (prev.classList.contains('group')) {
+        visibleGroups.add(prev);
+        break;
+      }
+      if (prev.classList && prev.classList.contains('cmd')) break;
+      prev = prev.previousElementSibling;
+    }
+  });
+
+  groups.forEach(el => {
+    if (!visibleGroups.has(el)) el.classList.add('hidden');
+  });
+
+  events.forEach(el => {
+    const text = el.textContent.toLowerCase();
+    if (!text.includes(q)) el.classList.add('hidden');
+    else hasResults = true;
+  });
+
+  noResults.style.display = hasResults ? 'none' : 'block';
+
+  // highlight active nav link
+  document.querySelectorAll('nav a').forEach(a => {
+    a.classList.toggle('active', q.length > 0 && a.textContent.toLowerCase().includes(q));
+  });
+}
+
+searchInput.addEventListener('input', performSearch);
+
+window.addEventListener('scroll', () => {
+  backToTop.classList.toggle('visible', window.scrollY > 400);
+});
+
+backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+// keyboard shortcut: / to focus search
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== searchInput) {
+    e.preventDefault();
+    searchInput.focus();
+  }
+  if (e.key === 'Escape') {
+    searchInput.value = '';
+    searchInput.blur();
+    performSearch();
+  }
+});
+</script>
+
+</body>
+</html>

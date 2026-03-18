@@ -80,7 +80,7 @@ export function Waveform() {
     <canvas
       ref={canvasRef}
       data-tauri-drag-region
-      className="flex-shrink-0"
+      className="flex-shrink-0 contain-layout-paint"
       style={{ width: BAR_COUNT * (BAR_WIDTH + BAR_GAP) - BAR_GAP, height: MAX_HEIGHT + 4 }}
     />
   );

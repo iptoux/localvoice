@@ -1,0 +1,288 @@
+{
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "close": "Schließen",
+    "confirm": "Bestätigen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "loading": "Laden...",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "clear": "Löschen",
+    "copy": "Kopieren",
+    "export": "Exportieren",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "remove": "Entfernen",
+    "enable": "Aktivieren",
+    "disable": "Deaktivieren",
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "yes": "Ja",
+    "no": "Nein",
+    "ok": "OK",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "warning": "Warnung",
+    "info": "Info"
+  },
+  "pill": {
+    "ready": "Bereit",
+    "listening": "Hören...",
+    "processing": "Transkribieren...",
+    "transcribing": "Transkribieren...",
+    "copied": "Kopiert",
+    "inserted": "Eingefügt",
+    "error": "Fehler",
+    "noMic": "Kein Mikrofon",
+    "modelDownload": "Modell wird heruntergeladen...",
+    "startRecording": "Aufnahme starten",
+    "stopRecording": "Aufnahme stoppen",
+    "openApp": "App öffnen",
+    "quit": "Beenden"
+  },
+  "sidebar": {
+    "dashboard": "Übersicht",
+    "history": "Verlauf",
+    "dictionary": "Wörterbuch",
+    "models": "Modelle",
+    "settings": "Einstellungen",
+    "logs": "Protokolle"
+  },
+  "dashboard": {
+    "title": "Übersicht",
+    "totalWords": "Gesamtwörter",
+    "totalSessions": "Gesamtsitzungen",
+    "avgWpm": "Durchschn. WPM",
+    "recordingTime": "Aufnahmezeit",
+    "wordsOverTime": "Wörter über Zeit",
+    "languages": "Sprachen",
+    "wpmTrend": "WPM-Verlauf",
+    "topCorrections": "Top-Korrekturen",
+    "topModels": "Top-Modelle",
+    "fillerWordsRemoved": "Füllwörter entfernt",
+    "thisWeek": "Diese Woche",
+    "thisMonth": "Diesen Monat",
+    "allTime": "Gesamte Zeit",
+    "today": "Heute",
+    "noData": "Noch keine Daten"
+  },
+  "history": {
+    "title": "Verlauf",
+    "searchPlaceholder": "Transkriptionen durchsuchen...",
+    "filterByLanguage": "Nach Sprache filtern",
+    "filterByDate": "Nach Datum filtern",
+    "filterByModel": "Nach Modell filtern",
+    "noResults": "Keine Sitzungen gefunden",
+    "sessionDetails": "Sitzungsdetails",
+    "rawTranscript": "Rohes Transkript",
+    "cleanedTranscript": "Bereinigtes Transkript",
+    "copyText": "Text kopieren",
+    "exportSession": "Sitzung exportieren",
+    "deleteSession": "Sitzung löschen",
+    "deleteConfirm": "Möchten Sie diese Sitzung wirklich löschen?",
+    "dateRange": "Zeitraum",
+    "from": "Von",
+    "to": "Bis",
+    "apply": "Anwenden",
+    "clearFilters": "Filter löschen",
+    "pages": "Seite",
+    "of": "von",
+    "entries": "Einträge"
+  },
+  "dictionary": {
+    "title": "Wörterbuch",
+    "tabs": {
+      "entries": "Einträge",
+      "rules": "Korrekturregeln",
+      "fillers": "Füllwörter"
+    },
+    "entries": {
+      "title": "Wörterbucheinträge",
+      "addEntry": "Eintrag hinzufügen",
+      "editEntry": "Eintrag bearbeiten",
+      "phrase": "Begriff",
+      "language": "Sprache",
+      "entryType": "Typ",
+      "notes": "Notizen",
+      "createdAt": "Erstellt",
+      "updatedAt": "Aktualisiert",
+      "noEntries": "Noch keine Wörterbucheinträge"
+    },
+    "rules": {
+      "title": "Korrekturregeln",
+      "addRule": "Regel hinzufügen",
+      "editRule": "Regel bearbeiten",
+      "sourcePhrase": "Quellbegriff",
+      "targetPhrase": "Zielbegriff",
+      "ruleMode": "Modus",
+      "autoApply": "Auto-anwenden",
+      "usageCount": "Nutzungsanzahl",
+      "noRules": "Noch keine Korrekturregeln"
+    },
+    "fillers": {
+      "title": "Füllwörter",
+      "addFiller": "Füllwort hinzufügen",
+      "removeFiller": "Füllwort entfernen",
+      "word": "Wort",
+      "count": "Anzahl",
+      "lastRemoved": "Zuletzt entfernt",
+      "noFillers": "Keine Füllwörter konfiguriert"
+    },
+    "types": {
+      "term": "Begriff",
+      "name": "Name",
+      "acronym": "Akronym",
+      "product": "Produkt",
+      "custom": "Benutzerdefiniert"
+    },
+    "modes": {
+      "manual": "Manuell",
+      "suggested": "Vorgeschlagen",
+      "learned": "Gelernt"
+    }
+  },
+  "models": {
+    "title": "Modelle",
+    "categories": {
+      "standard": "Standard-Modelle",
+      "quantized": "Quantisierte Modelle",
+      "turbo": "Turbo-Modelle",
+      "large": "Große Modelle"
+    },
+    "status": {
+      "installed": "Installiert",
+      "notInstalled": "Nicht installiert",
+      "downloading": "Herunterladen...",
+      "downloadingModel": "Modell wird heruntergeladen...",
+      "downloaded": "Heruntergeladen"
+    },
+    "actions": {
+      "download": "Herunterladen",
+      "install": "Installieren",
+      "delete": "Löschen",
+      "setDefault": "Als Standard festlegen",
+      "cancelDownload": "Download abbrechen"
+    },
+    "details": {
+      "size": "Größe",
+      "language": "Sprache",
+      "speed": "Geschwindigkeit",
+      "accuracy": "Genauigkeit",
+      "recommendedFor": "Empfohlen für",
+      "defaultFor": "Standard für"
+    },
+    "noModels": "Keine Modelle verfügbar",
+    "downloadFailed": "Download fehlgeschlagen",
+    "deleteConfirm": "Möchten Sie dieses Modell wirklich löschen?"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "sections": {
+      "app": "Anwendung",
+      "recording": "Aufnahme",
+      "transcription": "Transkription",
+      "output": "Ausgabe",
+      "dictionary": "Wörterbuch",
+      "models": "Modelle"
+    },
+    "app": {
+      "theme": "Design",
+      "themes": {
+        "system": "System",
+        "light": "Hell",
+        "dark": "Dunkel"
+      },
+      "language": "Sprache",
+      "autostart": "Mit System starten",
+      "startHidden": "Versteckt starten",
+      "alwaysOnTop": "Immer im Vordergrund"
+    },
+    "recording": {
+      "shortcut": "Aufnahme-Tastenkürzel",
+      "microphone": "Mikrofon",
+      "selectMic": "Mikrofon auswählen",
+      "silenceTimeout": "Stille-Timeout (ms)",
+      "playStartSound": "Startton abspielen",
+      "playStopSound": "Stoptom abspielen",
+      "pushToTalk": "Push-to-Talk"
+    },
+    "transcription": {
+      "defaultLanguage": "Standardsprache",
+      "autoPunctuation": "Auto-Zeichensetzung",
+      "autoCapitalization": "Auto-Großschreibung",
+      "removeFillers": "Füllwörter entfernen"
+    },
+    "output": {
+      "mode": "Ausgabemodus",
+      "modes": {
+        "insert": "Text einfügen",
+        "clipboard": "In Zwischenablage kopieren",
+        "preview": "Nur Vorschau"
+      },
+      "autoPaste": "Nach Einfügen automatisch einfügen"
+    },
+    "dictionary": {
+      "autoApplyRules": "Korrekturregeln auto-anwenden",
+      "suggestionMode": "Vorschlagsmodus"
+    },
+    "models": {
+      "storagePath": "Modell-Speicherpfad",
+      "browsePath": "Durchsuchen"
+    },
+    "reset": "Auf Standard zurücksetzen",
+    "resetConfirm": "Möchten Sie wirklich alle Einstellungen zurücksetzen?",
+    "saved": "Einstellungen gespeichert"
+  },
+  "logs": {
+    "title": "Protokolle",
+    "levels": {
+      "debug": "Debug",
+      "info": "Info",
+      "warn": "Warnung",
+      "error": "Fehler"
+    },
+    "areas": {
+      "all": "Alle Bereiche",
+      "app": "Anwendung",
+      "recording": "Aufnahme",
+      "transcription": "Transkription",
+      "output": "Ausgabe"
+    },
+    "clear": "Protokolle löschen",
+    "export": "Protokolle exportieren",
+    "noLogs": "Keine Protokolleinträge"
+  },
+  "onboarding": {
+    "welcome": "Willkommen bei LocalVoice",
+    "subtitle": "Ihr Offline-Sprachdiktier-Assistent",
+    "step1Title": "Tastenkürzel einrichten",
+    "step1Desc": "Wählen Sie ein globales Tastenkürzel zum Starten und Stoppen der Aufnahme",
+    "step2Title": "Mikrofon auswählen",
+    "step2Desc": "Wählen Sie das Mikrofon, das Sie verwenden möchten",
+    "step3Title": "Modell herunterladen",
+    "step3Desc": "Wählen Sie ein Whisper-Modell für die Transkription",
+    "step4Title": "Sie sind bereit!",
+    "step4Desc": "Beginnen Sie mit Ihrem Tastenkürzel zu diktieren",
+    "skip": "Überspringen",
+    "next": "Weiter",
+    "getStarted": "Loslegen"
+  },
+  "errors": {
+    "recordingFailed": "Aufnahme fehlgeschlagen",
+    "transcriptionFailed": "Transkription fehlgeschlagen",
+    "micNotFound": "Mikrofon nicht gefunden",
+    "modelNotFound": "Modell nicht gefunden",
+    "modelDownloadFailed": "Modell-Download fehlgeschlagen",
+    "clipboardFailed": "Kopieren in Zwischenablage fehlgeschlagen",
+    "insertFailed": "Text einfügen fehlgeschlagen",
+    "saveFailed": "Speichern fehlgeschlagen",
+    "loadFailed": "Laden der Daten fehlgeschlagen",
+    "connectionFailed": "Verbindung fehlgeschlagen",
+    "unknownError": "Ein unbekannter Fehler ist aufgetreten"
+  }
+}

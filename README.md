@@ -33,7 +33,31 @@ Offline-first desktop voice dictation. Record with a global shortcut, transcribe
 
 Windows: no additional system libraries needed — SQLite is bundled.
 
-## Setup
+## Quick Setup
+
+Run the bootstrap script to set up your development environment automatically:
+
+**Windows (PowerShell):**
+```powershell
+.\scripts\bootstrap.ps1
+```
+
+**Unix/macOS (Bash):**
+```bash
+./scripts/bootstrap.sh
+```
+
+The bootstrap script will:
+1. Check for Node.js (≥20), Rust (≥1.77), and pnpm
+2. Install pnpm if not present
+3. Install Node.js dependencies
+4. Download whisper.cpp binaries (or skip with `--skip-whisper`)
+5. Verify the Tauri CLI is installed
+6. Check Rust compilation (or skip with `--skip-verification`)
+
+## Manual Setup
+
+If you prefer to set up manually:
 
 ```bash
 # Install frontend dependencies

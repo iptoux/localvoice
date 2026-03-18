@@ -1,0 +1,30 @@
+{
+  "category": "enhancement",
+  "description": "Apply `contain: layout paint` or `contain: strict` CSS properties to independently updating panels like the audio waveform, status bar, and live transcription feed. This hints to the browser engine that changes inside these containers don't affect the rest of the layout, enabling parallel rendering optimizations.\n\n**Rationale:** In a two-window Tauri app with real-time updates, the browser's rendering engine must recalculate layout for the entire document tree by default. CSS containment scopes these expensive operations, reducing style recalculation and paint time for the surrounding UI.",
+  "title": "CSS Containment for Independent UI Panels",
+  "status": "backlog",
+  "id": "feature-1773845870966-1yh9k7kpe",
+  "createdAt": "2026-03-18T14:57:50.967Z",
+  "descriptionHistory": [
+    {
+      "description": "Apply `contain: layout paint` or `contain: strict` CSS properties to independently updating panels like the audio waveform, status bar, and live transcription feed. This hints to the browser engine that changes inside these containers don't affect the rest of the layout, enabling parallel rendering optimizations.\n\n**Rationale:** In a two-window Tauri app with real-time updates, the browser's rendering engine must recalculate layout for the entire document tree by default. CSS containment scopes these expensive operations, reducing style recalculation and paint time for the surrounding UI.",
+      "timestamp": "2026-03-18T14:57:50.967Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "opencode-minimax-m2.5-free",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "custom",
+  "dependencies": [],
+  "updatedAt": "2026-03-18T15:05:52.494Z",
+  "startedAt": "2026-03-18T15:02:09.626Z",
+  "summary": "## Summary: CSS Containment for Independent UI Panels\n\n### Changes Implemented\n- Added `@utility contain-layout-paint { contain: layout paint; }` to `src/index.css` as a Tailwind v4 custom utility\n- Applied `contain-layout-paint` to the **Waveform** canvas (60fps animation via `requestAnimationFrame`)\n- Applied `contain-layout-paint` to the **status bar** dynamic content span in `Pill.tsx` (state transitions: idle/listening/processing/success/error)\n- Applied `contain-layout-paint` to the **transcript preview** in `ExpandedPill.tsx` (updates per transcription result)\n\n### Files Modified\n- `src/index.css` — added `@utility contain-layout-paint`\n- `src/components/pill/Waveform.tsx` — added `contain-layout-paint` class\n- `src/components/pill/Pill.tsx` — added `contain-layout-paint` class\n- `src/components/pill/ExpandedPill.tsx` — added `contain-layout-paint` class\n\n### Notes for Developer\n- Build has pre-existing errors in `Dashboard.tsx` and `History.tsx` unrelated to this feature\n- The `@utility` directive is Tailwind v4's native API for custom utilities\n- `contain: layout paint` scopes layout and paint recalculations to each panel, preventing cascade into the rest of the document tree during rapid updates"
+}

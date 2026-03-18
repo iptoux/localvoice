@@ -1,0 +1,10 @@
+{
+  "id": "evt-1773847295963-abbe25cc",
+  "trigger": "feature_success",
+  "timestamp": "2026-03-18T15:21:35.963Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773847052339-kz3ra7ztb",
+  "featureName": "Sidecar Process Integration Guide",
+  "passes": true
+}

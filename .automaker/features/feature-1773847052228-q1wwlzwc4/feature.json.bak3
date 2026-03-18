@@ -1,0 +1,28 @@
+{
+  "category": "chore",
+  "description": "Create a docs/adrs/ directory with markdown files documenting key architectural decisions such as the sidecar approach for whisper.cpp, the dual-window design, and SQLite over other databases. Each ADR follows a standard template with context, decision, and consequences sections.\n\n**Rationale:** Preserves institutional knowledge about why specific technical choices were made. Helps new developers understand the reasoning behind non-obvious decisions and prevents accidental re-architecting during future work.",
+  "title": "Architecture Decision Records (ADRs)",
+  "status": "backlog",
+  "id": "feature-1773847052228-q1wwlzwc4",
+  "createdAt": "2026-03-18T15:17:32.229Z",
+  "descriptionHistory": [
+    {
+      "description": "Create a docs/adrs/ directory with markdown files documenting key architectural decisions such as the sidecar approach for whisper.cpp, the dual-window design, and SQLite over other databases. Each ADR follows a standard template with context, decision, and consequences sections.\n\n**Rationale:** Preserves institutional knowledge about why specific technical choices were made. Helps new developers understand the reasoning behind non-obvious decisions and prevents accidental re-architecting during future work.",
+      "timestamp": "2026-03-18T15:17:32.229Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-03-18T15:17:46.458Z",
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": []
+}

@@ -1,0 +1,11 @@
+{
+  "id": "evt-1773847064197-3b0b96b0",
+  "trigger": "feature_error",
+  "timestamp": "2026-03-18T15:17:44.197Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773847052267-bk216we61",
+  "featureName": "Tauri Command API Reference Docs",
+  "error": "Claude Code process exited with code 1",
+  "errorType": "execution"
+}

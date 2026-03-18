@@ -1,0 +1,11 @@
+{
+  "id": "evt-1773848093763-eca70ba1",
+  "trigger": "feature_error",
+  "timestamp": "2026-03-18T15:34:53.763Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773848074442-tet3lqw02",
+  "featureName": "Frontend-Backend Event Contract Registry",
+  "error": "Claude Code process exited with code 1",
+  "errorType": "execution"
+}

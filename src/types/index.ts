@@ -134,6 +134,8 @@ export interface TranscriptionResult {
   durationMs: number;
   /** Result of the output step (clipboard write or auto-insert). */
   output?: OutputResult;
+  /** Filler words removed during post-processing (for stats tracking). */
+  removedFillers: string[];
 }
 
 export interface DeviceInfo {
@@ -252,4 +254,19 @@ export interface FillerStat {
   language: string;
   count: number;
   lastRemovedAt: string;
+}
+
+export interface BenchmarkResult {
+  micToTextMs: number;
+  whisperInitMs: number;
+  whisperInferenceMs: number;
+  postProcessingMs: number;
+  totalTranscriptionMs: number;
+  modelId: string;
+  language: string;
+  audioDurationMs: number;
+  audioSampleRate: number;
+  textOutput: string;
+  success: boolean;
+  error?: string;
 }

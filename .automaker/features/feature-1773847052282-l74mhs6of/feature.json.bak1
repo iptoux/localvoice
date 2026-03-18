@@ -1,0 +1,30 @@
+{
+  "category": "chore",
+  "description": "A single bootstrap script (bash/pwsh) that installs Rust, Node.js dependencies, whisper-sidecar binaries, SQLite tools, and configures pre-commit hooks. Includes a verification step that confirms the app launches successfully.\n\n**Rationale:** Onboarding new developers currently requires reading multiple docs and manually running installation steps. A single command to full local setup dramatically reduces friction for contributors.",
+  "title": "Automated Dev Environment Setup Script",
+  "status": "backlog",
+  "id": "feature-1773847052282-l74mhs6of",
+  "createdAt": "2026-03-18T15:17:32.284Z",
+  "descriptionHistory": [
+    {
+      "description": "A single bootstrap script (bash/pwsh) that installs Rust, Node.js dependencies, whisper-sidecar binaries, SQLite tools, and configures pre-commit hooks. Includes a verification step that confirms the app launches successfully.\n\n**Rationale:** Onboarding new developers currently requires reading multiple docs and manually running installation steps. A single command to full local setup dramatically reduces friction for contributors.",
+      "timestamp": "2026-03-18T15:17:32.284Z",
+      "source": "initial"
+    }
+  ],
+  "updatedAt": "2026-03-18T15:21:15.712Z",
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": [],
+  "startedAt": "2026-03-18T15:18:22.447Z",
+  "summary": "## Summary: Automated Dev Environment Setup Script\n\n### Changes Implemented\n- Created `scripts/bootstrap.ps1` - PowerShell bootstrap script for Windows that:\n  - Checks for Node.js (≥20), Rust (≥1.77), and pnpm\n  - Installs pnpm if missing\n  - Installs Node.js dependencies via pnpm\n  - Downloads whisper.cpp binaries (with `--skip-whisper` option)\n  - Verifies Tauri CLI installation\n  - Checks Rust compilation (with `--skip-verification` option)\n  - Provides colored output and clear next steps\n\n- Created `scripts/bootstrap.sh` - Bash bootstrap script for Unix/macOS with the same functionality\n\n- Updated `README.md` to document the Quick Setup section with bootstrap scripts\n\n### Files Modified\n- `README.md` - Added Quick Setup section before Manual Setup\n- `scripts/bootstrap.ps1` - Created (PowerShell script)\n- `scripts/bootstrap.sh` - Created (Bash script)\n\n### Notes for Developer\n- Run `.\\scripts\\bootstrap.ps1` (Windows) or `./scripts/bootstrap.sh` (Unix/macOS) to set up the dev environment\n- Use `--skip-whisper` to skip downloading whisper binaries\n- Use `--skip-verification` to skip Rust compilation check\n- whisper.cpp binaries are downloaded to `src-tauri/binaries/`\n- The bootstrap script checks for existing whisper binaries and won't re-download if present"
+}

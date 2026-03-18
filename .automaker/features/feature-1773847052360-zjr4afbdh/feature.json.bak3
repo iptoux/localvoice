@@ -1,0 +1,27 @@
+{
+  "category": "chore",
+  "description": "Document the i18n approach including how to add new UI string keys, where translation files live, and how to handle language-specific transcription settings. Prepare the structure for future multi-language support.\n\n**Rationale:** Even though initial support is DE/EN, having documented i18n patterns prevents ad-hoc string handling and makes adding languages later straightforward rather than a major refactor.",
+  "title": "Internationalization Setup Documentation",
+  "status": "backlog",
+  "id": "feature-1773847052360-zjr4afbdh",
+  "createdAt": "2026-03-18T15:17:32.361Z",
+  "descriptionHistory": [
+    {
+      "description": "Document the i18n approach including how to add new UI string keys, where translation files live, and how to handle language-specific transcription settings. Prepare the structure for future multi-language support.\n\n**Rationale:** Even though initial support is DE/EN, having documented i18n patterns prevents ad-hoc string handling and makes adding languages later straightforward rather than a major refactor.",
+      "timestamp": "2026-03-18T15:17:32.361Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": []
+}

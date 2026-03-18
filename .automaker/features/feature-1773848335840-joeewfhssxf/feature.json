@@ -1,0 +1,27 @@
+{
+  "category": "Uncategorized",
+  "description": "Prepare Repository for Open Source Publication\n\nClean up, configure, and document the repository so it's ready for public release on GitHub or similar platforms.\n\nRequirements:\n\nDocumentation\n- Write comprehensive README with: project overview, features, installation, development setup, usage examples, and contribution guidelines\n- Add LICENSE file (choose appropriate license based on project dependencies)\n- Create CONTRIBUTING.md with pull request workflow, coding standards, and testing requirements\n- Add Code of Conduct (e.g., Contributor Covenant)\n- Create CHANGELOG.md documenting all notable changes\n\nCode & Configuration Cleanup\n- Audit for and remove all hardcoded secrets, API keys, tokens, and credentials\n- Ensure .gitignore excludes sensitive files (.env, credentials.json, node_modules, build artifacts)\n- Replace internal/project-specific configurations with placeholder values\n- Remove any personal or company-specific references\n- Verify package.json has correct public metadata (name, repository, author, license)\n\nSecurity Hardening\n- Run npm audit fix to address known vulnerabilities\n- Ensure environment variables are properly documented with .env.example\n- Verify no sensitive data is committed to git history\n\nGit Hygiene\n- Review recent commits for any sensitive information\n- Ensure main branch is clean and represents release-ready state\n- Add .github templates for issues and pull requests\n\nFinal Steps\n- Verify npm run build succeeds\n- Test fresh clone installation process\n- Confirm all links and references work correctly",
+  "title": "",
+  "images": [],
+  "imagePaths": [],
+  "textFilePaths": [],
+  "skipTests": true,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "lite",
+  "requirePlanApproval": true,
+  "dependencies": [],
+  "status": "backlog",
+  "createdAt": "2026-03-18T15:38:55.840Z",
+  "id": "feature-1773848335840-joeewfhssxf",
+  "descriptionHistory": [
+    {
+      "description": "Prepare Repository for Open Source Publication\n\nClean up, configure, and document the repository so it's ready for public release on GitHub or similar platforms.\n\nRequirements:\n\nDocumentation\n- Write comprehensive README with: project overview, features, installation, development setup, usage examples, and contribution guidelines\n- Add LICENSE file (choose appropriate license based on project dependencies)\n- Create CONTRIBUTING.md with pull request workflow, coding standards, and testing requirements\n- Add Code of Conduct (e.g., Contributor Covenant)\n- Create CHANGELOG.md documenting all notable changes\n\nCode & Configuration Cleanup\n- Audit for and remove all hardcoded secrets, API keys, tokens, and credentials\n- Ensure .gitignore excludes sensitive files (.env, credentials.json, node_modules, build artifacts)\n- Replace internal/project-specific configurations with placeholder values\n- Remove any personal or company-specific references\n- Verify package.json has correct public metadata (name, repository, author, license)\n\nSecurity Hardening\n- Run npm audit fix to address known vulnerabilities\n- Ensure environment variables are properly documented with .env.example\n- Verify no sensitive data is committed to git history\n\nGit Hygiene\n- Review recent commits for any sensitive information\n- Ensure main branch is clean and represents release-ready state\n- Add .github templates for issues and pull requests\n\nFinal Steps\n- Verify npm run build succeeds\n- Test fresh clone installation process\n- Confirm all links and references work correctly",
+      "timestamp": "2026-03-18T15:38:56.001Z",
+      "source": "initial"
+    }
+  ]
+}

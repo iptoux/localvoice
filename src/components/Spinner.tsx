@@ -1,4 +1,4 @@
-export function Spinner({ className = "" }: { className?: string }) {
+function Spinner({ className = "" }: { className?: string }) {
   return (
     <div
       className={`inline-block w-5 h-5 border-2 border-neutral-600 border-t-neutral-300 rounded-full animate-spin ${className}`}

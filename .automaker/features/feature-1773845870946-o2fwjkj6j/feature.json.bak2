@@ -1,0 +1,29 @@
+{
+  "category": "enhancement",
+  "description": "Identify all instances of expensive in-render computations — such as filtering transcription segments, computing word counts, or building display strings from raw data — and wrap them in useMemo with precise dependency arrays. Co-locate a performance budget comment (e.g., '< 2ms') to flag future regressions.\n\n**Rationale:** Derived data re-computed on every render is a silent performance drain. In transcription-heavy views where state updates are frequent, memoizing expensive derivations can reduce render time by 40–70% for those specific computations.",
+  "title": "useMemo for Derived State in Transcription Components",
+  "status": "completed",
+  "id": "feature-1773845870946-o2fwjkj6j",
+  "createdAt": "2026-03-18T14:57:50.947Z",
+  "descriptionHistory": [
+    {
+      "description": "Identify all instances of expensive in-render computations — such as filtering transcription segments, computing word counts, or building display strings from raw data — and wrap them in useMemo with precise dependency arrays. Co-locate a performance budget comment (e.g., '< 2ms') to flag future regressions.\n\n**Rationale:** Derived data re-computed on every render is a silent performance drain. In transcription-heavy views where state updates are frequent, memoizing expensive derivations can reduce render time by 40–70% for those specific computations.",
+      "timestamp": "2026-03-18T14:57:50.947Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": [],
+  "updatedAt": "2026-03-18T15:12:02.320Z",
+  "summary": "## Summary: useMemo for Derived State in Transcription Components\n\n### Changes Implemented\n- **Dashboard.tsx**: `useMemo` for `durationLabel`, `wpmLabel` (< 0.1ms), `total`, `chartData` (< 0.5ms) in StatCards/LanguagePie; `maxCount`, `chartData` (< 0.5ms) in CorrectionFrequency; `maxSessions` (< 0.3ms) in TopModels; `maxCount` (< 0.3ms) in FillerStatsChart\n\n- **History.tsx**: `useMemo` for `preview` (< 0.1ms) in SessionRow; `installedModels` (< 0.2ms) filter in SessionDrawer\n\n- **Models.tsx**: `useMemo` for `defaultsByLang` (< 1ms) lookup map; `visible` (< 1ms) filtered/sorted list; `installed` (< 0.2ms) in DefaultSelector\n\n- **Pill.tsx**: `useMemo` for `wordCount` (< 0.1ms) in IdleContent; `preview` (< 0.1ms) in SuccessContent\n\n- **ExpandedPill.tsx**: `useMemo` for `wordCount` (< 0.1ms) computation\n\n- **Dictionary.tsx**: `useMemo` for `filtered` (< 0.2ms) language filter in FillerWordsTab\n\n### Files Modified\n- `src/pages/Dashboard.tsx`\n- `src/pages/History.tsx`\n- `src/pages/Models.tsx`\n- `src/pages/Dictionary.tsx`\n- `src/components/pill/Pill.tsx`\n- `src/components/pill/ExpandedPill.tsx`\n\n### Notes for Developer\n- All `useMemo` hooks include performance budget comments (e.g., `// < 0.5ms`) to flag future regressions\n- Precise dependency arrays ensure re-computation only when necessary\n- Build verified with `npm run build`; TypeScript compilation passed with no errors"
+}

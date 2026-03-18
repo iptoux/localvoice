@@ -25,9 +25,11 @@ Technical reference for contributors and maintainers.
 ## Reference
 
 - [architecture.md](architecture.md) — high-level system overview *(todo)*
-- [database-schema.md](database-schema.md) — full schema with field descriptions *(todo)*
-- [tauri-commands.md](tauri-commands.md) — all Tauri command signatures *(todo)*
-- [transcription-pipeline.md](transcription-pipeline.md) — whisper.cpp sidecar pipeline *(todo)*
+- [database-schema.md](database-schema.md) — full schema with ERD, table reference, and migration guide
+- [error-handling.md](error-handling.md) — Rust error conventions and frontend event patterns
+- [i18n.md](i18n.md) — internationalization approach, translation structure, and language settings
+- [tauri-commands.md](tauri-commands.md) — all Tauri command signatures (parameters, return types, error codes, examples)
+- [transcription-pipeline.md](transcription-pipeline.md) — whisper.cpp sidecar, protocol, debugging *(done)*
 
 ## See Also
 

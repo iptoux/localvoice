@@ -1,0 +1,28 @@
+{
+  "category": "chore",
+  "description": "Write documentation explaining how whisper.cpp runs as a sidecar, the stdin/stdout protocol used, how to debug transcription issues, and how to swap in different whisper builds or configurations.\n\n**Rationale:** The sidecar architecture is unusual and may confuse developers unfamiliar with inter-process communication. Documentation demystifies this critical path and aids troubleshooting.",
+  "title": "Sidecar Process Integration Guide",
+  "status": "in_progress",
+  "id": "feature-1773847052339-kz3ra7ztb",
+  "createdAt": "2026-03-18T15:17:32.340Z",
+  "descriptionHistory": [
+    {
+      "description": "Write documentation explaining how whisper.cpp runs as a sidecar, the stdin/stdout protocol used, how to debug transcription issues, and how to swap in different whisper builds or configurations.\n\n**Rationale:** The sidecar architecture is unusual and may confuse developers unfamiliar with inter-process communication. Documentation demystifies this critical path and aids troubleshooting.",
+      "timestamp": "2026-03-18T15:17:32.340Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "opencode-big-pickle",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "current",
+  "dependencies": [],
+  "startedAt": "2026-03-18T15:19:04.118Z"
+}

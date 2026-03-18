@@ -1,0 +1,29 @@
+{
+  "category": "enhancement",
+  "description": "Apply `contain: layout paint` or `contain: strict` CSS properties to independently updating panels like the audio waveform, status bar, and live transcription feed. This hints to the browser engine that changes inside these containers don't affect the rest of the layout, enabling parallel rendering optimizations.\n\n**Rationale:** In a two-window Tauri app with real-time updates, the browser's rendering engine must recalculate layout for the entire document tree by default. CSS containment scopes these expensive operations, reducing style recalculation and paint time for the surrounding UI.",
+  "title": "CSS Containment for Independent UI Panels",
+  "status": "backlog",
+  "id": "feature-1773845870966-1yh9k7kpe",
+  "createdAt": "2026-03-18T14:57:50.967Z",
+  "descriptionHistory": [
+    {
+      "description": "Apply `contain: layout paint` or `contain: strict` CSS properties to independently updating panels like the audio waveform, status bar, and live transcription feed. This hints to the browser engine that changes inside these containers don't affect the rest of the layout, enabling parallel rendering optimizations.\n\n**Rationale:** In a two-window Tauri app with real-time updates, the browser's rendering engine must recalculate layout for the entire document tree by default. CSS containment scopes these expensive operations, reducing style recalculation and paint time for the surrounding UI.",
+      "timestamp": "2026-03-18T14:57:50.967Z",
+      "source": "initial"
+    }
+  ],
+  "skipTests": false,
+  "model": "opencode-minimax-m2.5-free",
+  "thinkingLevel": "none",
+  "reasoningEffort": "none",
+  "imagePaths": [],
+  "textFilePaths": [],
+  "branchName": "main",
+  "priority": 2,
+  "planningMode": "skip",
+  "requirePlanApproval": false,
+  "workMode": "custom",
+  "dependencies": [],
+  "updatedAt": "2026-03-18T15:02:35.521Z",
+  "startedAt": "2026-03-18T15:02:09.626Z"
+}

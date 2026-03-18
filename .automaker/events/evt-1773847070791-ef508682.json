@@ -1,0 +1,11 @@
+{
+  "id": "evt-1773847070791-ef508682",
+  "trigger": "feature_error",
+  "timestamp": "2026-03-18T15:17:50.791Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773847052282-l74mhs6of",
+  "featureName": "Automated Dev Environment Setup Script",
+  "error": "Claude Code process exited with code 1",
+  "errorType": "execution"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "evt-1773847159629-31987eb9",
+  "trigger": "feature_success",
+  "timestamp": "2026-03-18T15:19:19.629Z",
+  "projectPath": "C:\\Users\\Maik Roland Damm\\Entwicklung\\localvoice",
+  "projectName": "localvoice",
+  "featureId": "feature-1773847052228-q1wwlzwc4",
+  "featureName": "Architecture Decision Records (ADRs)",
+  "passes": true
+}

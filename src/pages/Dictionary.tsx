@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Pencil, Trash2, RefreshCw, BookOpen, Wand2, Lightbulb, Filter, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import type { AmbiguousTerm, CorrectionRule, DictionaryEntry, FillerWord } from "../types";
@@ -681,7 +681,8 @@ function FillerWordsTab() {
 
   useEffect(() => { fetch(lang); }, [lang, fetch]);
 
-  const filtered = words.filter((w) => w.language === lang);
+  // < 0.2ms — filter filler words by language, memoized to prevent re-computation on every render
+  const filtered = useMemo(() => words.filter((w) => w.language === lang), [words, lang]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();

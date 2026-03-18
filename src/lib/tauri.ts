@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
   AmbiguousTerm,
+  BenchmarkResult,
   CorrectionRule,
   CorrectionStat,
   DailyStats,
@@ -283,3 +284,16 @@ export const getFillerStats = (language?: string): Promise<FillerStat[]> =>
 
 export const getFillerTotalCount = (): Promise<number> =>
   invoke<number>("get_filler_total_count");
+
+// ── Benchmark ─────────────────────────────────────────────────────────────────
+
+export const runTranscriptionBenchmark = (options?: {
+  language?: string;
+  modelPath?: string;
+  durationMs?: number;
+}): Promise<BenchmarkResult> =>
+  invoke<BenchmarkResult>("run_transcription_benchmark", {
+    language: options?.language ?? null,
+    modelPath: options?.modelPath ?? null,
+    durationMs: options?.durationMs ?? null,
+  });
