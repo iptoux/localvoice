@@ -109,63 +109,96 @@ pub fn mark_uninstalled(db: &DbConn, model_key: &str) -> Result<(), AppError> {
          WHERE model_key = ?2",
         params![now, model_key],
     )?;
+    conn.execute(
+        "DELETE FROM model_language_defaults WHERE model_key = ?1",
+        params![model_key],
+    )?;
     Ok(())
 }
 
-/// Sets the default model for a given language ("de" | "en").
-/// Clears any existing default for that language first.
+/// Sets the default model for any language using the generic defaults table.
+/// Pass empty string as model_key to clear the default.
 pub fn set_default_for_language(
     db: &DbConn,
     language: &str,
     model_key: &str,
 ) -> Result<(), AppError> {
     let conn = db.lock().unwrap();
+    if model_key.is_empty() {
+        conn.execute(
+            "DELETE FROM model_language_defaults WHERE language = ?1",
+            params![language],
+        )?;
+    } else {
+        conn.execute(
+            "INSERT INTO model_language_defaults (language, model_key) VALUES (?1, ?2)
+             ON CONFLICT(language) DO UPDATE SET model_key = excluded.model_key",
+            params![language, model_key],
+        )?;
+    }
+
+    // Keep legacy columns in sync for de/en.
     let now = chrono::Utc::now().to_rfc3339();
-    let col = match language {
-        "de" => "is_default_for_de",
-        "en" => "is_default_for_en",
-        other => return Err(AppError(format!("Unknown language: {other}"))),
-    };
-
-    // Clear existing default for this language.
-    conn.execute(
-        &format!(
-            "UPDATE model_installations SET {col} = 0, updated_at = ?1 WHERE {col} = 1"
-        ),
-        params![now],
-    )?;
-
-    // Set new default.
-    conn.execute(
-        &format!(
-            "UPDATE model_installations SET {col} = 1, updated_at = ?1
-             WHERE model_key = ?2 AND installed = 1"
-        ),
-        params![now, model_key],
-    )?;
-
+    if language == "de" {
+        conn.execute("UPDATE model_installations SET is_default_for_de = 0, updated_at = ?1", params![now])?;
+        if !model_key.is_empty() {
+            conn.execute(
+                "UPDATE model_installations SET is_default_for_de = 1, updated_at = ?1 WHERE model_key = ?2",
+                params![now, model_key],
+            )?;
+        }
+    } else if language == "en" {
+        conn.execute("UPDATE model_installations SET is_default_for_en = 0, updated_at = ?1", params![now])?;
+        if !model_key.is_empty() {
+            conn.execute(
+                "UPDATE model_installations SET is_default_for_en = 1, updated_at = ?1 WHERE model_key = ?2",
+                params![now, model_key],
+            )?;
+        }
+    }
     Ok(())
 }
 
 /// Returns the `local_path` of the default installed model for `language`.
 pub fn get_default_path(db: &DbConn, language: &str) -> Result<Option<String>, AppError> {
     let conn = db.lock().unwrap();
+
+    // Try the generic defaults table first.
+    let mut stmt = conn.prepare(
+        "SELECT mi.local_path FROM model_language_defaults mld
+         JOIN model_installations mi ON mi.model_key = mld.model_key
+         WHERE mld.language = ?1 AND mi.installed = 1 LIMIT 1",
+    )?;
+    let mut rows = stmt.query(params![language])?;
+    if let Some(row) = rows.next()? {
+        return Ok(Some(row.get(0)?));
+    }
+
+    // Fallback: legacy de/en columns.
     let col = match language {
         "de" => "is_default_for_de",
         "en" => "is_default_for_en",
         _ => return Ok(None),
     };
-    let mut stmt = conn.prepare(&format!(
-        "SELECT local_path FROM model_installations
-         WHERE {col} = 1 AND installed = 1 LIMIT 1"
+    let mut stmt2 = conn.prepare(&format!(
+        "SELECT local_path FROM model_installations WHERE {col} = 1 AND installed = 1 LIMIT 1"
     ))?;
-    let mut rows = stmt.query([])?;
-    if let Some(row) = rows.next()? {
-        let path: String = row.get(0)?;
-        Ok(Some(path))
-    } else {
-        Ok(None)
+    let mut rows2 = stmt2.query([])?;
+    if let Some(row) = rows2.next()? {
+        return Ok(Some(row.get(0)?));
     }
+    Ok(None)
+}
+
+/// Returns all language → model_key defaults.
+pub fn get_all_defaults(db: &DbConn) -> Result<Vec<(String, String)>, AppError> {
+    let conn = db.lock().unwrap();
+    let mut stmt = conn.prepare(
+        "SELECT language, model_key FROM model_language_defaults ORDER BY language",
+    )?;
+    let x = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(x)
 }
 
 /// Returns the `local_path` of an installed model identified by `model_key`.

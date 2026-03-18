@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { RefreshCw, Download, Trash2, AlertTriangle, Info, AlertCircle, List } from "lucide-react";
 import { listLogs, exportLogs, clearLogs } from "../lib/tauri";
 import type { LogEntry } from "../types";
 
@@ -8,6 +9,12 @@ const LEVEL_COLORS: Record<string, string> = {
   info: "text-blue-300 bg-blue-900/20 border-blue-800/50",
   warn: "text-yellow-400 bg-yellow-900/30 border-yellow-700/50",
   error: "text-red-400 bg-red-900/30 border-red-700/50",
+};
+
+const LEVEL_ICONS: Record<string, React.ReactNode> = {
+  info: <Info size={12} />,
+  warn: <AlertTriangle size={12} />,
+  error: <AlertCircle size={12} />,
 };
 
 export default function Logs() {
@@ -62,33 +69,34 @@ export default function Logs() {
           <button
             key={level}
             onClick={() => setFilter(level)}
-            className={`px-3 py-1.5 text-xs rounded-full border transition-colors capitalize ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border transition-colors capitalize ${
               filter === level
                 ? "bg-accent border-neutral-500 text-foreground"
                 : "border-border text-muted-foreground hover:text-foreground"
             }`}
           >
+            {level === "all" ? <List size={11} /> : LEVEL_ICONS[level]}
             {level === "all" ? "All" : level}
           </button>
         ))}
         <div className="flex-1" />
         <button
           onClick={() => load()}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          Refresh
+          <RefreshCw size={13} /> Refresh
         </button>
         <button
           onClick={handleExport}
-          className="text-xs px-3 py-1.5 bg-accent hover:bg-neutral-600 text-foreground rounded transition-colors"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-accent hover:bg-neutral-600 text-foreground rounded transition-colors"
         >
-          Export JSON
+          <Download size={13} /> Export JSON
         </button>
         <button
           onClick={handleClear}
-          className="text-xs px-3 py-1.5 text-red-500 hover:text-red-400 border border-red-800 hover:border-red-600 rounded transition-colors"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 text-red-500 hover:text-red-400 border border-red-800 hover:border-red-600 rounded transition-colors"
         >
-          Clear
+          <Trash2 size={13} /> Clear
         </button>
       </div>
 
@@ -114,7 +122,8 @@ export default function Logs() {
               }`}
             >
               <div className="flex items-start gap-3 flex-wrap">
-                <span className="text-xs font-mono uppercase shrink-0 font-semibold">
+                <span className="flex items-center gap-1 text-xs font-mono uppercase shrink-0 font-semibold">
+                  {LEVEL_ICONS[entry.level]}
                   {entry.level}
                 </span>
                 <span className="text-xs text-muted-foreground shrink-0">

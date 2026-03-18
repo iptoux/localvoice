@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import type { AmbiguousTerm, CorrectionRule, DictionaryEntry } from "../types";
+import { Plus, Pencil, Trash2, RefreshCw, BookOpen, Wand2, Lightbulb, Filter, X } from "lucide-react";
+import type { AmbiguousTerm, CorrectionRule, DictionaryEntry, FillerWord } from "../types";
 import { useAmbiguityStore } from "../stores/ambiguity-store";
 import { useDictionaryStore } from "../stores/dictionary-store";
+import { useFillerWordsStore } from "../stores/filler-words-store";
 
 // ── shared ────────────────────────────────────────────────────────────────────
 
@@ -275,9 +277,9 @@ function TermsTab() {
         <span className="text-xs text-muted-foreground">{entries.length} entries</span>
         <button
           onClick={openAdd}
-          className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
         >
-          + Add entry
+          <Plus size={12} /> Add entry
         </button>
       </div>
 
@@ -304,13 +306,13 @@ function TermsTab() {
                 onClick={() => openEdit(entry)}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                Edit
+                <Pencil size={13} />
               </button>
               <button
                 onClick={() => handleDelete(entry)}
                 className="text-xs text-red-500 hover:text-red-400 transition-colors"
               >
-                Delete
+                <Trash2 size={13} />
               </button>
             </div>
           ))}
@@ -368,9 +370,9 @@ function RulesTab() {
         <span className="text-xs text-muted-foreground">{rules.length} rules</span>
         <button
           onClick={openAdd}
-          className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
         >
-          + Add rule
+          <Plus size={12} /> Add rule
         </button>
       </div>
 
@@ -421,13 +423,13 @@ function RulesTab() {
                 onClick={() => openEdit(rule)}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
               >
-                Edit
+                <Pencil size={13} />
               </button>
               <button
                 onClick={() => handleDelete(rule)}
                 className="text-xs text-red-500 hover:text-red-400 transition-colors shrink-0"
               >
-                Delete
+                <Trash2 size={13} />
               </button>
             </div>
           ))}
@@ -493,9 +495,9 @@ function SuggestionsTab() {
         <span className="text-xs text-muted-foreground">{terms.length} suggestions</span>
         <button
           onClick={() => fetch()}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          Refresh
+          <RefreshCw size={12} /> Refresh
         </button>
       </div>
 
@@ -621,9 +623,124 @@ function SuggestionsTab() {
   );
 }
 
+// ── Filler Words tab ──────────────────────────────────────────────────────────
+
+const FILLER_LANGUAGES = [
+  { value: "de", label: "DE" },
+  { value: "en", label: "EN" },
+  { value: "fr", label: "FR" },
+  { value: "es", label: "ES" },
+  { value: "it", label: "IT" },
+  { value: "pt", label: "PT" },
+  { value: "nl", label: "NL" },
+  { value: "pl", label: "PL" },
+  { value: "ru", label: "RU" },
+  { value: "ja", label: "JA" },
+  { value: "zh", label: "ZH" },
+];
+
+function FillerWordsTab() {
+  const { words, loading, error, fetch, add, remove, reset } = useFillerWordsStore();
+  const [lang, setLang] = useState("de");
+  const [newWord, setNewWord] = useState("");
+
+  useEffect(() => { fetch(lang); }, [lang, fetch]);
+
+  const filtered = words.filter((w) => w.language === lang);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newWord.trim().toLowerCase();
+    if (!trimmed) return;
+    await add(trimmed, lang);
+    setNewWord("");
+  };
+
+  const handleReset = async () => {
+    if (!confirm(`Reset all ${lang.toUpperCase()} filler words to defaults?`)) return;
+    await reset(lang);
+  };
+
+  return (
+    <>
+      {/* Language tabs */}
+      <div className="flex flex-wrap gap-1 mb-4">
+        {FILLER_LANGUAGES.map((l) => (
+          <button
+            key={l.value}
+            onClick={() => setLang(l.value)}
+            className={`px-2.5 py-1 text-xs rounded transition-colors ${
+              lang === l.value
+                ? "bg-blue-600 text-white"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {l.label}
+          </button>
+        ))}
+        <span className="flex-1" />
+        <button
+          onClick={handleReset}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <RefreshCw size={12} /> Reset to defaults
+        </button>
+      </div>
+
+      {/* Add form */}
+      <form onSubmit={handleAdd} className="flex gap-2 mb-4">
+        <input
+          className="flex-1 bg-muted border border-border text-foreground text-sm rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          placeholder={`Add filler word (${lang.toUpperCase()})…`}
+          value={newWord}
+          onChange={(e) => setNewWord(e.target.value)}
+        />
+        <button
+          type="submit"
+          disabled={!newWord.trim()}
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded transition-colors"
+        >
+          <Plus size={12} /> Add
+        </button>
+      </form>
+
+      {error && (
+        <div className="mb-3 p-3 rounded bg-red-900/40 border border-red-700 text-sm text-red-300">{error}</div>
+      )}
+
+      {loading ? (
+        <p className="text-muted-foreground text-sm">Loading…</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-muted-foreground text-sm">No filler words for {lang.toUpperCase()} yet.</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {filtered.map((w: FillerWord) => (
+            <span
+              key={w.id}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted border border-border text-sm"
+            >
+              <span className="text-foreground">{w.word}</span>
+              {w.isDefault && (
+                <span className="text-xs text-muted-foreground">·</span>
+              )}
+              <button
+                onClick={() => remove(w.id)}
+                className="text-muted-foreground hover:text-red-400 transition-colors leading-none"
+                title="Remove"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 // ── page ──────────────────────────────────────────────────────────────────────
 
-type Tab = "terms" | "rules" | "suggestions";
+type Tab = "terms" | "rules" | "suggestions" | "fillers";
 
 export default function Dictionary() {
   const [activeTab, setActiveTab] = useState<Tab>("rules");
@@ -649,19 +766,23 @@ export default function Dictionary() {
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border mb-5">
         <TabButton active={activeTab === "rules"} onClick={() => setActiveTab("rules")}>
-          Rules
+          <Wand2 size={13} className="inline mr-1.5 -mt-0.5" />Rules
         </TabButton>
         <TabButton active={activeTab === "suggestions"} onClick={() => setActiveTab("suggestions")}>
-          Suggestions
+          <Lightbulb size={13} className="inline mr-1.5 -mt-0.5" />Suggestions
         </TabButton>
         <TabButton active={activeTab === "terms"} onClick={() => setActiveTab("terms")}>
-          Terms
+          <BookOpen size={13} className="inline mr-1.5 -mt-0.5" />Terms
+        </TabButton>
+        <TabButton active={activeTab === "fillers"} onClick={() => setActiveTab("fillers")}>
+          <Filter size={13} className="inline mr-1.5 -mt-0.5" />Filler Words
         </TabButton>
       </div>
 
       {activeTab === "rules" && <RulesTab />}
       {activeTab === "suggestions" && <SuggestionsTab />}
       {activeTab === "terms" && <TermsTab />}
+      {activeTab === "fillers" && <FillerWordsTab />}
     </div>
   );
 }

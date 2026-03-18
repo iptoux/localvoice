@@ -13,9 +13,11 @@ import {
   Bar,
 } from "recharts";
 import { useDashboardStore, type RangePreset } from "../stores/dashboard-store";
+import { useFillerWordsStore } from "../stores/filler-words-store";
 import type {
   CorrectionStat,
   DashboardStats,
+  FillerStat,
   LanguageBreakdown,
   TimeseriesPoint,
   WpmPoint,
@@ -48,8 +50,11 @@ export default function Dashboard() {
     fetch,
   } = useDashboardStore();
 
+  const { stats: fillerStats, totalRemoved, fetchStats: fetchFillerStats } = useFillerWordsStore();
+
   useEffect(() => {
     fetch(range);
+    fetchFillerStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -109,6 +114,21 @@ export default function Dashboard() {
         </h2>
         <TopModels stats={stats} loading={loading} />
       </section>
+
+      {/* Filler word stats */}
+      {(totalRemoved > 0 || fillerStats.length > 0) && (
+        <section className="bg-card rounded-xl border border-border p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-foreground/70">
+              Filler words removed
+            </h2>
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {totalRemoved.toLocaleString()} total
+            </span>
+          </div>
+          <FillerStatsChart data={fillerStats} />
+        </section>
+      )}
     </div>
   );
 }
@@ -462,6 +482,40 @@ function TopModels({
                 <span>{dur} recorded</span>
                 {wpm && <span>{wpm} avg</span>}
               </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Filler stats chart ──────────────────────────────────────────────────────
+
+function FillerStatsChart({ data }: { data: FillerStat[] }) {
+  if (data.length === 0)
+    return <ChartPlaceholder label="No filler words removed yet. Enable filler removal in settings." />;
+
+  const maxCount = Math.max(...data.map((d) => d.count), 1);
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      {data.slice(0, 10).map((d) => {
+        const pct = Math.round((d.count / maxCount) * 100);
+        return (
+          <div key={`${d.language}-${d.word}`}>
+            <div className="flex items-center justify-between mb-1 gap-2">
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="text-xs text-muted-foreground uppercase shrink-0">{d.language}</span>
+                <span className="text-sm text-foreground font-mono truncate">{d.word}</span>
+              </span>
+              <span className="text-xs text-muted-foreground shrink-0 tabular-nums">{d.count}×</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-1.5">
+              <div
+                className="bg-violet-500 h-1.5 rounded-full transition-all"
+                style={{ width: `${pct}%` }}
+              />
             </div>
           </div>
         );

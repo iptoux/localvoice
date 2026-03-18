@@ -4,6 +4,8 @@ import type {
   CorrectionRule,
   CorrectionStat,
   DailyStats,
+  FillerStat,
+  FillerWord,
   LogEntry,
   DashboardStats,
   DateRange,
@@ -154,7 +156,7 @@ export const downloadModel = (key: string): Promise<void> =>
 export const deleteModel = (key: string): Promise<void> =>
   invoke<void>("delete_model", { key });
 
-export const setDefaultModel = (language: "de" | "en", key: string): Promise<void> =>
+export const setDefaultModel = (language: string, key: string): Promise<void> =>
   invoke<void>("set_default_model", { language, key });
 
 // ── Dictionary ────────────────────────────────────────────────────────────────
@@ -246,3 +248,23 @@ export const clearLogs = (): Promise<void> =>
 
 export const setLoggingEnabled = (enabled: boolean): Promise<void> =>
   invoke<void>("set_logging_enabled", { enabled });
+
+// ── Filler Words ──────────────────────────────────────────────────────────────
+
+export const listFillerWords = (language?: string): Promise<FillerWord[]> =>
+  invoke<FillerWord[]>("list_filler_words", { language: language ?? null });
+
+export const addFillerWord = (word: string, language: string): Promise<FillerWord> =>
+  invoke<FillerWord>("add_filler_word", { word, language });
+
+export const deleteFillerWord = (id: string): Promise<void> =>
+  invoke<void>("delete_filler_word", { id });
+
+export const resetFillerWords = (language: string): Promise<FillerWord[]> =>
+  invoke<FillerWord[]>("reset_filler_words", { language });
+
+export const getFillerStats = (language?: string): Promise<FillerStat[]> =>
+  invoke<FillerStat[]>("get_filler_stats", { language: language ?? null });
+
+export const getFillerTotalCount = (): Promise<number> =>
+  invoke<number>("get_filler_total_count");

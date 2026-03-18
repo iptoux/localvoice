@@ -201,4 +201,180 @@ static MIGRATIONS: &[(i64, &str)] = &[(
         ('recording.audio_retention_days', '7',     datetime('now')),
         ('recording.max_audio_storage_mb', '500',   datetime('now'));
     ",
+),
+(
+    6,
+    "
+    CREATE TABLE IF NOT EXISTS filler_words (
+        id          TEXT PRIMARY KEY,
+        word        TEXT NOT NULL,
+        language    TEXT NOT NULL,
+        is_default  INTEGER NOT NULL DEFAULT 0,
+        created_at  TEXT NOT NULL
+    );
+
+    -- Seed default German filler words
+    INSERT OR IGNORE INTO filler_words (id, word, language, is_default, created_at) VALUES
+        (lower(hex(randomblob(16))), 'äh',            'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'ähm',           'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'öhm',           'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'hm',            'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'hmm',           'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'mhm',           'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'halt',          'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'sozusagen',     'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'quasi',         'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'irgendwie',     'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'also',          'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'ja',            'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'ne',            'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'naja',          'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'gewissermaßen', 'de', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'sagen wir mal', 'de', 1, datetime('now'));
+
+    -- Seed default English filler words
+    INSERT OR IGNORE INTO filler_words (id, word, language, is_default, created_at) VALUES
+        (lower(hex(randomblob(16))), 'uh',        'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'um',        'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'uhm',       'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'hmm',       'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'hm',        'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'mhm',       'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'you know',  'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'like',      'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'basically', 'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'actually',  'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'sort of',   'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'kind of',   'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'i mean',    'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'right',     'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'well',      'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'so',        'en', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'okay so',   'en', 1, datetime('now'));
+    ",
+),
+(
+    7,
+    "
+    -- Filler word removal tracking
+    CREATE TABLE IF NOT EXISTS filler_removal_log (
+        id          TEXT PRIMARY KEY,
+        session_id  TEXT,
+        word        TEXT NOT NULL,
+        language    TEXT NOT NULL,
+        removed_at  TEXT NOT NULL
+    );
+
+    -- Seed French filler words
+    INSERT OR IGNORE INTO filler_words (id, word, language, is_default, created_at) VALUES
+        (lower(hex(randomblob(16))), 'euh',           'fr', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'bah',           'fr', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'ben',           'fr', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'hein',          'fr', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'voilà',         'fr', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'quoi',          'fr', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'genre',         'fr', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'du coup',       'fr', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'en fait',       'fr', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'tu vois',       'fr', 1, datetime('now'));
+
+    -- Seed Spanish filler words
+    INSERT OR IGNORE INTO filler_words (id, word, language, is_default, created_at) VALUES
+        (lower(hex(randomblob(16))), 'eh',            'es', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'este',          'es', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'pues',          'es', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'bueno',         'es', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'o sea',         'es', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'a ver',         'es', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'sabes',         'es', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'mira',          'es', 1, datetime('now'));
+
+    -- Seed Italian filler words
+    INSERT OR IGNORE INTO filler_words (id, word, language, is_default, created_at) VALUES
+        (lower(hex(randomblob(16))), 'allora',        'it', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'cioè',          'it', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'quindi',        'it', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'praticamente',  'it', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'tipo',          'it', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'ecco',          'it', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'vabbè',         'it', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'insomma',       'it', 1, datetime('now'));
+
+    -- Seed Portuguese filler words
+    INSERT OR IGNORE INTO filler_words (id, word, language, is_default, created_at) VALUES
+        (lower(hex(randomblob(16))), 'né',            'pt', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'então',         'pt', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'tipo',          'pt', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'sabe',          'pt', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'assim',         'pt', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'ahn',           'pt', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'bom',           'pt', 1, datetime('now'));
+
+    -- Seed Dutch filler words
+    INSERT OR IGNORE INTO filler_words (id, word, language, is_default, created_at) VALUES
+        (lower(hex(randomblob(16))), 'eh',            'nl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'uhm',           'nl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'nou',           'nl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'eigenlijk',     'nl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'gewoon',        'nl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'zeg maar',      'nl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'weet je',       'nl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'toch',          'nl', 1, datetime('now'));
+
+    -- Seed Polish filler words
+    INSERT OR IGNORE INTO filler_words (id, word, language, is_default, created_at) VALUES
+        (lower(hex(randomblob(16))), 'eee',           'pl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'yyy',           'pl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'no',            'pl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'właśnie',       'pl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'znaczy',        'pl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'tak jakby',     'pl', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'wiesz',         'pl', 1, datetime('now'));
+
+    -- Seed Russian filler words
+    INSERT OR IGNORE INTO filler_words (id, word, language, is_default, created_at) VALUES
+        (lower(hex(randomblob(16))), 'э',             'ru', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'ну',            'ru', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'вот',           'ru', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'значит',        'ru', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'короче',        'ru', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'типа',          'ru', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'как бы',        'ru', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'понимаешь',     'ru', 1, datetime('now'));
+
+    -- Seed Japanese filler words
+    INSERT OR IGNORE INTO filler_words (id, word, language, is_default, created_at) VALUES
+        (lower(hex(randomblob(16))), 'えーと',        'ja', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'あの',          'ja', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'まあ',          'ja', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'なんか',        'ja', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'ちょっと',      'ja', 1, datetime('now')),
+        (lower(hex(randomblob(16))), 'そうですね',    'ja', 1, datetime('now'));
+
+    -- Seed Chinese filler words
+    INSERT OR IGNORE INTO filler_words (id, word, language, is_default, created_at) VALUES
+        (lower(hex(randomblob(16))), '那个',          'zh', 1, datetime('now')),
+        (lower(hex(randomblob(16))), '就是',          'zh', 1, datetime('now')),
+        (lower(hex(randomblob(16))), '然后',          'zh', 1, datetime('now')),
+        (lower(hex(randomblob(16))), '这个',          'zh', 1, datetime('now')),
+        (lower(hex(randomblob(16))), '嗯',            'zh', 1, datetime('now')),
+        (lower(hex(randomblob(16))), '啊',            'zh', 1, datetime('now')),
+        (lower(hex(randomblob(16))), '对对对',        'zh', 1, datetime('now'));
+    ",
+),
+(
+    8,
+    "
+    -- Generic per-language model defaults (replaces is_default_for_de / is_default_for_en columns).
+    CREATE TABLE IF NOT EXISTS model_language_defaults (
+        language    TEXT PRIMARY KEY,
+        model_key   TEXT NOT NULL
+    );
+
+    -- Migrate existing de/en defaults into the new table.
+    INSERT OR IGNORE INTO model_language_defaults (language, model_key)
+        SELECT 'de', model_key FROM model_installations WHERE is_default_for_de = 1 AND installed = 1 LIMIT 1;
+    INSERT OR IGNORE INTO model_language_defaults (language, model_key)
+        SELECT 'en', model_key FROM model_installations WHERE is_default_for_en = 1 AND installed = 1 LIMIT 1;
+    ",
 )];

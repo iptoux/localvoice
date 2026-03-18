@@ -1,4 +1,5 @@
 pub mod dictionary;
+pub mod filler_words;
 pub mod history;
 pub mod logs;
 pub mod models;

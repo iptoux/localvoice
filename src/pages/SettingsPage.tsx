@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { emit, emitTo } from "@tauri-apps/api/event";
 import { useAppStore } from "../stores/app-store";
 import { useSettingsStore } from "../stores/settings-store";
 import {
@@ -542,6 +543,8 @@ export default function SettingsPage() {
             if (v) {
               set("app.theme", v);
               applyTheme(v as Theme);
+              emit("theme-changed", v);
+              emitTo("pill", "theme-changed", v).catch(() => {});
             }
           }}
         >

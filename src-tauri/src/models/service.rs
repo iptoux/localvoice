@@ -21,6 +21,8 @@ pub struct ModelInfo {
     pub installed: bool,
     pub is_default_for_de: bool,
     pub is_default_for_en: bool,
+    /// All languages for which this model is the default (from model_language_defaults table).
+    pub default_for_languages: Vec<String>,
     pub local_path: Option<String>,
     pub installed_at: Option<String>,
     // Extended metadata from registry
@@ -44,11 +46,17 @@ pub fn models_dir(app: &AppHandle) -> Result<PathBuf, AppError> {
 pub fn list_available(app: &AppHandle) -> Result<Vec<ModelInfo>, AppError> {
     let state = app.state::<AppState>();
     let installed = models_repo::list_installed(&state.db)?;
+    let all_defaults = models_repo::get_all_defaults(&state.db).unwrap_or_default();
 
     let models = registry::REGISTRY
         .iter()
         .map(|def| {
             let inst = installed.iter().find(|i| i.model_key == def.key);
+            let default_for_languages: Vec<String> = all_defaults
+                .iter()
+                .filter(|(_, k)| k == def.key)
+                .map(|(lang, _)| lang.clone())
+                .collect();
             ModelInfo {
                 key: def.key.to_string(),
                 display_name: def.display_name.to_string(),
@@ -57,6 +65,7 @@ pub fn list_available(app: &AppHandle) -> Result<Vec<ModelInfo>, AppError> {
                 installed: inst.is_some(),
                 is_default_for_de: inst.map(|i| i.is_default_for_de).unwrap_or(false),
                 is_default_for_en: inst.map(|i| i.is_default_for_en).unwrap_or(false),
+                default_for_languages,
                 local_path: inst.map(|i| i.local_path.clone()),
                 installed_at: inst.and_then(|i| i.installed_at.clone()),
                 description: def.description.to_string(),
@@ -82,18 +91,26 @@ pub async fn download_model(app: AppHandle, key: String) -> Result<(), AppError>
     let dest_dir = models_dir(&app)?;
     let dest_path = dest_dir.join(format!("{}.bin", key));
 
-    // Perform the download.
-    if let Err(e) = downloader::download(
-        &app,
-        &key,
-        def.download_url,
-        &dest_path,
-        def.file_size_bytes,
-    )
-    .await
-    {
-        downloader::cleanup_tmp(&dest_path);
-        let msg = format!("Failed to download {}: {e}", def.display_name);
+    // Perform the download — retry up to 3 times on failure.
+    const MAX_ATTEMPTS: u32 = 3;
+    let mut last_err = None;
+    for attempt in 1..=MAX_ATTEMPTS {
+        match downloader::download(&app, &key, def.download_url, &dest_path, def.file_size_bytes).await {
+            Ok(_) => { last_err = None; break; }
+            Err(e) => {
+                downloader::cleanup_tmp(&dest_path);
+                push_log("warn", "models::download", &format!(
+                    "Attempt {attempt}/{MAX_ATTEMPTS} failed for {}: {e}", def.display_name
+                ));
+                last_err = Some(e);
+                if attempt < MAX_ATTEMPTS {
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                }
+            }
+        }
+    }
+    if let Some(e) = last_err {
+        let msg = format!("Failed to download {} after {MAX_ATTEMPTS} attempts: {e}", def.display_name);
         push_log("error", "models::download", &msg);
         let _ = app.notification()
             .builder()
@@ -160,7 +177,7 @@ pub fn delete_model(app: &AppHandle, key: &str) -> Result<(), AppError> {
     Ok(())
 }
 
-/// Sets the default model for `language` ("de" | "en").
+/// Sets the default model for any language.
 pub fn set_default_model(app: &AppHandle, language: &str, key: &str) -> Result<(), AppError> {
     let state = app.state::<AppState>();
     models_repo::set_default_for_language(&state.db, language, key)?;

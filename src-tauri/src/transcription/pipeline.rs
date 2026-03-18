@@ -7,20 +7,15 @@ use crate::transcription::types::TranscriptSegment;
 
 /// Runs the full post-processing pipeline on raw transcript data.
 ///
-/// Returns `(cleaned_text, cleaned_segments, fired_rule_ids)`.
-///
-/// Stages:
-/// 1. Normalise whitespace in all segment texts.
-/// 2. Apply filler-word removal (if enabled).
-/// 3. Apply `normalize::normalize()` (collapse spaces + optional punctuation + optional capitalisation).
-/// 4. Apply active correction rules (case-insensitive substring replacement).
+/// Returns `(cleaned_text, cleaned_segments, fired_rule_ids, removed_fillers)`.
 pub fn run(
     raw_text: &str,
     segments: Vec<TranscriptSegment>,
     settings: &HashMap<String, String>,
     active_rules: &[CorrectionRule],
-    language: &str,
-) -> (String, Vec<TranscriptSegment>, Vec<String>) {
+    _language: &str,
+    filler_words: &[String],
+) -> (String, Vec<TranscriptSegment>, Vec<String>, Vec<String>) {
     let auto_cap = settings
         .get("transcription.auto_capitalization")
         .map(|v| v == "true")
@@ -46,10 +41,10 @@ pub fn run(
         .collect();
 
     // 1. Filler-word removal (before normalization so punctuation isn't disrupted).
-    let text = if remove_fillers_enabled {
-        fillers::remove_fillers(raw_text, language)
+    let (text, removed_fillers) = if remove_fillers_enabled {
+        fillers::remove_fillers_tracked(raw_text, filler_words)
     } else {
-        raw_text.to_string()
+        (raw_text.to_string(), vec![])
     };
 
     // 2. Normalize (whitespace + optional punctuation + optional capitalization).
@@ -58,5 +53,5 @@ pub fn run(
     // 3. Apply correction rules after normalization.
     let (cleaned_text, fired_ids) = dict_rules::apply_rules(&normalized, active_rules);
 
-    (cleaned_text, cleaned_segments, fired_ids)
+    (cleaned_text, cleaned_segments, fired_ids, removed_fillers)
 }

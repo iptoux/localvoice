@@ -6,11 +6,11 @@ import { ExpandedPill } from "./ExpandedPill";
 import type { RecordingState } from "../../types";
 
 const STATE_COLOR: Record<RecordingState, string> = {
-  idle: "bg-neutral-800",
-  listening: "bg-red-600",
-  processing: "bg-amber-500",
-  success: "bg-green-600",
-  error: "bg-rose-700",
+  idle: "bg-card/80",
+  listening: "bg-red-600/90",
+  processing: "bg-amber-500/90",
+  success: "bg-green-600/90",
+  error: "bg-rose-700/90",
 };
 
 /** Duration (ms) before the success state fades back to idle. */
@@ -46,7 +46,8 @@ export function Pill() {
     };
   }, [recordingState, setRecordingState]);
 
-  const handleClick = () => {
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
     if (isPillExpanded) {
       collapsePill().then(() => setIsPillExpanded(false));
     } else {
@@ -75,9 +76,10 @@ export function Pill() {
   return (
     <div
       className={`
-        w-full rounded-2xl select-none cursor-default overflow-hidden
+        w-full rounded-tl-2xl rounded-br-2xl select-none cursor-default overflow-hidden
         ${STATE_COLOR[recordingState]}
-        text-white shadow-lg
+        backdrop-blur-xl
+        text-foreground shadow-lg border border-border
         transition-all duration-300 ease-in-out
         ${isFadingOut ? "opacity-80" : "opacity-100"}
       `}
@@ -85,7 +87,7 @@ export function Pill() {
       {/* Compact pill bar — always visible */}
       <div
         data-tauri-drag-region
-        onClick={handleClick}
+        onContextMenu={handleContextMenu}
         onDoubleClick={handleDoubleClick}
         className="flex items-center gap-2 px-4 h-16 text-sm font-medium"
       >
@@ -100,7 +102,7 @@ export function Pill() {
           ) : recordingState === "processing" ? (
             "Transcribing…"
           ) : (
-            "Ready"
+            "LocalVoice"
           )}
         </span>
         {recordingState === "listening" && <ElapsedTimer />}
@@ -157,6 +159,9 @@ function OutputBadge({
 // ── State icon ───────────────────────────────────────────────────────────────
 
 function StateIcon({ state }: { state: RecordingState }) {
+  const isColored = state !== "idle";
+  const strokeColor = isColored ? "white" : "currentColor";
+
   switch (state) {
     case "listening":
       return (
@@ -179,7 +184,7 @@ function StateIcon({ state }: { state: RecordingState }) {
           className="w-4 h-4 flex-shrink-0"
           viewBox="0 0 16 16"
           fill="none"
-          stroke="white"
+          stroke={strokeColor}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -194,20 +199,31 @@ function StateIcon({ state }: { state: RecordingState }) {
           className="w-4 h-4 flex-shrink-0"
           viewBox="0 0 16 16"
           fill="none"
-          stroke="white"
+          stroke={strokeColor}
           strokeWidth="2"
           strokeLinecap="round"
         >
           <line x1="8" y1="3" x2="8" y2="9" />
-          <circle cx="8" cy="12" r="1" fill="white" />
+          <circle cx="8" cy="12" r="1" fill={strokeColor} />
         </svg>
       );
     default:
       return (
-        <div
+        <svg
           data-tauri-drag-region
-          className="w-4 h-4 rounded-full border-2 border-white/80 flex-shrink-0"
-        />
+          className="w-4 h-4 flex-shrink-0 text-foreground/70"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="5" y="1" width="6" height="9" rx="3" />
+          <path d="M2 8a6 6 0 0 0 12 0" />
+          <line x1="8" y1="14" x2="8" y2="15" />
+          <line x1="5" y1="15" x2="11" y2="15" />
+        </svg>
       );
   }
 }
@@ -236,7 +252,7 @@ function ElapsedTimer() {
   return (
     <span
       data-tauri-drag-region
-      className="text-white/70 text-xs tabular-nums flex-shrink-0"
+      className="text-muted-foreground text-xs tabular-nums flex-shrink-0"
     >
       {formatted}
     </span>

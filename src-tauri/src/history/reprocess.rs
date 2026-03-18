@@ -1,6 +1,6 @@
 use tauri::{AppHandle, Manager};
 
-use crate::db::repositories::{dictionary_repo, models_repo, sessions_repo, settings_repo};
+use crate::db::repositories::{dictionary_repo, filler_words_repo, models_repo, sessions_repo, settings_repo};
 use crate::errors::CmdResult;
 use crate::state::AppState;
 use crate::transcription::{language, parser, pipeline, whisper_sidecar};
@@ -97,8 +97,11 @@ pub fn reprocess_session(
     let active_rules = dictionary_repo::list_active_rules(&state.db, Some(&lang_code))
         .unwrap_or_default();
 
-    let (cleaned_text, cleaned_segments, _fired_ids) =
-        pipeline::run(&raw_text, segments, &settings, &active_rules, &lang_code);
+    let filler_words = filler_words_repo::list_words_for_language(&state.db, &lang_code)
+        .unwrap_or_default();
+
+    let (cleaned_text, cleaned_segments, _fired_ids, _removed_fillers) =
+        pipeline::run(&raw_text, segments, &settings, &active_rules, &lang_code, &filler_words);
 
     // Update session record.
     sessions_repo::update_session_reprocess(

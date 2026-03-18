@@ -23,7 +23,7 @@ interface ModelsStore {
   fetch: () => Promise<void>;
   startDownload: (key: string) => Promise<void>;
   removeModel: (key: string) => Promise<void>;
-  setDefault: (language: "de" | "en", key: string) => Promise<void>;
+  setDefault: (language: string, key: string) => Promise<void>;
   setDownloadProgress: (key: string, state: DownloadState | null) => void;
 }
 
@@ -68,7 +68,7 @@ export const useModelsStore = create<ModelsStore>((set, get) => ({
     }
   },
 
-  setDefault: async (language: "de" | "en", key: string) => {
+  setDefault: async (language: string, key: string) => {
     try {
       await setDefaultModel(language, key);
       await get().fetch();

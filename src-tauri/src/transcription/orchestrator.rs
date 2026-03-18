@@ -5,7 +5,7 @@ use tauri_plugin_notification::NotificationExt;
 use uuid::Uuid;
 
 use crate::db::models::Session;
-use crate::db::repositories::{ambiguous_terms_repo, dictionary_repo, models_repo, sessions_repo, settings_repo};
+use crate::db::repositories::{ambiguous_terms_repo, dictionary_repo, filler_words_repo, models_repo, sessions_repo, settings_repo};
 use crate::dictionary::service as dict_service;
 use crate::errors::CmdResult;
 use crate::os::{clipboard, foreground_window, text_insertion};
@@ -100,8 +100,12 @@ pub fn transcribe(
     let active_rules = dictionary_repo::list_active_rules(&state.db, Some(&lang_code))
         .unwrap_or_default();
 
-    let (cleaned_text, cleaned_segments, fired_rule_ids) =
-        pipeline::run(&raw_text, segments, &settings, &active_rules, &lang_code);
+    // Load filler words for the current language from DB.
+    let filler_words = filler_words_repo::list_words_for_language(&state.db, &lang_code)
+        .unwrap_or_default();
+
+    let (cleaned_text, cleaned_segments, fired_rule_ids, removed_fillers) =
+        pipeline::run(&raw_text, segments, &settings, &active_rules, &lang_code, &filler_words);
 
     // Increment usage counters for rules that fired.
     if !fired_rule_ids.is_empty() {
@@ -118,6 +122,7 @@ pub fn transcribe(
         model_id,
         duration_ms,
         output: None,
+        removed_fillers,
     })
 }
 
@@ -242,6 +247,18 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                 log::error!("Failed to persist session segments: {e}");
             } else {
                 log::info!("Session {} persisted ({} segments)", session.id, result.segments.len());
+            }
+
+            // Log filler word removals for stats tracking.
+            if !result.removed_fillers.is_empty() {
+                if let Err(e) = filler_words_repo::log_removals(
+                    &state.db,
+                    Some(&session.id),
+                    &result.removed_fillers,
+                    &result.language,
+                ) {
+                    log::warn!("Failed to log filler removals: {e}");
+                }
             }
 
             // ── Ambiguity detection ───────────────────────────────────────────

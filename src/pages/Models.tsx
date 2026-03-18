@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { Download, Trash2, CheckCircle, Globe } from "lucide-react";
 import type { ModelInfo, DownloadProgress } from "../types";
 import { useModelsStore } from "../stores/models-store";
 
@@ -48,19 +49,33 @@ function Dots({ filled, total = 5, color }: { filled: number; total?: number; co
 
 // ── DefaultSelector ───────────────────────────────────────────────────────────
 
+const ALL_LANGUAGES = [
+  { code: "de", label: "German (DE)" },
+  { code: "en", label: "English (EN)" },
+  { code: "fr", label: "French (FR)" },
+  { code: "es", label: "Spanish (ES)" },
+  { code: "it", label: "Italian (IT)" },
+  { code: "pt", label: "Portuguese (PT)" },
+  { code: "nl", label: "Dutch (NL)" },
+  { code: "pl", label: "Polish (PL)" },
+  { code: "ru", label: "Russian (RU)" },
+  { code: "ja", label: "Japanese (JA)" },
+  { code: "zh", label: "Chinese (ZH)" },
+];
+
 interface DefaultSelectorProps {
   label: string;
-  language: "de" | "en";
+  language: string;
   models: ModelInfo[];
   currentKey: string | undefined;
-  onSelect: (language: "de" | "en", key: string) => void;
+  onSelect: (language: string, key: string) => void;
 }
 
 function DefaultSelector({ label, language, models, currentKey, onSelect }: DefaultSelectorProps) {
   const installed = models.filter((m) => m.installed);
   return (
     <div className="flex items-center gap-3">
-      <span className="text-sm text-muted-foreground w-32 shrink-0">{label}</span>
+      <span className="text-sm text-muted-foreground w-36 shrink-0">{label}</span>
       {installed.length === 0 ? (
         <span className="text-xs text-muted-foreground italic">No installed models</span>
       ) : (
@@ -108,16 +123,15 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
               {CATEGORY_LABELS[model.category]}
             </span>
             {model.installed && (
-              <span className="px-1.5 py-0.5 rounded text-xs bg-green-900/60 text-green-300 font-medium">
-                Installed
+              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-green-900/60 text-green-300 font-medium">
+                <CheckCircle size={11} /> Installed
               </span>
             )}
-            {model.isDefaultForDe && (
-              <span className="px-1.5 py-0.5 rounded text-xs bg-blue-900/60 text-blue-300 font-medium">DE</span>
-            )}
-            {model.isDefaultForEn && (
-              <span className="px-1.5 py-0.5 rounded text-xs bg-indigo-900/60 text-indigo-300 font-medium">EN</span>
-            )}
+            {(model.defaultForLanguages ?? []).map((lang) => (
+              <span key={lang} className="px-1.5 py-0.5 rounded text-xs bg-blue-900/60 text-blue-300 font-medium uppercase">
+                {lang}
+              </span>
+            ))}
           </div>
 
           {/* Description */}
@@ -127,7 +141,7 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
           <div className="flex items-center gap-4 mt-2 flex-wrap">
             <span className="text-xs text-muted-foreground">{formatBytes(model.fileSizeBytes)}</span>
             <span className="text-xs text-muted-foreground capitalize">
-              {model.languageScope === "multilingual" ? "🌍 Multilingual" : "🇬🇧 EN only"}
+              {model.languageScope === "multilingual" ? <><Globe size={11} className="inline mr-1" />Multilingual</> : "🇬🇧 EN only"}
             </span>
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>Speed</span>
@@ -150,9 +164,9 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
           {model.installed ? (
             <button
               onClick={() => onDelete(model.key)}
-              className="text-xs px-3 py-1.5 rounded border border-red-800 text-red-400 hover:bg-red-900/40 transition-colors"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-red-800 text-red-400 hover:bg-red-900/40 transition-colors"
             >
-              Delete
+              <Trash2 size={12} /> Delete
             </button>
           ) : isDownloading ? (
             <button disabled className="text-xs px-3 py-1.5 rounded bg-accent text-muted-foreground cursor-not-allowed">
@@ -161,9 +175,9 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
           ) : (
             <button
               onClick={() => onDownload(model.key)}
-              className="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors"
             >
-              Download
+              <Download size={12} /> Download
             </button>
           )}
         </div>
@@ -227,8 +241,22 @@ export default function Models() {
     return () => { unlisten.then((fn) => fn()); };
   }, [setDownloadProgress]);
 
-  const defaultDe = models.find((m) => m.isDefaultForDe)?.key;
-  const defaultEn = models.find((m) => m.isDefaultForEn)?.key;
+  // Build a map: language → model key from defaultForLanguages
+  const defaultsByLang: Record<string, string> = {};
+  for (const m of models) {
+    for (const lang of m.defaultForLanguages ?? []) {
+      defaultsByLang[lang] = m.key;
+    }
+  }
+  // Fallback to legacy fields for de/en
+  if (!defaultsByLang["de"]) {
+    const legacyDe = models.find((m) => m.isDefaultForDe);
+    if (legacyDe) defaultsByLang["de"] = legacyDe.key;
+  }
+  if (!defaultsByLang["en"]) {
+    const legacyEn = models.find((m) => m.isDefaultForEn);
+    if (legacyEn) defaultsByLang["en"] = legacyEn.key;
+  }
 
   const handleDelete = (key: string) => {
     if (confirm(`Delete model "${key}"? The file will be removed from disk.`)) {
@@ -260,9 +288,17 @@ export default function Models() {
       {/* Default model selectors */}
       <section className="mb-8">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Default models</h2>
-        <div className="bg-muted border border-border rounded-lg p-4 flex flex-col gap-3">
-          <DefaultSelector label="German (DE)" language="de" models={models} currentKey={defaultDe} onSelect={setDefault} />
-          <DefaultSelector label="English (EN)" language="en" models={models} currentKey={defaultEn} onSelect={setDefault} />
+        <div className="bg-muted border border-border rounded-lg p-4 grid grid-cols-2 gap-3">
+          {ALL_LANGUAGES.map((lang) => (
+            <DefaultSelector
+              key={lang.code}
+              label={lang.label}
+              language={lang.code}
+              models={models}
+              currentKey={defaultsByLang[lang.code]}
+              onSelect={setDefault}
+            />
+          ))}
         </div>
       </section>
 
@@ -289,12 +325,12 @@ export default function Models() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className="bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex items-center gap-1 bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
-              <option value="default">Default order</option>
-              <option value="speed">Fastest first</option>
-              <option value="accuracy">Most accurate first</option>
-              <option value="size">Smallest first</option>
+              <option value="default">↕ Default order</option>
+              <option value="speed">↕ Fastest first</option>
+              <option value="accuracy">↕ Most accurate first</option>
+              <option value="size">↕ Smallest first</option>
             </select>
           </div>
         </div>

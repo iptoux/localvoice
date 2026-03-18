@@ -13,9 +13,9 @@ mod stats;
 mod transcription;
 
 use commands::{
-    dictionary as cmd_dictionary, history as cmd_history, logs as cmd_logs,
-    models as cmd_models, recording, settings, stats as cmd_stats, system as cmd_system,
-    transcription as cmd_transcription, window,
+    dictionary as cmd_dictionary, filler_words as cmd_filler_words, history as cmd_history,
+    logs as cmd_logs, models as cmd_models, recording, settings, stats as cmd_stats,
+    system as cmd_system, transcription as cmd_transcription, window,
 };
 use db::repositories::settings_repo;
 use state::AppState;
@@ -198,6 +198,13 @@ pub fn run() {
             // Logs
             cmd_logs::list_logs,
             cmd_logs::export_logs,
+            // Filler Words
+            cmd_filler_words::list_filler_words,
+            cmd_filler_words::add_filler_word,
+            cmd_filler_words::delete_filler_word,
+            cmd_filler_words::reset_filler_words,
+            cmd_filler_words::get_filler_stats,
+            cmd_filler_words::get_filler_total_count,
             cmd_logs::clear_logs,
             cmd_logs::set_logging_enabled,
         ])

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Search, Copy, Check, Trash2, Upload, ChevronLeft, ChevronRight, X, RefreshCw, Calendar } from "lucide-react";
 import type { Session, SessionFilter, SessionWithSegments } from "../types";
 import {
   deleteSession,
@@ -111,21 +112,24 @@ export default function History() {
                 "txt"
               ).catch(console.error)
             }
-            className="text-xs text-muted-foreground hover:text-foreground border border-border hover:border-neutral-500 px-3 py-1.5 rounded transition-colors"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border hover:border-neutral-500 px-3 py-1.5 rounded transition-colors"
           >
-            Export page ↗
+            <Upload size={12} />
+            Export page
           </button>
         </div>
 
-        {/* Search & filters (TASK-075, 076) */}
-        <div className="flex flex-col gap-2">
-          <input
-            type="search"
-            placeholder="Search transcriptions…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-muted border border-border text-foreground text-sm rounded-md px-3 py-2 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500"
-          />
+          <div className="flex flex-col gap-2">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <input
+              type="search"
+              placeholder="Search transcriptions…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full bg-muted border border-border text-foreground text-sm rounded-md pl-9 pr-3 py-2 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-500"
+            />
+          </div>
           <div className="flex flex-wrap gap-2">
             <select
               value={language}
@@ -140,6 +144,7 @@ export default function History() {
               <option value="auto">Auto-detect</option>
             </select>
             <label className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Calendar size={12} />
               From
               <input
                 type="date"
@@ -149,6 +154,7 @@ export default function History() {
               />
             </label>
             <label className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Calendar size={12} />
               To
               <input
                 type="date"
@@ -165,9 +171,10 @@ export default function History() {
                   setDateFrom("");
                   setDateTo("");
                 }}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2"
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2"
               >
-                Clear filters ✕
+                <X size={12} />
+                Clear filters
               </button>
             )}
           </div>
@@ -238,6 +245,16 @@ function SessionRow({
       ? session.cleanedText.slice(0, 78) + "…"
       : session.cleanedText;
 
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(session.cleanedText).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
   return (
     <button
       onClick={onClick}
@@ -255,6 +272,15 @@ function SessionRow({
         <LanguageBadge lang={session.language} />
         <span className="text-xs text-muted-foreground">{session.wordCount} words</span>
         <OutputBadge mode={session.outputMode} ok={session.insertedSuccessfully} />
+        <span className="flex-1" />
+        <button
+          onClick={handleCopy}
+          title="Copy to clipboard"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-muted"
+        >
+          {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+          {copied ? "Copied" : "Copy"}
+        </button>
       </div>
       <p className="text-sm text-foreground/70 leading-snug">{preview}</p>
     </button>
@@ -355,10 +381,10 @@ function SessionDrawer({
         <h2 className="text-sm font-semibold text-foreground">Session Details</h2>
         <button
           onClick={onClose}
-          className="text-muted-foreground hover:text-foreground text-lg leading-none"
+          className="text-muted-foreground hover:text-foreground"
           aria-label="Close"
         >
-          ✕
+          <X size={16} />
         </button>
       </div>
 
@@ -522,42 +548,45 @@ function SessionDrawer({
         </div>
       )}
 
-      {/* Actions (TASK-078) */}
       <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
         <button
           onClick={() =>
             copyText(tab === "cleaned" ? session.cleanedText : session.rawText)
           }
-          className="flex-1 text-xs bg-muted hover:bg-accent text-foreground/70 hover:text-foreground rounded px-3 py-1.5 transition-colors"
+          className="flex items-center gap-1.5 flex-1 text-xs bg-muted hover:bg-accent text-foreground/70 hover:text-foreground rounded px-3 py-1.5 transition-colors"
         >
+          <Copy size={12} />
           Copy
         </button>
         {session.audioPath && (
           <button
             onClick={() => setShowReprocess(!showReprocess)}
-            className={`text-xs rounded px-3 py-1.5 transition-colors ${
+            className={`flex items-center gap-1.5 text-xs rounded px-3 py-1.5 transition-colors ${
               showReprocess
                 ? "bg-blue-700 text-white"
                 : "bg-muted hover:bg-accent text-foreground/70 hover:text-foreground"
             }`}
           >
+            <RefreshCw size={12} />
             Reprocess
           </button>
         )}
         <button
           onClick={handleExport}
-          className="text-xs bg-muted hover:bg-accent text-foreground/70 hover:text-foreground rounded px-3 py-1.5 transition-colors"
+          className="flex items-center gap-1.5 text-xs bg-muted hover:bg-accent text-foreground/70 hover:text-foreground rounded px-3 py-1.5 transition-colors"
         >
+          <Upload size={12} />
           Export
         </button>
         <button
           onClick={handleDelete}
-          className={`text-xs rounded px-3 py-1.5 transition-colors ${
+          className={`flex items-center gap-1.5 text-xs rounded px-3 py-1.5 transition-colors ${
             confirmDelete
               ? "bg-rose-700 hover:bg-rose-600 text-white"
               : "bg-muted hover:bg-accent text-rose-400 hover:text-rose-300"
           }`}
         >
+          <Trash2 size={12} />
           {confirmDelete ? "Confirm delete" : "Delete"}
         </button>
       </div>
@@ -597,16 +626,16 @@ function Pagination({
         <button
           onClick={onPrev}
           disabled={page === 0}
-          className="px-3 py-1 rounded bg-muted hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-1 px-3 py-1 rounded bg-muted hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          ← Previous
+          <ChevronLeft size={12} /> Previous
         </button>
         <button
           onClick={onNext}
           disabled={!hasNext}
-          className="px-3 py-1 rounded bg-muted hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="flex items-center gap-1 px-3 py-1 rounded bg-muted hover:bg-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
-          Next →
+          Next <ChevronRight size={12} />
         </button>
       </div>
     </div>

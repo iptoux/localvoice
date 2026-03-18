@@ -89,6 +89,8 @@ export interface ModelInfo {
   installed: boolean;
   isDefaultForDe: boolean;
   isDefaultForEn: boolean;
+  /** All languages for which this model is the default. */
+  defaultForLanguages: string[];
   localPath?: string;
   installedAt?: string;
   description: string;
@@ -235,4 +237,19 @@ export interface AmbiguousTerm {
   dismissed: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FillerWord {
+  id: string;
+  word: string;
+  language: string;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface FillerStat {
+  word: string;
+  language: string;
+  count: number;
+  lastRemovedAt: string;
 }

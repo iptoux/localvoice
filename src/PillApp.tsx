@@ -18,7 +18,7 @@ export function PillApp() {
   const setLastTranscription = useAppStore((s) => s.setLastTranscription);
   const setLastOutputResult = useAppStore((s) => s.setLastOutputResult);
 
-  // Apply persisted theme on mount.
+  // Apply persisted theme on mount and react to theme changes from main window.
   useEffect(() => {
     let currentTheme: Theme = "dark";
     getSettings()
@@ -28,7 +28,17 @@ export function PillApp() {
       })
       .catch(() => applyTheme("dark"));
 
-    return watchSystemTheme(() => currentTheme);
+    const unlistenTheme = listen<string>("theme-changed", (event) => {
+      currentTheme = event.payload as Theme;
+      applyTheme(currentTheme);
+    });
+
+    const unlistenSystem = watchSystemTheme(() => currentTheme);
+
+    return () => {
+      unlistenTheme.then((fn) => fn());
+      unlistenSystem();
+    };
   }, []);
 
   useEffect(() => {

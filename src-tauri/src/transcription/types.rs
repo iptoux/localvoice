@@ -44,6 +44,9 @@ pub struct TranscriptionResult {
     pub duration_ms: u64,
     /// Result of the output step (set by the orchestrator after transcription).
     pub output: Option<OutputResult>,
+    /// Filler words that were removed during post-processing (for stats tracking).
+    #[serde(default)]
+    pub removed_fillers: Vec<String>,
 }
 
 // ── Whisper JSON deserialization helpers ──────────────────────────────────────
