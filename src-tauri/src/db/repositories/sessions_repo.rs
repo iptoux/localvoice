@@ -20,9 +20,9 @@ pub fn insert_session(db: &DbConn, session: &Session) -> CmdResult<()> {
             word_count, char_count, avg_confidence, estimated_wpm,
             output_mode, output_target_app, inserted_successfully,
             error_message, created_at, audio_path, original_raw_text,
-            reprocessed_count
+            reprocessed_count, original_model_id, original_language, original_avg_confidence
          ) VALUES (
-            ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22
+            ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25
          )",
         params![
             session.id,
@@ -47,6 +47,9 @@ pub fn insert_session(db: &DbConn, session: &Session) -> CmdResult<()> {
             session.audio_path,
             session.original_raw_text,
             session.reprocessed_count,
+            session.original_model_id,
+            session.original_language,
+            session.original_avg_confidence,
         ],
     )
     .map_err(AppError::from)?;
@@ -140,7 +143,8 @@ pub fn list_sessions(db: &DbConn, filter: &SessionFilter) -> CmdResult<Vec<Sessi
                 input_device_id, raw_text, cleaned_text, word_count, char_count,
                 avg_confidence, estimated_wpm, output_mode, output_target_app,
                 inserted_successfully, error_message, created_at,
-                audio_path, original_raw_text, reprocessed_count
+                audio_path, original_raw_text, reprocessed_count,
+                original_model_id, original_language, original_avg_confidence
          FROM sessions
          {where_clause}
          ORDER BY started_at DESC
@@ -173,7 +177,8 @@ pub fn get_session(db: &DbConn, id: &str) -> CmdResult<SessionWithSegments> {
                     input_device_id, raw_text, cleaned_text, word_count, char_count,
                     avg_confidence, estimated_wpm, output_mode, output_target_app,
                     inserted_successfully, error_message, created_at,
-                    audio_path, original_raw_text, reprocessed_count
+                    audio_path, original_raw_text, reprocessed_count,
+                    original_model_id, original_language, original_avg_confidence
              FROM sessions WHERE id = ?1",
             params![id],
             row_to_session,
@@ -234,7 +239,8 @@ pub fn get_sessions_by_ids(db: &DbConn, ids: &[String]) -> CmdResult<Vec<Session
                 input_device_id, raw_text, cleaned_text, word_count, char_count,
                 avg_confidence, estimated_wpm, output_mode, output_target_app,
                 inserted_successfully, error_message, created_at,
-                audio_path, original_raw_text, reprocessed_count
+                audio_path, original_raw_text, reprocessed_count,
+                original_model_id, original_language, original_avg_confidence
          FROM sessions
          WHERE id IN ({placeholders})
          ORDER BY started_at DESC"
@@ -276,6 +282,9 @@ fn row_to_session(row: &rusqlite::Row<'_>) -> rusqlite::Result<Session> {
         audio_path: row.get(19)?,
         original_raw_text: row.get(20)?,
         reprocessed_count: row.get(21)?,
+        original_model_id: row.get(22)?,
+        original_language: row.get(23)?,
+        original_avg_confidence: row.get(24)?,
     })
 }
 

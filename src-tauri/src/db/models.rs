@@ -26,6 +26,9 @@ pub struct Session {
     pub audio_path: Option<String>,
     pub original_raw_text: Option<String>,
     pub reprocessed_count: i64,
+    pub original_model_id: Option<String>,
+    pub original_language: Option<String>,
+    pub original_avg_confidence: Option<f64>,
 }
 
 /// A single time-stamped segment row from `session_segments`.

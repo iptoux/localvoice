@@ -377,4 +377,13 @@ static MIGRATIONS: &[(i64, &str)] = &[(
     INSERT OR IGNORE INTO model_language_defaults (language, model_key)
         SELECT 'en', model_key FROM model_installations WHERE is_default_for_en = 1 AND installed = 1 LIMIT 1;
     ",
+),
+(
+    9,
+    "
+    -- Preserve original transcription metadata before first reprocess.
+    ALTER TABLE sessions ADD COLUMN original_model_id TEXT;
+    ALTER TABLE sessions ADD COLUMN original_language TEXT;
+    ALTER TABLE sessions ADD COLUMN original_avg_confidence REAL;
+    ",
 )];

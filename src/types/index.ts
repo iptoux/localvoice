@@ -25,6 +25,9 @@ export interface Session {
   audioPath?: string;
   originalRawText?: string;
   reprocessedCount: number;
+  originalModelId?: string;
+  originalLanguage?: string;
+  originalAvgConfidence?: number;
 }
 
 export interface SessionSegment {

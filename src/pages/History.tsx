@@ -449,12 +449,29 @@ function SessionDrawer({
         ))}
       </div>
 
-      {/* Reprocessed badge */}
+      {/* Reprocessed badge + original metadata */}
       {session.reprocessedCount > 0 && (
         <div className="px-5 pt-2">
-          <span className="text-xs bg-blue-900/40 text-blue-400 px-1.5 py-0.5 rounded">
-            Reprocessed {session.reprocessedCount}x
-          </span>
+          <details className="group">
+            <summary className="flex items-center gap-2 cursor-pointer list-none select-none">
+              <span className="text-xs bg-blue-900/40 text-blue-400 px-1.5 py-0.5 rounded">
+                Reprocessed {session.reprocessedCount}x
+              </span>
+              <span className="text-xs text-muted-foreground group-open:hidden">▸ Original info</span>
+              <span className="text-xs text-muted-foreground hidden group-open:inline">▾ Original info</span>
+            </summary>
+            <div className="mt-2 mb-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground pl-1 border-l-2 border-blue-900/40">
+              {session.originalLanguage && (
+                <span>Lang: <span className="text-foreground/70">{session.originalLanguage.toUpperCase()}</span></span>
+              )}
+              {session.originalModelId && (
+                <span>Model: <span className="text-foreground/70">{session.originalModelId}</span></span>
+              )}
+              {session.originalAvgConfidence != null && (
+                <span>Confidence: <span className="text-foreground/70">{Math.round(session.originalAvgConfidence * 100)}%</span></span>
+              )}
+            </div>
+          </details>
         </div>
       )}
 
