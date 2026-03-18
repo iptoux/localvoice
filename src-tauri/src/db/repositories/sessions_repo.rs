@@ -19,9 +19,10 @@ pub fn insert_session(db: &DbConn, session: &Session) -> CmdResult<()> {
             trigger_type, input_device_id, raw_text, cleaned_text,
             word_count, char_count, avg_confidence, estimated_wpm,
             output_mode, output_target_app, inserted_successfully,
-            error_message, created_at
+            error_message, created_at, audio_path, original_raw_text,
+            reprocessed_count
          ) VALUES (
-            ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19
+            ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22
          )",
         params![
             session.id,
@@ -43,6 +44,9 @@ pub fn insert_session(db: &DbConn, session: &Session) -> CmdResult<()> {
             session.inserted_successfully as i64,
             session.error_message,
             session.created_at,
+            session.audio_path,
+            session.original_raw_text,
+            session.reprocessed_count,
         ],
     )
     .map_err(AppError::from)?;
@@ -135,7 +139,8 @@ pub fn list_sessions(db: &DbConn, filter: &SessionFilter) -> CmdResult<Vec<Sessi
         "SELECT id, started_at, ended_at, duration_ms, language, model_id, trigger_type,
                 input_device_id, raw_text, cleaned_text, word_count, char_count,
                 avg_confidence, estimated_wpm, output_mode, output_target_app,
-                inserted_successfully, error_message, created_at
+                inserted_successfully, error_message, created_at,
+                audio_path, original_raw_text, reprocessed_count
          FROM sessions
          {where_clause}
          ORDER BY started_at DESC
@@ -227,7 +232,8 @@ pub fn get_sessions_by_ids(db: &DbConn, ids: &[String]) -> CmdResult<Vec<Session
         "SELECT id, started_at, ended_at, duration_ms, language, model_id, trigger_type,
                 input_device_id, raw_text, cleaned_text, word_count, char_count,
                 avg_confidence, estimated_wpm, output_mode, output_target_app,
-                inserted_successfully, error_message, created_at
+                inserted_successfully, error_message, created_at,
+                audio_path, original_raw_text, reprocessed_count
          FROM sessions
          WHERE id IN ({placeholders})
          ORDER BY started_at DESC"
@@ -266,5 +272,36 @@ fn row_to_session(row: &rusqlite::Row<'_>) -> rusqlite::Result<Session> {
         inserted_successfully: row.get::<_, i64>(16)? != 0,
         error_message: row.get(17)?,
         created_at: row.get(18)?,
+        audio_path: row.get(19)?,
+        original_raw_text: row.get(20)?,
+        reprocessed_count: row.get(21)?,
     })
+}
+
+/// Updates a session's text fields after reprocessing.
+pub fn update_session_reprocess(
+    db: &DbConn,
+    session_id: &str,
+    raw_text: &str,
+    cleaned_text: &str,
+    language: &str,
+    model_id: &str,
+) -> CmdResult<()> {
+    let conn = db.lock().unwrap();
+    let word_count = cleaned_text.split_whitespace().count() as i64;
+    let char_count = cleaned_text.chars().count() as i64;
+    let n = conn
+        .execute(
+            "UPDATE sessions SET
+                raw_text = ?1, cleaned_text = ?2, word_count = ?3, char_count = ?4,
+                language = ?5, model_id = ?6,
+                reprocessed_count = reprocessed_count + 1
+             WHERE id = ?7",
+            params![raw_text, cleaned_text, word_count, char_count, language, model_id, session_id],
+        )
+        .map_err(AppError::from)?;
+    if n == 0 {
+        return Err(AppError(format!("Session '{session_id}' not found")));
+    }
+    Ok(())
 }

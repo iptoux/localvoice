@@ -1,5 +1,13 @@
 # Changelog
 
+## MS-14 — Session Reprocessing & Configurable Post-Processing (2026-03-18)
+
+- Reprocess sessions with a different whisper model or language
+- Optional audio file retention with configurable cleanup period
+- Post-processing pipeline toggles (auto-cap, auto-punct, filler removal, dictionary auto-apply) in Settings
+- "Original" tab in session detail drawer to compare pre/post-reprocess text
+- Audio cleanup runs on startup, removing files older than retention period
+
 ## MS-13 — Theme System & Customizable Shortcuts (2026-03-18)
 
 - **Theme switching**: Light, Dark, and System themes with live preview in Settings → Appearance

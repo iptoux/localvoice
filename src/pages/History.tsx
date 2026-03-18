@@ -5,7 +5,10 @@ import {
   exportSessions,
   getSessionDetail,
   listSessions,
+  reprocessSession,
+  listAvailableModels,
 } from "../lib/tauri";
+import type { ModelInfo } from "../types";
 
 const PAGE_SIZE = 50;
 
@@ -87,6 +90,11 @@ export default function History() {
   async function handleDelete(sessionId: string) {
     await deleteSession(sessionId);
     setSelected(null);
+    load({ query, language, dateFrom, dateTo }, page);
+  }
+
+  async function handleReprocess(detail: SessionWithSegments) {
+    setSelected(detail);
     load({ query, language, dateFrom, dateTo }, page);
   }
 
@@ -206,6 +214,7 @@ export default function History() {
           loading={drawerLoading}
           onClose={() => setSelected(null)}
           onDelete={handleDelete}
+          onReprocess={handleReprocess}
         />
       )}
     </div>
@@ -259,20 +268,56 @@ function SessionDrawer({
   loading,
   onClose,
   onDelete,
+  onReprocess,
 }: {
   detail: SessionWithSegments | null;
   loading: boolean;
   onClose: () => void;
   onDelete: (id: string) => void;
+  onReprocess: (detail: SessionWithSegments) => void;
 }) {
-  const [tab, setTab] = useState<"cleaned" | "raw">("cleaned");
+  const [tab, setTab] = useState<"cleaned" | "raw" | "original">("cleaned");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showReprocess, setShowReprocess] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
+  const [reprocessLang, setReprocessLang] = useState("");
+  const [reprocessModel, setReprocessModel] = useState("");
+  const [models, setModels] = useState<ModelInfo[]>([]);
 
   // Reset tabs & confirm state when session changes.
   useEffect(() => {
     setTab("cleaned");
     setConfirmDelete(false);
+    setShowReprocess(false);
+    setReprocessing(false);
   }, [detail?.session.id]);
+
+  // Load models when reprocess dialog opens.
+  useEffect(() => {
+    if (showReprocess) {
+      listAvailableModels().then(setModels).catch(console.error);
+      setReprocessLang(detail?.session.language ?? "");
+      setReprocessModel("");
+    }
+  }, [showReprocess, detail?.session.language]);
+
+  async function handleReprocess() {
+    if (!detail) return;
+    setReprocessing(true);
+    try {
+      const updated = await reprocessSession(
+        detail.session.id,
+        reprocessLang || undefined,
+        reprocessModel || undefined
+      );
+      setShowReprocess(false);
+      onReprocess(updated);
+    } catch (e) {
+      console.error("Reprocess failed:", e);
+    } finally {
+      setReprocessing(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -341,7 +386,11 @@ function SessionDrawer({
 
       {/* Text tabs */}
       <div className="flex border-b border-border">
-        {(["cleaned", "raw"] as const).map((t) => (
+        {(
+          session.originalRawText
+            ? (["cleaned", "raw", "original"] as const)
+            : (["cleaned", "raw"] as const)
+        ).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -351,15 +400,28 @@ function SessionDrawer({
                 : "text-muted-foreground hover:text-foreground/70"
             }`}
           >
-            {t === "cleaned" ? "Cleaned" : "Raw"}
+            {t === "cleaned" ? "Cleaned" : t === "raw" ? "Raw" : "Original"}
           </button>
         ))}
       </div>
 
+      {/* Reprocessed badge */}
+      {session.reprocessedCount > 0 && (
+        <div className="px-5 pt-2">
+          <span className="text-xs bg-blue-900/40 text-blue-400 px-1.5 py-0.5 rounded">
+            Reprocessed {session.reprocessedCount}x
+          </span>
+        </div>
+      )}
+
       {/* Text content */}
       <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
         <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-          {tab === "cleaned" ? session.cleanedText : session.rawText}
+          {tab === "cleaned"
+            ? session.cleanedText
+            : tab === "raw"
+              ? session.rawText
+              : session.originalRawText ?? session.rawText}
         </p>
 
         {/* Segments list (optional) */}
@@ -387,6 +449,66 @@ function SessionDrawer({
         )}
       </div>
 
+      {/* Reprocess panel */}
+      {showReprocess && (
+        <div className="px-5 py-3 border-t border-border space-y-2">
+          <p className="text-xs font-medium text-foreground">Reprocess Session</p>
+          <div className="flex gap-2">
+            <select
+              value={reprocessLang}
+              onChange={(e) => setReprocessLang(e.target.value)}
+              className="flex-1 bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1.5"
+            >
+              <option value="">Same language</option>
+              <option value="de">German</option>
+              <option value="en">English</option>
+              <option value="fr">French</option>
+              <option value="es">Spanish</option>
+              <option value="auto">Auto-detect</option>
+            </select>
+            <select
+              value={reprocessModel}
+              onChange={(e) => setReprocessModel(e.target.value)}
+              className="flex-1 bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1.5"
+            >
+              <option value="">Default model</option>
+              {models
+                .filter((m) => m.installed)
+                .map((m) => (
+                  <option key={m.key} value={m.key}>
+                    {m.displayName}
+                  </option>
+                ))}
+            </select>
+          </div>
+          {session.originalRawText && (
+            <details className="text-xs">
+              <summary className="text-muted-foreground cursor-pointer hover:text-foreground/70 select-none">
+                Original raw text
+              </summary>
+              <p className="mt-1 text-foreground/60 whitespace-pre-wrap leading-relaxed">
+                {session.originalRawText}
+              </p>
+            </details>
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={handleReprocess}
+              disabled={reprocessing}
+              className="flex-1 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded px-3 py-1.5 transition-colors disabled:opacity-50"
+            >
+              {reprocessing ? "Reprocessing…" : "Reprocess"}
+            </button>
+            <button
+              onClick={() => setShowReprocess(false)}
+              className="text-xs bg-muted hover:bg-accent text-foreground/70 rounded px-3 py-1.5 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Actions (TASK-078) */}
       <div className="flex items-center gap-2 px-5 py-3 border-t border-border">
         <button
@@ -397,11 +519,23 @@ function SessionDrawer({
         >
           Copy
         </button>
+        {session.audioPath && (
+          <button
+            onClick={() => setShowReprocess(!showReprocess)}
+            className={`text-xs rounded px-3 py-1.5 transition-colors ${
+              showReprocess
+                ? "bg-blue-700 text-white"
+                : "bg-muted hover:bg-accent text-foreground/70 hover:text-foreground"
+            }`}
+          >
+            Reprocess
+          </button>
+        )}
         <button
           onClick={handleExport}
           className="text-xs bg-muted hover:bg-accent text-foreground/70 hover:text-foreground rounded px-3 py-1.5 transition-colors"
         >
-          Export ↗
+          Export
         </button>
         <button
           onClick={handleDelete}

@@ -23,6 +23,9 @@ pub struct Session {
     pub inserted_successfully: bool,
     pub error_message: Option<String>,
     pub created_at: String,
+    pub audio_path: Option<String>,
+    pub original_raw_text: Option<String>,
+    pub reprocessed_count: i64,
 }
 
 /// A single time-stamped segment row from `session_segments`.
