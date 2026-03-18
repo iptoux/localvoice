@@ -190,6 +190,31 @@ pub fn get_default_path(db: &DbConn, language: &str) -> Result<Option<String>, A
     Ok(None)
 }
 
+/// Returns the `local_path` of any installed model that has been set as a default
+/// for any language. Used as a fallback when language is "auto".
+pub fn get_any_default_path(db: &DbConn) -> Result<Option<String>, AppError> {
+    let conn = db.lock().unwrap();
+    let mut stmt = conn.prepare(
+        "SELECT mi.local_path FROM model_language_defaults mld
+         JOIN model_installations mi ON mi.model_key = mld.model_key
+         WHERE mi.installed = 1 LIMIT 1",
+    )?;
+    let mut rows = stmt.query([])?;
+    if let Some(row) = rows.next()? {
+        return Ok(Some(row.get(0)?));
+    }
+    // Fallback: legacy columns.
+    let mut stmt2 = conn.prepare(
+        "SELECT local_path FROM model_installations
+         WHERE (is_default_for_en = 1 OR is_default_for_de = 1) AND installed = 1 LIMIT 1",
+    )?;
+    let mut rows2 = stmt2.query([])?;
+    if let Some(row) = rows2.next()? {
+        return Ok(Some(row.get(0)?));
+    }
+    Ok(None)
+}
+
 /// Returns all language → model_key defaults.
 pub fn get_all_defaults(db: &DbConn) -> Result<Vec<(String, String)>, AppError> {
     let conn = db.lock().unwrap();

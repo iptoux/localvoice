@@ -38,7 +38,7 @@ pub fn transcribe(
         .unwrap_or_else(|| "auto".to_string());
     let whisper_lang = language::to_whisper_lang(&lang_code).to_string();
 
-    // Resolve model path: explicit override → DB default for language → settings path → auto-scan.
+    // Resolve model path: explicit override → DB default for language → auto fallback → settings path → auto-scan.
     let effective_model_override = if let Some(p) = model_path_override {
         Some(p.to_string())
     } else {
@@ -47,6 +47,10 @@ pub fn transcribe(
             .unwrap_or(None);
         if db_default.is_some() {
             db_default
+        } else if lang_code == "auto" {
+            // For "auto" language, fall back to any configured default model.
+            models_repo::get_any_default_path(&state.db).unwrap_or(None)
+                .or_else(|| settings.get("transcription.model_path").cloned())
         } else {
             // Fall back to the legacy settings key.
             settings.get("transcription.model_path").cloned()
