@@ -1,5 +1,14 @@
 # Changelog
 
+## MS-13 — Theme System & Customizable Shortcuts (2026-03-18)
+
+- **Theme switching**: Light, Dark, and System themes with live preview in Settings → Appearance
+- **Theme persistence**: selected theme is saved and restored on app restart; "System" follows OS preference in real-time
+- **Semantic colors**: all pages migrated from hardcoded dark colors to CSS-variable-based theme-aware classes
+- **Shortcut customization**: new "Change" button in Settings → Recording to record a custom global shortcut; validates and re-registers immediately without restart
+- **Enhanced tray menu**: Start/Stop Recording, Dashboard, History, Settings, Quit — with separators for grouping
+- **Rust `update_shortcut` command**: validates shortcut format, unregisters old shortcut, registers new one atomically
+
 ## MS-12 — Improved Insert Flow (2026-03-18)
 
 - **Direct SendInput**: replaced `enigo 0.1` with `windows-sys` `SendInput` for more reliable Ctrl+V simulation

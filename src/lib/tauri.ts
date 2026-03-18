@@ -28,6 +28,9 @@ export const updateSetting = (key: string, value: string): Promise<void> =>
 export const resetSettings = (): Promise<void> =>
   invoke<void>("reset_settings");
 
+export const updateShortcut = (shortcut: string): Promise<void> =>
+  invoke<void>("update_shortcut", { shortcut });
+
 // ── Window ────────────────────────────────────────────────────────────────────
 
 export const showPill = (): Promise<void> => invoke<void>("show_pill");

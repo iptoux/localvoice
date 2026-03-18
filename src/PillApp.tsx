@@ -3,6 +3,8 @@ import { listen } from "@tauri-apps/api/event";
 import "./index.css";
 import { Pill } from "./components/pill/Pill";
 import { useAppStore } from "./stores/app-store";
+import { getSettings } from "./lib/tauri";
+import { applyTheme, watchSystemTheme, type Theme } from "./lib/theme";
 import type {
   OutputResultPayload,
   RecordingStatePayload,
@@ -15,6 +17,19 @@ export function PillApp() {
   const setRecordingError = useAppStore((s) => s.setRecordingError);
   const setLastTranscription = useAppStore((s) => s.setLastTranscription);
   const setLastOutputResult = useAppStore((s) => s.setLastOutputResult);
+
+  // Apply persisted theme on mount.
+  useEffect(() => {
+    let currentTheme: Theme = "dark";
+    getSettings()
+      .then((s) => {
+        currentTheme = (s["app.theme"] as Theme) || "dark";
+        applyTheme(currentTheme);
+      })
+      .catch(() => applyTheme("dark"));
+
+    return watchSystemTheme(() => currentTheme);
+  }, []);
 
   useEffect(() => {
     const unlistenState = listen<RecordingStatePayload>(

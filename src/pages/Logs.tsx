@@ -51,8 +51,8 @@ export default function Logs() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-semibold text-white mb-1">Logs</h1>
-      <p className="text-neutral-400 text-sm mb-6">
+      <h1 className="text-2xl font-semibold text-foreground mb-1">Logs</h1>
+      <p className="text-muted-foreground text-sm mb-6">
         Application logs captured during this session. Filter by level to focus on what matters.
       </p>
 
@@ -64,8 +64,8 @@ export default function Logs() {
             onClick={() => setFilter(level)}
             className={`px-3 py-1.5 text-xs rounded-full border transition-colors capitalize ${
               filter === level
-                ? "bg-neutral-700 border-neutral-500 text-white"
-                : "border-neutral-700 text-neutral-400 hover:text-white"
+                ? "bg-accent border-neutral-500 text-foreground"
+                : "border-border text-muted-foreground hover:text-foreground"
             }`}
           >
             {level === "all" ? "All" : level}
@@ -74,13 +74,13 @@ export default function Logs() {
         <div className="flex-1" />
         <button
           onClick={() => load()}
-          className="text-xs text-neutral-400 hover:text-white transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           Refresh
         </button>
         <button
           onClick={handleExport}
-          className="text-xs px-3 py-1.5 bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+          className="text-xs px-3 py-1.5 bg-accent hover:bg-neutral-600 text-foreground rounded transition-colors"
         >
           Export JSON
         </button>
@@ -93,15 +93,15 @@ export default function Logs() {
       </div>
 
       {/* Count */}
-      <p className="text-xs text-neutral-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         {entries.length} {entries.length === 1 ? "entry" : "entries"}
       </p>
 
       {/* List */}
       {loading ? (
-        <p className="text-neutral-500 text-sm">Loading…</p>
+        <p className="text-muted-foreground text-sm">Loading…</p>
       ) : entries.length === 0 ? (
-        <div className="text-center py-12 text-neutral-500 text-sm">
+        <div className="text-center py-12 text-muted-foreground text-sm">
           No log entries for this filter. Logs will appear here as they occur.
         </div>
       ) : (
@@ -110,18 +110,18 @@ export default function Logs() {
             <div
               key={entry.id}
               className={`px-4 py-2.5 rounded-lg border text-sm ${
-                LEVEL_COLORS[entry.level] ?? "text-neutral-300 bg-neutral-800 border-neutral-700"
+                LEVEL_COLORS[entry.level] ?? "text-foreground/70 bg-muted border-border"
               }`}
             >
               <div className="flex items-start gap-3 flex-wrap">
                 <span className="text-xs font-mono uppercase shrink-0 font-semibold">
                   {entry.level}
                 </span>
-                <span className="text-xs text-neutral-500 shrink-0">
+                <span className="text-xs text-muted-foreground shrink-0">
                   {new Date(entry.createdAt).toLocaleTimeString()}
                 </span>
                 {entry.area && (
-                  <span className="text-xs text-neutral-500 shrink-0 font-mono">
+                  <span className="text-xs text-muted-foreground shrink-0 font-mono">
                     {entry.area}
                   </span>
                 )}

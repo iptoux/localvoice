@@ -14,11 +14,11 @@ export function Onboarding({ onDismiss }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-neutral-900 border border-neutral-700 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-        <h1 className="text-xl font-semibold text-white mb-2">
+      <div className="bg-card border border-border rounded-2xl p-8 w-full max-w-md shadow-2xl">
+        <h1 className="text-xl font-semibold text-foreground mb-2">
           Welcome to LocalVoice
         </h1>
-        <p className="text-neutral-400 text-sm mb-6">
+        <p className="text-muted-foreground text-sm mb-6">
           To start dictating, you need to download a transcription model first.
           LocalVoice runs entirely offline — no cloud, no account required.
         </p>
@@ -38,7 +38,7 @@ export function Onboarding({ onDismiss }: Props) {
           </button>
           <button
             onClick={onDismiss}
-            className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors"
+            className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Skip for now
           </button>
@@ -54,7 +54,7 @@ function Step({ number, text }: { number: number; text: string }) {
       <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
         {number}
       </span>
-      <p className="text-sm text-neutral-300">{text}</p>
+      <p className="text-sm text-foreground/70">{text}</p>
     </div>
   );
 }

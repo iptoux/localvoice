@@ -27,8 +27,8 @@ function TabButton({
       onClick={onClick}
       className={`px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
         active
-          ? "border-blue-500 text-white"
-          : "border-transparent text-neutral-400 hover:text-neutral-200"
+          ? "border-blue-500 text-foreground"
+          : "border-transparent text-muted-foreground hover:text-foreground/80"
       }`}
     >
       {children}
@@ -65,14 +65,14 @@ function EntryForm({ initial, onSave, onClose }: EntryFormProps) {
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <form
         onSubmit={handleSubmit}
-        className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-full max-w-md shadow-xl"
+        className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-xl"
       >
-        <h2 className="text-white font-semibold mb-4">
+        <h2 className="text-foreground font-semibold mb-4">
           {initial ? "Edit Entry" : "Add Entry"}
         </h2>
         <div className="flex flex-col gap-3">
           <input
-            className="bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="bg-muted border border-border text-foreground text-sm rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
             placeholder="Phrase"
             value={phrase}
             onChange={(e) => setPhrase(e.target.value)}
@@ -80,7 +80,7 @@ function EntryForm({ initial, onSave, onClose }: EntryFormProps) {
             required
           />
           <select
-            className="bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-3 py-2 focus:outline-none"
+            className="bg-muted border border-border text-foreground text-sm rounded px-3 py-2 focus:outline-none"
             value={entryType}
             onChange={(e) => setEntryType(e.target.value)}
           >
@@ -91,7 +91,7 @@ function EntryForm({ initial, onSave, onClose }: EntryFormProps) {
             ))}
           </select>
           <select
-            className="bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-3 py-2 focus:outline-none"
+            className="bg-muted border border-border text-foreground text-sm rounded px-3 py-2 focus:outline-none"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
           >
@@ -102,7 +102,7 @@ function EntryForm({ initial, onSave, onClose }: EntryFormProps) {
             ))}
           </select>
           <textarea
-            className="bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+            className="bg-muted border border-border text-foreground text-sm rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
             placeholder="Notes (optional)"
             rows={2}
             value={notes}
@@ -113,7 +113,7 @@ function EntryForm({ initial, onSave, onClose }: EntryFormProps) {
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 text-sm text-neutral-400 hover:text-white transition-colors"
+            className="px-4 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Cancel
           </button>
@@ -166,24 +166,24 @@ function RuleForm({ initial, onSave, onClose }: RuleFormProps) {
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <form
         onSubmit={handleSubmit}
-        className="bg-neutral-900 border border-neutral-700 rounded-xl p-6 w-full max-w-md shadow-xl"
+        className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-xl"
       >
-        <h2 className="text-white font-semibold mb-4">
+        <h2 className="text-foreground font-semibold mb-4">
           {initial ? "Edit Rule" : "Add Rule"}
         </h2>
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <input
-              className="flex-1 bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex-1 bg-muted border border-border text-foreground text-sm rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="Heard text (e.g. clawd)"
               value={source}
               onChange={(e) => setSource(e.target.value)}
               autoFocus
               required
             />
-            <span className="text-neutral-500">→</span>
+            <span className="text-muted-foreground">→</span>
             <input
-              className="flex-1 bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex-1 bg-muted border border-border text-foreground text-sm rounded px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="Corrected text (e.g. Claude)"
               value={target}
               onChange={(e) => setTarget(e.target.value)}
@@ -191,7 +191,7 @@ function RuleForm({ initial, onSave, onClose }: RuleFormProps) {
             />
           </div>
           <select
-            className="bg-neutral-800 border border-neutral-700 text-white text-sm rounded px-3 py-2 focus:outline-none"
+            className="bg-muted border border-border text-foreground text-sm rounded px-3 py-2 focus:outline-none"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
           >
@@ -201,7 +201,7 @@ function RuleForm({ initial, onSave, onClose }: RuleFormProps) {
               </option>
             ))}
           </select>
-          <label className="flex items-center gap-2 text-sm text-neutral-300 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-foreground/70 cursor-pointer">
             <input
               type="checkbox"
               checked={autoApply}
@@ -211,7 +211,7 @@ function RuleForm({ initial, onSave, onClose }: RuleFormProps) {
             Apply automatically during transcription
           </label>
           {initial && (
-            <label className="flex items-center gap-2 text-sm text-neutral-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-foreground/70 cursor-pointer">
               <input
                 type="checkbox"
                 checked={isActive}
@@ -226,7 +226,7 @@ function RuleForm({ initial, onSave, onClose }: RuleFormProps) {
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 text-sm text-neutral-400 hover:text-white transition-colors"
+            className="px-4 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Cancel
           </button>
@@ -272,7 +272,7 @@ function TermsTab() {
   return (
     <>
       <div className="flex justify-between items-center mb-3">
-        <span className="text-xs text-neutral-500">{entries.length} entries</span>
+        <span className="text-xs text-muted-foreground">{entries.length} entries</span>
         <button
           onClick={openAdd}
           className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
@@ -282,27 +282,27 @@ function TermsTab() {
       </div>
 
       {entries.length === 0 ? (
-        <p className="text-neutral-500 text-sm">No entries yet. Add terms, names, or acronyms that whisper frequently mishears.</p>
+        <p className="text-muted-foreground text-sm">No entries yet. Add terms, names, or acronyms that whisper frequently mishears.</p>
       ) : (
         <div className="flex flex-col gap-1.5">
           {entries.map((entry) => (
             <div
               key={entry.id}
-              className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-neutral-800 border border-neutral-700"
+              className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-muted border border-border"
             >
               <div className="flex-1 min-w-0">
-                <span className="text-white text-sm font-medium">{entry.phrase}</span>
-                <span className="ml-2 text-xs text-neutral-500 capitalize">{entry.entryType}</span>
+                <span className="text-foreground text-sm font-medium">{entry.phrase}</span>
+                <span className="ml-2 text-xs text-muted-foreground capitalize">{entry.entryType}</span>
                 {entry.language && (
-                  <span className="ml-1 text-xs text-neutral-500 uppercase">{entry.language}</span>
+                  <span className="ml-1 text-xs text-muted-foreground uppercase">{entry.language}</span>
                 )}
                 {entry.notes && (
-                  <p className="text-xs text-neutral-500 mt-0.5 truncate">{entry.notes}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{entry.notes}</p>
                 )}
               </div>
               <button
                 onClick={() => openEdit(entry)}
-                className="text-xs text-neutral-400 hover:text-white transition-colors"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 Edit
               </button>
@@ -365,7 +365,7 @@ function RulesTab() {
   return (
     <>
       <div className="flex justify-between items-center mb-3">
-        <span className="text-xs text-neutral-500">{rules.length} rules</span>
+        <span className="text-xs text-muted-foreground">{rules.length} rules</span>
         <button
           onClick={openAdd}
           className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
@@ -375,7 +375,7 @@ function RulesTab() {
       </div>
 
       {rules.length === 0 ? (
-        <p className="text-neutral-500 text-sm">No correction rules yet. Rules replace misheard words automatically during transcription.</p>
+        <p className="text-muted-foreground text-sm">No correction rules yet. Rules replace misheard words automatically during transcription.</p>
       ) : (
         <div className="flex flex-col gap-1.5">
           {rules.map((rule) => (
@@ -383,8 +383,8 @@ function RulesTab() {
               key={rule.id}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border ${
                 rule.isActive
-                  ? "bg-neutral-800 border-neutral-700"
-                  : "bg-neutral-900 border-neutral-800 opacity-60"
+                  ? "bg-muted border-border"
+                  : "bg-card border-border opacity-60"
               }`}
             >
               {/* Active toggle */}
@@ -404,22 +404,22 @@ function RulesTab() {
 
               {/* Content */}
               <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
-                <span className="text-white text-sm font-mono">{rule.sourcePhrase}</span>
-                <span className="text-neutral-500 text-xs">→</span>
+                <span className="text-foreground text-sm font-mono">{rule.sourcePhrase}</span>
+                <span className="text-muted-foreground text-xs">→</span>
                 <span className="text-green-400 text-sm font-mono">{rule.targetPhrase}</span>
                 {rule.language && (
-                  <span className="text-xs text-neutral-500 uppercase">{rule.language}</span>
+                  <span className="text-xs text-muted-foreground uppercase">{rule.language}</span>
                 )}
               </div>
 
               {/* Usage count */}
-              <span className="text-xs text-neutral-500 shrink-0">
+              <span className="text-xs text-muted-foreground shrink-0">
                 {rule.usageCount}×
               </span>
 
               <button
                 onClick={() => openEdit(rule)}
-                className="text-xs text-neutral-400 hover:text-white transition-colors shrink-0"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
               >
                 Edit
               </button>
@@ -471,14 +471,14 @@ function SuggestionsTab() {
   };
 
   const confidenceColor = (conf?: number) => {
-    if (conf === undefined) return "text-neutral-500";
+    if (conf === undefined) return "text-muted-foreground";
     if (conf < 0.4) return "text-red-400";
     if (conf < 0.55) return "text-orange-400";
     return "text-yellow-400";
   };
 
   if (loading) {
-    return <p className="text-neutral-500 text-sm">Loading…</p>;
+    return <p className="text-muted-foreground text-sm">Loading…</p>;
   }
 
   return (
@@ -490,17 +490,17 @@ function SuggestionsTab() {
       )}
 
       <div className="flex justify-between items-center mb-3">
-        <span className="text-xs text-neutral-500">{terms.length} suggestions</span>
+        <span className="text-xs text-muted-foreground">{terms.length} suggestions</span>
         <button
           onClick={() => fetch()}
-          className="text-xs text-neutral-400 hover:text-white transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           Refresh
         </button>
       </div>
 
       {terms.length === 0 ? (
-        <p className="text-neutral-500 text-sm">
+        <p className="text-muted-foreground text-sm">
           No suggestions yet. Ambiguous terms are detected automatically when
           whisper transcribes segments with low confidence (≥ 3 occurrences by
           default).
@@ -510,14 +510,14 @@ function SuggestionsTab() {
           {terms.map((term) => (
             <div
               key={term.id}
-              className="px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700"
+              className="px-4 py-3 rounded-lg bg-muted border border-border"
             >
               {/* Header row */}
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-white text-sm font-mono font-medium">
+                <span className="text-foreground text-sm font-mono font-medium">
                   {term.phrase}
                 </span>
-                <span className="text-xs text-neutral-500">
+                <span className="text-xs text-muted-foreground">
                   {term.occurrences}×
                 </span>
                 {term.avgConfidence !== undefined && (
@@ -528,7 +528,7 @@ function SuggestionsTab() {
                   </span>
                 )}
                 {term.language && (
-                  <span className="text-xs text-neutral-500 uppercase">
+                  <span className="text-xs text-muted-foreground uppercase">
                     {term.language}
                   </span>
                 )}
@@ -538,11 +538,11 @@ function SuggestionsTab() {
               <div className="mt-2">
                 {editingId === term.id ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-neutral-500 text-xs shrink-0">
+                    <span className="text-muted-foreground text-xs shrink-0">
                       Replace with:
                     </span>
                     <input
-                      className="flex-1 bg-neutral-700 border border-neutral-600 text-white text-sm rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="flex-1 bg-accent border border-neutral-600 text-foreground text-sm rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       value={customTarget}
                       onChange={(e) => setCustomTarget(e.target.value)}
                       autoFocus
@@ -566,14 +566,14 @@ function SuggestionsTab() {
                         setEditingId(null);
                         setCustomTarget("");
                       }}
-                      className="text-xs text-neutral-400 hover:text-white transition-colors"
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
                       Cancel
                     </button>
                   </div>
                 ) : term.suggestedTarget ? (
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-neutral-500 text-xs">→</span>
+                    <span className="text-muted-foreground text-xs">→</span>
                     <span className="text-green-400 text-sm font-mono">
                       {term.suggestedTarget}
                     </span>
@@ -585,13 +585,13 @@ function SuggestionsTab() {
                     </button>
                     <button
                       onClick={() => openCustom(term)}
-                      className="text-xs text-neutral-400 hover:text-white transition-colors"
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => dismiss(term.id)}
-                      className="text-xs text-neutral-500 hover:text-red-400 transition-colors"
+                      className="text-xs text-muted-foreground hover:text-red-400 transition-colors"
                     >
                       Dismiss
                     </button>
@@ -600,13 +600,13 @@ function SuggestionsTab() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => openCustom(term)}
-                      className="text-xs px-3 py-1 bg-neutral-700 hover:bg-neutral-600 text-white rounded transition-colors"
+                      className="text-xs px-3 py-1 bg-accent hover:bg-neutral-600 text-foreground rounded transition-colors"
                     >
                       Create Rule…
                     </button>
                     <button
                       onClick={() => dismiss(term.id)}
-                      className="text-xs text-neutral-500 hover:text-red-400 transition-colors"
+                      className="text-xs text-muted-foreground hover:text-red-400 transition-colors"
                     >
                       Dismiss
                     </button>
@@ -635,8 +635,8 @@ export default function Dictionary() {
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-semibold text-white mb-1">Dictionary</h1>
-      <p className="text-neutral-400 text-sm mb-6">
+      <h1 className="text-2xl font-semibold text-foreground mb-1">Dictionary</h1>
+      <p className="text-muted-foreground text-sm mb-6">
         Correction rules are applied automatically to every transcript. Terms are reference entries. Suggestions surface low-confidence phrases for review.
       </p>
 
@@ -647,7 +647,7 @@ export default function Dictionary() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-neutral-700 mb-5">
+      <div className="flex gap-1 border-b border-border mb-5">
         <TabButton active={activeTab === "rules"} onClick={() => setActiveTab("rules")}>
           Rules
         </TabButton>

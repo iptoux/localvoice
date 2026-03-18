@@ -18,6 +18,7 @@ Offline-first desktop voice dictation. Record with a global shortcut, transcribe
 | MS-10 | Polish | ✅ done |
 | MS-11 | Expanded Pill & Animations | ✅ done |
 | MS-12 | Improved Insert Flow | ✅ done |
+| MS-13 | Theme & Custom Shortcuts | ✅ done |
 
 ## Prerequisites
 

@@ -26,7 +26,7 @@ export default function Dashboard() {
     <div className="p-8 space-y-6 overflow-y-auto">
       {/* Header + range selector */}
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
+        <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
         <RangeSelector current={range} onChange={setRange} />
       </div>
 
@@ -38,16 +38,16 @@ export default function Dashboard() {
       <StatCards stats={stats} loading={loading} />
 
       {/* Words-over-time chart (TASK-090) */}
-      <section className="bg-neutral-900 rounded-xl border border-neutral-800 p-5">
-        <h2 className="text-sm font-semibold text-neutral-300 mb-4">
+      <section className="bg-card rounded-xl border border-border p-5">
+        <h2 className="text-sm font-semibold text-foreground/70 mb-4">
           Words over time
         </h2>
         <WordsChart data={timeseries} loading={loading} />
       </section>
 
       {/* Top models */}
-      <section className="bg-neutral-900 rounded-xl border border-neutral-800 p-5">
-        <h2 className="text-sm font-semibold text-neutral-300 mb-4">
+      <section className="bg-card rounded-xl border border-border p-5">
+        <h2 className="text-sm font-semibold text-foreground/70 mb-4">
           Top models
         </h2>
         <TopModels stats={stats} loading={loading} />
@@ -72,15 +72,15 @@ function RangeSelector({
   onChange: (r: RangePreset) => void;
 }) {
   return (
-    <div className="flex gap-1 bg-neutral-800 rounded-lg p-1">
+    <div className="flex gap-1 bg-muted rounded-lg p-1">
       {(["7d", "30d", "all"] as RangePreset[]).map((r) => (
         <button
           key={r}
           onClick={() => onChange(r)}
           className={`px-3 py-1 text-xs rounded-md transition-colors ${
             current === r
-              ? "bg-neutral-600 text-white"
-              : "text-neutral-400 hover:text-white"
+              ? "bg-neutral-600 text-foreground"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           {RANGE_LABELS[r]}
@@ -126,9 +126,9 @@ function StatCards({
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
-      <p className="text-xs text-neutral-500 mb-1">{label}</p>
-      <p className="text-2xl font-semibold text-white tabular-nums">{value}</p>
+    <div className="bg-card border border-border rounded-xl p-5">
+      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+      <p className="text-2xl font-semibold text-foreground tabular-nums">{value}</p>
     </div>
   );
 }
@@ -222,18 +222,18 @@ function TopModels({
             <span className="text-base w-6 shrink-0">{rank}</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1 gap-2">
-                <span className="text-sm text-white font-medium truncate capitalize">{label}</span>
-                <span className="text-xs text-neutral-500 shrink-0">
+                <span className="text-sm text-foreground font-medium truncate capitalize">{label}</span>
+                <span className="text-xs text-muted-foreground shrink-0">
                   {m.sessionCount} {m.sessionCount === 1 ? "session" : "sessions"}
                 </span>
               </div>
-              <div className="w-full bg-neutral-800 rounded-full h-1.5 mb-1">
+              <div className="w-full bg-muted rounded-full h-1.5 mb-1">
                 <div
                   className="bg-blue-500 h-1.5 rounded-full transition-all"
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <div className="flex gap-3 text-xs text-neutral-500">
+              <div className="flex gap-3 text-xs text-muted-foreground">
                 <span>{m.totalWordCount.toLocaleString()} words</span>
                 <span>{dur} recorded</span>
                 {wpm && <span>{wpm} avg</span>}
