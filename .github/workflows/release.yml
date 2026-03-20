@@ -1,5 +1,26 @@
 name: Release
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipeline overview
+#
+#   build  →  sign (SignPath)  →  release
+#
+# 1. build   – compiles the Tauri app and uploads unsigned .msi / .exe to
+#              GitHub Actions artifact storage (no code signing here).
+# 2. sign    – submits the unsigned artifact to SignPath for Authenticode
+#              signing; waits for approval + completion; re-uploads the result.
+# 3. release – creates a draft GitHub Release with the signed installers.
+#
+# Required repository secrets
+#   SIGNPATH_API_TOKEN       – CI user token from your SignPath organisation
+#   SIGNPATH_ORGANIZATION_ID – GUID shown in SignPath → Organisation → General
+#
+# Required SignPath configuration
+#   project-slug             : localvoice
+#   signing-policy-slug      : release-signing   (adjust to your policy name)
+#   artifact-configuration-slug: windows-installers
+# ─────────────────────────────────────────────────────────────────────────────
+
 on:
   push:
     tags:
@@ -12,14 +33,31 @@ on:
         default: "v0.2.0"
 
 permissions:
-  contents: write
+  contents: write   # create GitHub Release + upload assets
+  id-token: write   # required for SignPath trusted-build OIDC attestation
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 1 – Build (unsigned)
+# ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  build-windows:
-    name: Build Windows
+  build:
+    name: Build (unsigned)
     runs-on: windows-latest
+    outputs:
+      tag: ${{ steps.resolve-tag.outputs.tag }}
+      unsigned-artifact-id: ${{ steps.upload.outputs.artifact-id }}
 
     steps:
+      - name: Resolve tag
+        id: resolve-tag
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -84,23 +122,109 @@ jobs:
 
           Write-Host "Done."
 
+      # ── Tauri build (no Authenticode signing — SignPath handles that) ──────
       - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+        shell: bash
+        run: pnpm tauri build
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Do NOT set TAURI_SIGNING_PRIVATE_KEY here; updater signing is a
+          # separate concern from Authenticode and is configured elsewhere.
+          TAURI_SIGNING_PRIVATE_KEY: ""
+
+      # ── Collect .msi and NSIS .exe into a flat staging directory ──────────
+      - name: Collect unsigned installers
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist\unsigned | Out-Null
+
+          $msi = Get-ChildItem "src-tauri\target\release\bundle\msi\*.msi" -ErrorAction SilentlyContinue
+          foreach ($f in $msi) {
+            Copy-Item $f.FullName "dist\unsigned\$($f.Name)"
+            Write-Host "Collected MSI: $($f.Name)"
+          }
+
+          $nsis = Get-ChildItem "src-tauri\target\release\bundle\nsis\*-setup.exe" -ErrorAction SilentlyContinue
+          foreach ($f in $nsis) {
+            Copy-Item $f.FullName "dist\unsigned\$($f.Name)"
+            Write-Host "Collected NSIS: $($f.Name)"
+          }
+
+          if (-not (Get-ChildItem "dist\unsigned")) {
+            Write-Error "No installers found — check bundle configuration in tauri.conf.json."
+            exit 1
+          }
+
+      - name: Upload unsigned installers
+        id: upload
+        uses: actions/upload-artifact@v4
         with:
-          tagName: ${{ github.ref_name != 'main' && github.ref_name || inputs.tag }}
-          releaseName: "LocalVoice ${{ github.ref_name != 'main' && github.ref_name || inputs.tag }}"
-          releaseBody: |
-            ## LocalVoice ${{ github.ref_name }}
+          name: unsigned-installers
+          path: dist/unsigned/
+          retention-days: 1   # short TTL — only needed until SignPath pulls them
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 2 – Sign with SignPath
+# ─────────────────────────────────────────────────────────────────────────────
+  sign:
+    name: Sign (SignPath)
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      # SignPath pulls the artifact directly from GitHub Actions using the
+      # artifact ID; no manual download step is needed before submission.
+      - name: Submit signing request
+        id: signpath
+        uses: SignPath/github-action-submit-signing-request@v1.1
+        with:
+          api-token:                   ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id:             ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+          project-slug:                localvoice
+          signing-policy-slug:         release-signing
+          artifact-configuration-slug: windows-installers
+          github-artifact-id:          ${{ needs.build.outputs.unsigned-artifact-id }}
+          wait-for-completion:         "true"
+          output-artifact-directory:   dist/signed
+
+      - name: Upload signed installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-installers
+          path: dist/signed/
+          retention-days: 7
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 3 – Publish GitHub Release
+# ─────────────────────────────────────────────────────────────────────────────
+  release:
+    name: Publish Release
+    needs: [build, sign]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download signed installers
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-installers
+          path: dist/signed
+
+      - name: Create GitHub Release (draft)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name:   ${{ needs.build.outputs.tag }}
+          name:       "LocalVoice ${{ needs.build.outputs.tag }}"
+          draft:      true
+          prerelease: false
+          files:      dist/signed/**
+          body: |
+            ## LocalVoice ${{ needs.build.outputs.tag }}
 
             ### Installation
-            Download the `.msi` installer or the `.exe` setup below.
+            Download the `.msi` installer or the `-setup.exe` NSIS installer below.
+            All binaries are Authenticode-signed via [SignPath](https://signpath.io).
 
-            > **Note:** The whisper.cpp models are not bundled — download them from the Models page inside the app after installation.
+            > **Note:** Whisper models are not bundled — download them from the
+            > Models page inside the app after installation.
 
             ### What's new
-            See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ github.ref_name }}) for details.
-          releaseDraft: true
-          prerelease: false
-          includeUpdaterJson: false
+            See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ needs.build.outputs.tag }}) for details.
