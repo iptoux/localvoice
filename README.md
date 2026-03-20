@@ -268,6 +268,23 @@ Look for issues tagged `good first issue` — these are scoped and well-document
 
 ---
 
+## Code signing policy
+
+Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+
+Official Windows release artifacts for LocalVoice are built from this public repository and submitted for signing only from the project's release workflow.
+
+Committers and reviewers:
+- @iptoux
+
+Approvers:
+- @iptoux
+
+Only release artifacts produced from the LocalVoice repository are submitted for signing.
+Third-party upstream binaries included in release packages remain attributed to their original upstream projects and are not individually signed under the LocalVoice project certificate.
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE) for the full text.
