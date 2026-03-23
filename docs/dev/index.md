@@ -21,6 +21,7 @@ Technical reference for contributors and maintainers.
 | [ms13-theme-shortcuts.md](ms13-theme-shortcuts.md) | MS-13 Theme & Shortcuts | done |
 | [ms14-reprocess-pipeline.md](ms14-reprocess-pipeline.md) | MS-14 Session Reprocessing & Configurable Post-Processing | done |
 | MS-15 | [Stronger Dashboard & Confidence Viz](ms15-dashboard-confidence.md) | `done` |
+| [ms17-tests-ci-perf.md](ms17-tests-ci-perf.md) | MS-17 Test Suite, CI/CD & Performance | done |
 
 ## Reference
 

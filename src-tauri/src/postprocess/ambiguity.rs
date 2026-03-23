@@ -49,3 +49,97 @@ pub fn detect(segments: &[TranscriptSegment], threshold: f32) -> Vec<AmbiguousCa
         .map(|(phrase, confidence)| AmbiguousCandidate { phrase, confidence })
         .collect()
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::transcription::types::TranscriptSegment;
+
+    fn seg(text: &str, conf: Option<f32>) -> TranscriptSegment {
+        TranscriptSegment {
+            start_ms: 0,
+            end_ms: 1000,
+            text: text.to_string(),
+            confidence: conf,
+        }
+    }
+
+    #[test]
+    fn detects_low_confidence_segment() {
+        let segs = vec![seg("hello world", Some(0.3))];
+        let candidates = detect(&segs, 0.6);
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0].phrase, "hello world");
+        let conf = candidates[0].confidence.unwrap();
+        assert!((conf - 0.3).abs() < 0.001);
+    }
+
+    #[test]
+    fn skips_high_confidence_segment() {
+        let segs = vec![seg("hello world", Some(0.9))];
+        let candidates = detect(&segs, 0.6);
+        assert!(candidates.is_empty());
+    }
+
+    #[test]
+    fn skips_segment_at_exact_threshold() {
+        let segs = vec![seg("hello world", Some(0.6))];
+        let candidates = detect(&segs, 0.6);
+        assert!(candidates.is_empty(), "segment at threshold should not be flagged");
+    }
+
+    #[test]
+    fn skips_segment_without_confidence() {
+        let segs = vec![seg("hello world", None)];
+        let candidates = detect(&segs, 0.6);
+        assert!(candidates.is_empty());
+    }
+
+    #[test]
+    fn filters_single_char_segment() {
+        let segs = vec![seg("a", Some(0.1))];
+        let candidates = detect(&segs, 0.6);
+        assert!(candidates.is_empty());
+    }
+
+    #[test]
+    fn filters_non_alphabetic_segment() {
+        let segs = vec![seg("123", Some(0.1))];
+        let candidates = detect(&segs, 0.6);
+        assert!(candidates.is_empty());
+    }
+
+    #[test]
+    fn normalizes_phrase_to_lowercase() {
+        let segs = vec![seg("Hello World", Some(0.3))];
+        let candidates = detect(&segs, 0.6);
+        assert_eq!(candidates[0].phrase, "hello world");
+    }
+
+    #[test]
+    fn deduplicates_keeping_lowest_confidence() {
+        let segs = vec![
+            seg("hello world", Some(0.4)),
+            seg("HELLO WORLD", Some(0.2)), // same normalized phrase, lower confidence
+        ];
+        let candidates = detect(&segs, 0.6);
+        assert_eq!(candidates.len(), 1);
+        let conf = candidates[0].confidence.unwrap();
+        assert!((conf - 0.2).abs() < 0.001, "lowest confidence should be kept");
+    }
+
+    #[test]
+    fn trims_whitespace_from_phrase() {
+        let segs = vec![seg("  hello  ", Some(0.3))];
+        let candidates = detect(&segs, 0.6);
+        assert_eq!(candidates[0].phrase, "hello");
+    }
+
+    #[test]
+    fn empty_segments_returns_empty() {
+        let candidates = detect(&[], 0.6);
+        assert!(candidates.is_empty());
+    }
+}

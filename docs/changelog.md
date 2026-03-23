@@ -1,5 +1,14 @@
 # Changelog
 
+## MS-17 — Test Suite, CI/CD & Performance (2026-03-23)
+
+- 91 Rust unit/integration tests across all major backend modules
+- 48 frontend component tests (Pill, SettingsPage, Dashboard) via Vitest + @testing-library/react
+- GitHub Actions CI pipeline: cargo test + lint + frontend test + build on every PR
+- SQLite log persistence: app logs now survive restarts via tokio background channel
+- Vite code splitting with `manualChunks` for vendor chunks (recharts, lucide, i18n, UI libs)
+- Deferred non-critical Tauri startup work (audio cleanup) to after first render
+
 ## MS-15 — Stronger Dashboard & Confidence Visualization (2026-03-18)
 
 - Language breakdown donut chart on Dashboard

@@ -375,6 +375,198 @@ pub fn get_daily_comparison(
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::migrations;
+    use rusqlite::{params, Connection};
+    use std::sync::{Arc, Mutex};
+
+    fn test_db() -> crate::db::DbConn {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
+        migrations::run(&conn).unwrap();
+        Arc::new(Mutex::new(conn))
+    }
+
+    fn insert_session(
+        db: &crate::db::DbConn,
+        id: &str,
+        started_at: &str,
+        language: &str,
+        word_count: i64,
+        duration_ms: i64,
+        estimated_wpm: Option<f64>,
+    ) {
+        let conn = db.lock().unwrap();
+        conn.execute(
+            "INSERT INTO sessions
+                (id, started_at, ended_at, duration_ms, language, trigger_type,
+                 raw_text, cleaned_text, word_count, char_count, output_mode,
+                 inserted_successfully, created_at, reprocessed_count, estimated_wpm)
+             VALUES (?1, ?2, ?2, ?3, ?4, 'hotkey', '', '', ?5, 0, 'clipboard', 0, ?2, 0, ?6)",
+            params![id, started_at, duration_ms, language, word_count, estimated_wpm],
+        )
+        .unwrap();
+    }
+
+    // ── get_dashboard_stats ───────────────────────────────────────────────────
+
+    #[test]
+    fn dashboard_stats_empty_db_returns_zeros() {
+        let db = test_db();
+        let range = DateRange::default();
+        let stats = get_dashboard_stats(&db, &range).unwrap();
+        assert_eq!(stats.total_session_count, 0);
+        assert_eq!(stats.total_word_count, 0);
+        assert_eq!(stats.total_duration_ms, 0);
+    }
+
+    #[test]
+    fn dashboard_stats_aggregates_sessions() {
+        let db = test_db();
+        insert_session(&db, "1", "2026-01-01T10:00:00Z", "de", 100, 60_000, Some(100.0));
+        insert_session(&db, "2", "2026-01-02T10:00:00Z", "en", 200, 120_000, Some(100.0));
+        let range = DateRange::default();
+        let stats = get_dashboard_stats(&db, &range).unwrap();
+        assert_eq!(stats.total_session_count, 2);
+        assert_eq!(stats.total_word_count, 300);
+        assert_eq!(stats.total_duration_ms, 180_000);
+        assert!((stats.avg_wpm - 100.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn dashboard_stats_filters_by_date_range() {
+        let db = test_db();
+        insert_session(&db, "1", "2026-01-01T10:00:00Z", "de", 50, 30_000, None);
+        insert_session(&db, "2", "2026-02-01T10:00:00Z", "de", 100, 60_000, None);
+        let range = DateRange {
+            start: Some("2026-02-01T00:00:00Z".to_string()),
+            end: None,
+        };
+        let stats = get_dashboard_stats(&db, &range).unwrap();
+        assert_eq!(stats.total_session_count, 1);
+        assert_eq!(stats.total_word_count, 100);
+    }
+
+    #[test]
+    fn dashboard_stats_includes_language_counts() {
+        let db = test_db();
+        insert_session(&db, "1", "2026-01-01T10:00:00Z", "de", 100, 60_000, None);
+        insert_session(&db, "2", "2026-01-02T10:00:00Z", "de", 50, 30_000, None);
+        insert_session(&db, "3", "2026-01-03T10:00:00Z", "en", 200, 60_000, None);
+        let range = DateRange::default();
+        let stats = get_dashboard_stats(&db, &range).unwrap();
+        assert_eq!(stats.language_counts.len(), 2);
+        // de has 2 sessions, en has 1 — ordered by count desc
+        assert_eq!(stats.language_counts[0].language, "de");
+        assert_eq!(stats.language_counts[0].count, 2);
+    }
+
+    // ── get_usage_timeseries ─────────────────────────────────────────────────
+
+    #[test]
+    fn timeseries_groups_by_day() {
+        let db = test_db();
+        insert_session(&db, "1", "2026-01-01T10:00:00Z", "de", 100, 60_000, None);
+        insert_session(&db, "2", "2026-01-01T14:00:00Z", "de", 50, 30_000, None);
+        insert_session(&db, "3", "2026-01-02T10:00:00Z", "en", 200, 60_000, None);
+        let range = DateRange::default();
+        let points = get_usage_timeseries(&db, &range, "day").unwrap();
+        assert_eq!(points.len(), 2);
+        // First bucket: 2026-01-01, two sessions, 150 words
+        assert_eq!(points[0].session_count, 2);
+        assert_eq!(points[0].word_count, 150);
+        // Second bucket: 2026-01-02, one session, 200 words
+        assert_eq!(points[1].session_count, 1);
+        assert_eq!(points[1].word_count, 200);
+    }
+
+    #[test]
+    fn timeseries_empty_when_no_sessions() {
+        let db = test_db();
+        let range = DateRange::default();
+        let points = get_usage_timeseries(&db, &range, "day").unwrap();
+        assert!(points.is_empty());
+    }
+
+    // ── get_language_breakdown ───────────────────────────────────────────────
+
+    #[test]
+    fn language_breakdown_ordered_by_word_count() {
+        let db = test_db();
+        insert_session(&db, "1", "2026-01-01T10:00:00Z", "de", 100, 60_000, None);
+        insert_session(&db, "2", "2026-01-02T10:00:00Z", "de", 50, 30_000, None);
+        insert_session(&db, "3", "2026-01-03T10:00:00Z", "en", 200, 60_000, None);
+        let range = DateRange::default();
+        let breakdown = get_language_breakdown(&db, &range).unwrap();
+        assert_eq!(breakdown.len(), 2);
+        // en has more words (200) than de (150)
+        assert_eq!(breakdown[0].language, "en");
+        assert_eq!(breakdown[0].word_count, 200);
+        assert_eq!(breakdown[1].language, "de");
+        assert_eq!(breakdown[1].word_count, 150);
+    }
+
+    // ── get_wpm_trend ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn wpm_trend_averages_per_bucket() {
+        let db = test_db();
+        insert_session(&db, "1", "2026-01-01T10:00:00Z", "de", 100, 60_000, Some(100.0));
+        insert_session(&db, "2", "2026-01-01T14:00:00Z", "de", 100, 60_000, Some(200.0));
+        let range = DateRange::default();
+        let trend = get_wpm_trend(&db, &range, "day").unwrap();
+        assert_eq!(trend.len(), 1);
+        assert!((trend[0].avg_wpm - 150.0).abs() < 0.01);
+        assert_eq!(trend[0].session_count, 2);
+    }
+
+    // ── get_daily_comparison ─────────────────────────────────────────────────
+
+    #[test]
+    fn daily_comparison_returns_per_date_stats() {
+        let db = test_db();
+        insert_session(&db, "1", "2026-01-01T10:00:00Z", "de", 100, 60_000, Some(100.0));
+        insert_session(&db, "2", "2026-01-02T10:00:00Z", "en", 200, 120_000, Some(150.0));
+        let (day_a, day_b) = get_daily_comparison(&db, "2026-01-01", "2026-01-02").unwrap();
+        assert_eq!(day_a.word_count, 100);
+        assert_eq!(day_a.session_count, 1);
+        assert_eq!(day_b.word_count, 200);
+        assert_eq!(day_b.session_count, 1);
+    }
+
+    #[test]
+    fn daily_comparison_empty_date_returns_zeros() {
+        let db = test_db();
+        let (day_a, day_b) = get_daily_comparison(&db, "2099-01-01", "2099-01-02").unwrap();
+        assert_eq!(day_a.word_count, 0);
+        assert_eq!(day_b.word_count, 0);
+    }
+
+    // ── get_correction_stats ─────────────────────────────────────────────────
+
+    #[test]
+    fn correction_stats_empty_when_no_rules() {
+        let db = test_db();
+        let stats = get_correction_stats(&db).unwrap();
+        assert!(stats.is_empty());
+    }
+
+    #[test]
+    fn correction_stats_returns_active_rules() {
+        use crate::dictionary::service;
+        let db = test_db();
+        service::create_rule(&db, "k8s", "Kubernetes", None, true).unwrap();
+        let stats = get_correction_stats(&db).unwrap();
+        assert_eq!(stats.len(), 1);
+        assert_eq!(stats[0].source_phrase, "k8s");
+        assert_eq!(stats[0].target_phrase, "Kubernetes");
+    }
+}
+
 /// Builds a parameterized `WHERE` clause from a `DateRange`.
 fn build_where(range: &DateRange) -> (String, Vec<Box<dyn rusqlite::ToSql>>) {
     let mut conditions: Vec<&str> = Vec::new();
