@@ -31,15 +31,15 @@
 
 ## Product/UX Tasks
 
-- [ ] TASK-159: Review all user-visible strings for clarity; fix unclear labels
-- [ ] TASK-160: Validate pill-first flow with simulated fresh install
+- [x] TASK-159: Review all user-visible strings for clarity; fix unclear labels
+- [x] TASK-160: Validate pill-first flow with simulated fresh install
 
 ## QA / Acceptance
 
-- [ ] TASK-161: Verify autostart works on Windows
-- [ ] TASK-162: Verify pill and main window positions are remembered
-- [ ] TASK-163: Verify first-time user sees onboarding
-- [ ] TASK-164: Verify common error paths show actionable messages
+- [x] TASK-161: Verify autostart works on Windows
+- [x] TASK-162: Verify pill and main window positions are remembered
+- [x] TASK-163: Verify first-time user sees onboarding
+- [x] TASK-164: Verify common error paths show actionable messages
 
 ---
 

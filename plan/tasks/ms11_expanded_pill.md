@@ -22,9 +22,9 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-180a: Verify expanded pill shows correct transcript, language, and model after transcription
-- [ ] TASK-180b: Verify collapse-on-blur works and expanded pill does not stay open permanently
-- [ ] TASK-180c: Verify waveform responds to actual audio level changes during recording
+- [x] TASK-180a: Verify expanded pill shows correct transcript, language, and model after transcription
+- [x] TASK-180b: Verify collapse-on-blur works and expanded pill does not stay open permanently
+- [x] TASK-180c: Verify waveform responds to actual audio level changes during recording
 
 ---
 

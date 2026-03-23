@@ -22,10 +22,10 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-231a: Verify bulk delete removes all selected sessions correctly
-- [ ] TASK-231b: Verify push-to-talk stops recording immediately on key release
-- [ ] TASK-231c: Verify audio playback plays the correct file for each session
-- [ ] TASK-231d: Verify CSV export opens correctly in Excel and LibreOffice Calc
+- [x] TASK-231a: Verify bulk delete removes all selected sessions correctly
+- [X] TASK-231b: Verify push-to-talk stops recording immediately on key release
+- [X] TASK-231c: Verify audio playback plays the correct file for each session
+- [X] TASK-231d: Verify CSV export opens correctly in Excel and LibreOffice Calc
 
 ---
 

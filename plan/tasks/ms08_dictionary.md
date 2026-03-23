@@ -26,10 +26,10 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-129: Verify adding a correction rule (e.g. "clawd" → "Claude") changes the next transcript that contains "clawd"
-- [ ] TASK-130: Verify disabling a rule (`is_active=false`) stops it from applying in future transcripts
-- [ ] TASK-131: Verify `usage_count` increments each time a rule fires during transcription
-- [ ] TASK-132: Verify deleting a rule does not affect already-stored session transcripts
+- [x] TASK-129: Verify adding a correction rule (e.g. "clawd" → "Claude") changes the next transcript that contains "clawd"
+- [x] TASK-130: Verify disabling a rule (`is_active=false`) stops it from applying in future transcripts
+- [x] TASK-131: Verify `usage_count` increments each time a rule fires during transcription
+- [x] TASK-132: Verify deleting a rule does not affect already-stored session transcripts
 
 ---
 

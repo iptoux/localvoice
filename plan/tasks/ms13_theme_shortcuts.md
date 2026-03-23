@@ -24,9 +24,9 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-200a: Verify theme persists across app restart
-- [ ] TASK-200b: Verify shortcut change takes effect immediately without restart
-- [ ] TASK-200c: Verify all pages render correctly in both light and dark themes
+- [x] TASK-200a: Verify theme persists across app restart
+- [x] TASK-200b: Verify shortcut change takes effect immediately without restart
+- [x] TASK-200c: Verify all pages render correctly in both light and dark themes
 
 ---
 

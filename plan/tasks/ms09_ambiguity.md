@@ -26,10 +26,10 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-143: Verify ambiguous terms list is populated after multiple sessions with a consistently low-confidence segment
-- [ ] TASK-144: Verify accepting a suggestion creates a functional correction rule (rule fires in next transcription)
-- [ ] TASK-145: Verify dismissed items do not reappear unless occurrence count grows significantly after dismissal
-- [ ] TASK-146: Verify zero ambiguous terms scenario renders empty state without errors
+- [x] TASK-143: Verify ambiguous terms list is populated after multiple sessions with a consistently low-confidence segment
+- [x] TASK-144: Verify accepting a suggestion creates a functional correction rule (rule fires in next transcription)
+- [x] TASK-145: Verify dismissed items do not reappear unless occurrence count grows significantly after dismissal
+- [x] TASK-146: Verify zero ambiguous terms scenario renders empty state without errors
 
 ---
 

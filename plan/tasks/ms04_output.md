@@ -25,9 +25,9 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-065: Verify clipboard default output works reliably across apps
+- [x] TASK-065: Verify clipboard default output works reliably across apps
 - [ ] TASK-066: Verify insert mode pastes into the focused app immediately after transcription
-- [ ] TASK-067: Verify pill always returns to Idle after Success or Error, regardless of output mode
+- [x] TASK-067: Verify pill always returns to Idle after Success or Error, regardless of output mode
 
 ---
 

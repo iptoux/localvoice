@@ -20,10 +20,10 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-187a: Verify text insertion in Notepad, VS Code, Chrome text input, and Word
-- [ ] TASK-187b: Verify insert delay prevents text loss in slow apps
-- [ ] TASK-187c: Verify fallback to clipboard when insert fails
-- [ ] TASK-187d: Verify `output_target_app` is stored in session after insertion
+- [x] TASK-187a: Verify text insertion in Notepad, VS Code, Chrome text input, and Word
+- [x] TASK-187b: Verify insert delay prevents text loss in slow apps
+- [x] TASK-187c: Verify fallback to clipboard when insert fails
+- [x] TASK-187d: Verify `output_target_app` is stored in session after insertion
 
 ---
 

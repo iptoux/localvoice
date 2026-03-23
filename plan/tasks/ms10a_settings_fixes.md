@@ -61,12 +61,12 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-300: Verify auto-punctuation adds terminal period when whisper output lacks it
-- [ ] TASK-301: Verify filler removal strips "uh", "um", "äh" without removing legitimate words containing those substrings (e.g., "umbrella" must not become "brella")
-- [ ] TASK-302: Verify silence detection stops recording after configured timeout with no speech
-- [ ] TASK-303: Verify push-to-talk starts on key down and stops on key up
-- [ ] TASK-304: Verify `ui.default_mode = "main"` opens the main window instead of pill on launch
-- [ ] TASK-305: Verify `app.start_hidden = true` starts the app with no visible windows (tray only)
+- [x] TASK-300: Verify auto-punctuation adds terminal period when whisper output lacks it
+- [x] TASK-301: Verify filler removal strips "uh", "um", "äh" without removing legitimate words containing those substrings (e.g., "umbrella" must not become "brella")
+- [x] TASK-302: Verify silence detection stops recording after configured timeout with no speech
+- [x] TASK-303: Verify push-to-talk starts on key down and stops on key up
+- [x] TASK-304: Verify `ui.default_mode = "main"` opens the main window instead of pill on launch
+- [x] TASK-305: Verify `app.start_hidden = true` starts the app with no visible windows (tray only)
 
 ---
 

@@ -20,14 +20,14 @@
 
 ## Product/UX Tasks
 
-- [ ] TASK-094: Validate metric definitions — confirm `estimated_wpm` formula is `(word_count / duration_ms) * 60000`; document centrally in `stats/aggregations.rs`
+- [x] TASK-094: Validate metric definitions — confirm `estimated_wpm` formula is `(word_count / duration_ms) * 60000`; document centrally in `stats/aggregations.rs`
 
 ## QA / Acceptance
 
-- [ ] TASK-095: Verify dashboard shows non-zero values after 3+ sessions exist
-- [ ] TASK-096: Verify total word count matches sum of `word_count` column across sessions in DB
-- [ ] TASK-097: Verify charts re-render correctly when date range changes
-- [ ] TASK-098: Verify empty state (no sessions yet) renders without errors
+- [x] TASK-095: Verify dashboard shows non-zero values after 3+ sessions exist
+- [x] TASK-096: Verify total word count matches sum of `word_count` column across sessions in DB
+- [x] TASK-097: Verify charts re-render correctly when date range changes
+- [x] TASK-098: Verify empty state (no sessions yet) renders without errors
 
 ---
 

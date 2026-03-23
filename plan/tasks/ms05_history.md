@@ -27,10 +27,10 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-081: Verify sessions persist across app restarts
-- [ ] TASK-082: Verify search with a known word returns the correct session
-- [ ] TASK-083: Verify deleting a session removes it from DB and list immediately
-- [ ] TASK-084: Verify export produces a valid file in chosen format
+- [x] TASK-081: Verify sessions persist across app restarts
+- [x] TASK-082: Verify search with a known word returns the correct session
+- [x] TASK-083: Verify deleting a session removes it from DB and list immediately
+- [x] TASK-084: Verify export produces a valid file in chosen format
 
 ---
 

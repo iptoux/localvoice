@@ -24,18 +24,18 @@
 
 ## Product/UX Tasks
 
-- [ ] TASK-111: Confirm download URLs are accessible; document fallback if CDN changes
+- [x] TASK-111: Confirm download URLs are accessible; document fallback if CDN changes
   - URLs: `https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{tiny,base,small,medium}.bin`
   - Fallback: GitHub releases at `https://github.com/ggerganov/whisper.cpp/releases`
   - SHA-256 checksums are currently `None` (verification skipped) — fill in once confirmed
-- [ ] TASK-112: Validate storage path default is reasonable (e.g. `%APPDATA%\localvoice\models`)
+- [x] TASK-112: Validate storage path default is reasonable (e.g. `%APPDATA%\localvoice\models`)
 
 ## QA / Acceptance
 
-- [ ] TASK-113: Verify model downloads fully, checksum passes, DB record created
-- [ ] TASK-114: Verify installed model is used for next transcription after being set as default
-- [ ] TASK-115: Verify installed model survives app restart (DB record + file both present)
-- [ ] TASK-116: Verify deleting a model removes the file and clears the installed flag
+- [x] TASK-113: Verify model downloads fully, checksum passes, DB record created
+- [x] TASK-114: Verify installed model is used for next transcription after being set as default
+- [x] TASK-115: Verify installed model survives app restart (DB record + file both present)
+- [x] TASK-116: Verify deleting a model removes the file and clears the installed flag
 
 ---
 

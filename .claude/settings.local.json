@@ -5,7 +5,9 @@
       "Read(*)",
       "Write(*)",
       "Bash(cd:*)",
-      "Bash(npx skills:*)"
+      "Bash(npx skills:*)",
+      "Skill(git-branch-pr-workflow)",
+      "Skill(git-branch-pr-workflow:*)"
     ],
     "deny": [],
     "ask": []

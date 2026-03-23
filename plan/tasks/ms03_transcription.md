@@ -24,15 +24,15 @@
 
 ## Product/UX Tasks
 
-- [ ] TASK-049: Validate the end-to-end latency on typical hardware (record 5s clip, measure time to Success state); document baseline
+- [x] TASK-049: Validate the end-to-end latency on typical hardware (record 5s clip, measure time to Success state); document baseline
   - Depends on actual whisper.cpp binary being placed
 
 ## QA / Acceptance
 
-- [ ] TASK-050: Verify a 5–10s German clip transcribes locally and shows German text
-- [ ] TASK-051: Verify a 5–10s English clip transcribes locally and shows English text
-- [ ] TASK-052: Verify error is shown if model file is missing or sidecar invocation fails
-- [ ] TASK-053: Verify `TranscriptSegment` list has correct timing and maps to full text
+- [x] TASK-050: Verify a 5–10s German clip transcribes locally and shows German text
+- [x] TASK-051: Verify a 5–10s English clip transcribes locally and shows English text
+- [x] TASK-052: Verify error is shown if model file is missing or sidecar invocation fails
+- [x] TASK-053: Verify `TranscriptSegment` list has correct timing and maps to full text
 
 ---
 

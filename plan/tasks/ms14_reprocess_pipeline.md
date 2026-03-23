@@ -26,10 +26,10 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-210a: Verify reprocessing with a different model produces different output
-- [ ] TASK-210b: Verify original raw text is preserved after reprocessing
-- [ ] TASK-210c: Verify audio cleanup removes files older than retention period
-- [ ] TASK-210d: Verify toggling pipeline steps changes transcription output
+- [x] TASK-210a: Verify reprocessing with a different model produces different output
+- [x] TASK-210b: Verify original raw text is preserved after reprocessing
+- [x] TASK-210c: Verify audio cleanup removes files older than retention period
+- [x] TASK-210d: Verify toggling pipeline steps changes transcription output
 
 ---
 

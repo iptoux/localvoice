@@ -22,10 +22,10 @@
 
 ## QA / Acceptance
 
-- [ ] TASK-220a: Verify language breakdown chart reflects actual session data
-- [ ] TASK-220b: Verify correction frequency updates after rules are applied
-- [ ] TASK-220c: Verify confidence colors are correct for known segment values
-- [ ] TASK-220d: Verify all charts respond to date range changes
+- [X] TASK-220a: Verify language breakdown chart reflects actual session data
+- [X] TASK-220b: Verify correction frequency updates after rules are applied
+- [X] TASK-220c: Verify confidence colors are correct for known segment values
+- [X] TASK-220d: Verify all charts respond to date range changes
 
 ---
 
