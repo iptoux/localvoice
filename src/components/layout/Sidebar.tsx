@@ -10,7 +10,8 @@ import {
   Settings,
   MousePointerClick,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 
 const TOP_LINKS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -29,8 +30,10 @@ export function Sidebar() {
   const loggingEnabled = useSettingsStore(
     useShallow((s) => s.settings["logging.enabled"] !== "false")
   );
+  const [appVersion, setAppVersion] = useState<string>("");
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { getVersion().then(setAppVersion); }, []);
 
   const visibleTopLinks = TOP_LINKS.filter(
     (l) => l.to !== "/logs" || loggingEnabled
@@ -85,7 +88,7 @@ export function Sidebar() {
         ))}
 
         <div className="border-t border-sidebar-border mt-2 pt-2 px-3">
-          <span className="text-[11px] text-sidebar-foreground/30">v0.1.0</span>
+          <span className="text-[11px] text-sidebar-foreground/30">{appVersion ? `v${appVersion}` : ""}</span>
         </div>
       </div>
     </nav>
