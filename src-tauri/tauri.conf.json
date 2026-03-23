@@ -63,13 +63,6 @@
     ],
     "externalBin": [
       "binaries/whisper-cli"
-    ],
-    "resources": [
-      "ggml.dll",
-      "ggml-base.dll",
-      "ggml-cpu.dll",
-      "whisper.dll",
-      "SDL2.dll"
     ]
   }
 }

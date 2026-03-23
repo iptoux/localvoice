@@ -18,6 +18,7 @@ LocalVoice is an offline-first desktop voice dictation app. All audio and transc
 | [Pill (Compact & Expanded)](pill.md) | MS-11 ✓ |
 | [Text Insertion](text-insertion.md) | MS-12 ✓ |
 | [Session Reprocessing](reprocessing.md) | MS-14 ✓ |
+| [Platform Support](platforms.md) | MS-18 ✓ |
 | Settings | MS-10 |
 
 ## See Also
