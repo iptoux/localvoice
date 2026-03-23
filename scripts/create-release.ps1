@@ -69,7 +69,11 @@ function Set-VersionInFile {
     param([string]$File, [string]$Old, [string]$New)
     if (-not (Test-Path $File)) { return }
     $c = (Get-Content $File -Raw) -replace ([regex]::Escape("`"version`": `"$Old`"")), "`"version`": `"$New`""
-    if (-not $DryRun) { $c | Set-Content $File -NoNewline -Encoding UTF8 }
+    if (-not $DryRun) {
+        # Use UTF8NoBOM to avoid BOM that breaks JSON parsers
+        $enc = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText((Resolve-Path $File).Path, $c, $enc)
+    }
     Write-Info "Updated $(Split-Path $File -Leaf): $Old -> $New"
 }
 
