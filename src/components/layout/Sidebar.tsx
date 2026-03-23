@@ -8,10 +8,10 @@ import {
   Cpu,
   ScrollText,
   Settings,
-  MousePointerClick,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
+import { TIPS } from "../../data/tips";
 
 const TOP_LINKS = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -25,19 +25,37 @@ const BOTTOM_LINKS = [
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
+const TIP_INTERVAL_MS = 8_000;
+
 export function Sidebar() {
   const load = useSettingsStore((s) => s.load);
   const loggingEnabled = useSettingsStore(
     useShallow((s) => s.settings["logging.enabled"] !== "false")
   );
   const [appVersion, setAppVersion] = useState<string>("");
+  const [tipIndex, setTipIndex] = useState(() => Math.floor(Math.random() * TIPS.length));
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { getVersion().then(setAppVersion); }, []);
 
+  useEffect(() => {
+    const id = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setTipIndex((i) => (i + 1) % TIPS.length);
+        setVisible(true);
+      }, 300);
+    }, TIP_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
+
   const visibleTopLinks = TOP_LINKS.filter(
     (l) => l.to !== "/logs" || loggingEnabled
   );
+
+  const tip = TIPS[tipIndex];
+  const TipIcon = tip.icon;
 
   return (
     <nav className="w-48 bg-sidebar text-sidebar-foreground flex flex-col py-6 px-3 shrink-0">
@@ -64,10 +82,12 @@ export function Sidebar() {
         ))}
       </div>
       <div className="mt-auto flex flex-col gap-1">
-        {/* Tip: right-click the pill */}
-        <div className="flex items-start gap-2 px-3 py-2 mb-1 rounded-md bg-sidebar-accent/40 text-sidebar-foreground/50 text-[11px] leading-snug">
-          <MousePointerClick className="size-3 shrink-0 mt-0.5 opacity-60" />
-          <span>Right-click the pill to expand quick actions</span>
+        <div
+          className="flex items-start gap-2 px-3 py-2 mb-1 rounded-md bg-sidebar-accent/40 text-sidebar-foreground/50 text-[11px] leading-snug transition-opacity duration-300"
+          style={{ opacity: visible ? 1 : 0 }}
+        >
+          <TipIcon className="size-3 shrink-0 mt-0.5 opacity-60" />
+          <span>{tip.text}</span>
         </div>
 
         {BOTTOM_LINKS.map(({ to, label, icon: Icon }) => (
