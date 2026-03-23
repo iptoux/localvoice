@@ -387,3 +387,111 @@ static MIGRATIONS: &[(i64, &str)] = &[(
     ALTER TABLE sessions ADD COLUMN original_avg_confidence REAL;
     ",
 )];
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::Connection;
+
+    fn open_in_memory() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch("PRAGMA foreign_keys=ON;").unwrap();
+        conn
+    }
+
+    #[test]
+    fn all_migrations_apply_cleanly() {
+        let conn = open_in_memory();
+        run(&conn).expect("migrations should apply without error");
+
+        let tables: Vec<String> = conn
+            .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect();
+
+        for expected in &[
+            "app_logs",
+            "ambiguous_terms",
+            "correction_rules",
+            "dictionary_entries",
+            "filler_words",
+            "model_installations",
+            "model_language_defaults",
+            "schema_migrations",
+            "session_segments",
+            "sessions",
+            "settings",
+        ] {
+            assert!(
+                tables.contains(&expected.to_string()),
+                "table '{}' should exist after migrations",
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn migrations_are_idempotent() {
+        let conn = open_in_memory();
+        run(&conn).expect("first run should succeed");
+        run(&conn).expect("second run should not error (idempotent)");
+    }
+
+    #[test]
+    fn schema_version_tracks_all_migrations() {
+        let conn = open_in_memory();
+        run(&conn).unwrap();
+        let version: i64 = conn
+            .query_row(
+                "SELECT MAX(version) FROM schema_migrations",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(version, MIGRATIONS.len() as i64);
+    }
+
+    #[test]
+    fn default_settings_are_seeded() {
+        let conn = open_in_memory();
+        run(&conn).unwrap();
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM settings", [], |r| r.get(0))
+            .unwrap();
+        assert!(count > 0, "default settings should be seeded");
+    }
+
+    #[test]
+    fn filler_words_are_seeded() {
+        let conn = open_in_memory();
+        run(&conn).unwrap();
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM filler_words", [], |r| r.get(0))
+            .unwrap();
+        assert!(count > 0, "default filler words should be seeded");
+    }
+
+    #[test]
+    fn sessions_table_has_reprocessing_columns() {
+        let conn = open_in_memory();
+        run(&conn).unwrap();
+        // If migration 5/9 applied correctly, these columns must exist.
+        conn.execute(
+            "INSERT INTO sessions
+                (id, started_at, ended_at, duration_ms, language, trigger_type,
+                 raw_text, cleaned_text, word_count, char_count, output_mode,
+                 inserted_successfully, created_at, reprocessed_count,
+                 original_model_id, original_language)
+             VALUES ('test', datetime('now'), datetime('now'), 1000, 'de',
+                     'hotkey', '', '', 0, 0, 'clipboard', 0, datetime('now'), 0,
+                     NULL, NULL)",
+            [],
+        )
+        .expect("session insert with reprocessing columns should succeed");
+    }
+}

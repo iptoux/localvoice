@@ -43,31 +43,35 @@ pub fn run() {
             // Read persisted settings before moving the DB into AppState.
             let persisted = settings_repo::get_all(&db).unwrap_or_default();
 
-            // Initialise in-memory log buffer, respecting the persisted setting.
+            // Initialise SQLite-backed logger, respecting the persisted setting (TASK-247).
             let logging_enabled = persisted
                 .get("logging.enabled")
                 .map(|v| v != "false")
                 .unwrap_or(true);
-            logging::init(logging_enabled);
+            logging::init(logging_enabled, db.clone());
 
             // Register shared state.
             app.manage(AppState::new(db));
 
-            // Clean up old audio files (TASK-209).
-            if let Ok(data_dir) = app.path().app_data_dir() {
-                audio::cleanup::cleanup_old_audio(
-                    &app.state::<AppState>().db,
-                    &data_dir.join("audio"),
-                );
-            }
-
-            // Build system tray.
+            // Build system tray (critical — needed before window shows).
             os::tray::setup(app.handle())
                 .map_err(|e| Box::<dyn std::error::Error>::from(e.to_string()))?;
 
-            // Register the global recording shortcut.
+            // Register the global recording shortcut (critical — user expects it immediately).
             os::hotkeys::setup(app.handle())
                 .map_err(|e| Box::<dyn std::error::Error>::from(e))?;
+
+            // Defer non-critical work (audio cleanup) to after the window is rendered
+            // so it does not delay the initial display.  TASK-245.
+            {
+                let db_handle = app.state::<AppState>().db.clone();
+                let data_dir = app.path().app_data_dir().ok();
+                tauri::async_runtime::spawn(async move {
+                    if let Some(dir) = data_dir {
+                        audio::cleanup::cleanup_old_audio(&db_handle, &dir.join("audio"));
+                    }
+                });
+            }
 
             // ── Restore pill position ─────────────────────────────────────────
             if let Some(pill) = app.get_webview_window("pill") {

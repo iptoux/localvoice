@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "localvoice"
 version = "0.2.0"
 description = "LocalVoice â€” offline-first desktop voice dictation"
