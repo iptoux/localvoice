@@ -10,9 +10,19 @@ fn exe_path() -> Result<String, String> {
 /// On Windows this writes / removes a registry value under
 /// `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
 /// On other platforms the operation is a no-op (returns Ok).
-#[allow(unused_variables)]
+/// In debug builds this always returns an error to prevent registering
+/// the dev binary (which requires a running Vite dev server).
 pub fn set_autostart(enabled: bool) -> Result<(), String> {
-    #[cfg(target_os = "windows")]
+    #[cfg(debug_assertions)]
+    {
+        let _ = enabled;
+        return Err(
+            "Autostart cannot be enabled in development builds. Build a release binary first."
+                .to_string(),
+        );
+    }
+
+    #[cfg(all(not(debug_assertions), target_os = "windows"))]
     {
         use winreg::enums::{HKEY_CURRENT_USER, KEY_SET_VALUE};
         use winreg::RegKey;
@@ -36,15 +46,22 @@ pub fn set_autostart(enabled: bool) -> Result<(), String> {
         }
         Ok(())
     }
-    #[cfg(not(target_os = "windows"))]
+
+    #[cfg(all(not(debug_assertions), not(target_os = "windows")))]
     {
         Ok(())
     }
 }
 
 /// Returns `true` if the LocalVoice autostart entry is present.
+/// Always returns `false` in debug builds.
 pub fn get_autostart() -> bool {
-    #[cfg(target_os = "windows")]
+    #[cfg(debug_assertions)]
+    {
+        return false;
+    }
+
+    #[cfg(all(not(debug_assertions), target_os = "windows"))]
     {
         use winreg::enums::HKEY_CURRENT_USER;
         use winreg::RegKey;
@@ -58,7 +75,8 @@ pub fn get_autostart() -> bool {
             false
         }
     }
-    #[cfg(not(target_os = "windows"))]
+
+    #[cfg(all(not(debug_assertions), not(target_os = "windows")))]
     {
         false
     }

@@ -600,8 +600,12 @@ export default function SettingsPage() {
         <Switch
           checked={autostart}
           onCheckedChange={async (v) => {
-            await setAutostart(v);
-            setAutostartState(v);
+            try {
+              await setAutostart(v);
+              setAutostartState(v);
+            } catch (e) {
+              console.error("Autostart toggle failed:", e);
+            }
           }}
         />
       </SettingRow>
