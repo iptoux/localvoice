@@ -112,10 +112,10 @@ describe("Pill", () => {
         language: "en",
         modelId: "ggml-base",
         durationMs: 1000,
-        output: null,
+        output: undefined,
         removedFillers: [],
       },
-      lastOutputResult: { mode: "clipboard", success: true, error: null },
+      lastOutputResult: { mode: "clipboard", success: true, error: undefined },
     });
     render(<Pill />);
     expect(screen.getByText("Copied")).toBeInTheDocument();
@@ -131,10 +131,10 @@ describe("Pill", () => {
         language: "en",
         modelId: "ggml-base",
         durationMs: 1000,
-        output: null,
+        output: undefined,
         removedFillers: [],
       },
-      lastOutputResult: { mode: "insert", success: true, error: null },
+      lastOutputResult: { mode: "insert", success: true, error: undefined },
     });
     render(<Pill />);
     expect(screen.getByText("Inserted")).toBeInTheDocument();
@@ -151,7 +151,7 @@ describe("Pill", () => {
         language: "en",
         modelId: "ggml-base",
         durationMs: 1000,
-        output: null,
+        output: undefined,
         removedFillers: [],
       },
       lastOutputResult: null,
