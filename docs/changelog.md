@@ -1,5 +1,18 @@
 # Changelog
 
+## MS-18 — macOS & Linux Support (2026-03-23)
+
+- macOS autostart via launchd plist (`~/Library/LaunchAgents/com.localvoice.app.plist`)
+- Linux autostart via XDG `.desktop` file (`~/.config/autostart/localvoice.desktop`)
+- macOS auto-insert: simulates `Cmd+V` via `osascript` (requires Accessibility permission)
+- Linux auto-insert: detects X11 vs. Wayland at runtime; uses `xdotool` or `wtype`
+- `windows-sys` dependency moved to Windows-only in `Cargo.toml`
+- DLL resources split into `tauri.windows.conf.json` — macOS/Linux builds no longer fail due to missing `.dll` files
+- CI matrix: `cargo test` now runs on `windows-latest`, `macos-latest`, and `ubuntu-latest`
+- Release pipeline: new `build-macos` and `build-linux` jobs produce `.dmg` and `.deb`/`.AppImage` artifacts; whisper.cpp is built from source via `cmake`
+- `bootstrap.sh` updated: detects macOS vs. Linux, downloads or builds the correct whisper-cli triple
+- README updated with platform prerequisites, macOS Accessibility setup, and Linux `xdotool`/`wtype` instructions
+
 ## MS-17 — Test Suite, CI/CD & Performance (2026-03-23)
 
 - 91 Rust unit/integration tests across all major backend modules
