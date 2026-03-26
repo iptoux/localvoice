@@ -89,15 +89,24 @@ It's built for developers, writers, and anyone who wants fast, private voice inp
 
 ---
 
+## Platform Support
+
+| Platform | Status | Notes |
+|---|---|---|
+| **Windows 10/11 x64** | First-class | Fully supported, signed installers |
+| **macOS Apple Silicon (arm64)** | Supported | Unsigned builds; Accessibility permission required for auto-insert |
+| **macOS Intel (x86_64)** | Supported | Same as Apple Silicon |
+| **Linux x86_64** | Supported | Requires `xdotool` (X11) or `wtype` (Wayland) for auto-insert; `libappindicator` for tray |
+
+---
+
 ## Installation
 
-> **Windows Security Warning**
+> **Security notices by platform**
 >
-> When installing LocalVoice on Windows, you may see a SmartScreen warning saying the installer is from an "unknown publisher". This is expected — the binaries are not signed with a commercial code signing certificate.
->
-> Code signing certificates for Windows cost around $300–$500 per year. As an indie developer working on this as a hobby project, that's not a cost I'm willing to justify — especially since a certificate can be purchased by anyone and doesn't actually verify the quality or safety of the software. The source code is fully open and auditable right here.
->
-> To proceed: click **"More info"** → **"Run anyway"** in the SmartScreen dialog.
+> - **Windows:** You may see a SmartScreen warning ("unknown publisher"). Click **"More info" → "Run anyway"**. Release binaries are Authenticode-signed via SignPath.
+> - **macOS:** The app is not notarized. Right-click the `.app` → Open → Open to bypass Gatekeeper. Auto-insert (paste) requires granting Accessibility permission in System Settings → Privacy & Security → Accessibility.
+> - **Linux:** No code signing. Mark the binary executable and run directly. Tray icon requires `libayatana-appindicator3` or `libappindicator3`.
 
 ### Prerequisites
 
@@ -107,8 +116,21 @@ It's built for developers, writers, and anyone who wants fast, private voice inp
 | pnpm | ≥ 9 |
 | Rust | stable ≥ 1.77 |
 
-> On Windows, no additional system libraries are needed — SQLite is bundled.
-> On macOS/Linux, make sure you have the standard build tools (`xcode-select --install` on macOS, `build-essential` on Ubuntu).
+**macOS additional requirements:**
+- Xcode Command Line Tools: `xcode-select --install`
+- cmake (for building whisper.cpp): `brew install cmake`
+
+**Linux additional requirements:**
+```bash
+sudo apt-get install -y \
+  libwebkit2gtk-4.1-dev libssl-dev libgtk-3-dev \
+  libayatana-appindicator3-dev librsvg2-dev libasound2-dev \
+  cmake build-essential
+# For auto-insert (X11):
+sudo apt-get install -y xdotool
+# For auto-insert (Wayland):
+sudo apt-get install -y wtype
+```
 
 ### Quick Setup (recommended)
 
@@ -130,14 +152,13 @@ cd localvoice
 
 The script will:
 1. Check for Node.js, Rust, and pnpm (and install pnpm if missing)
-2. Install frontend dependencies
-3. Download the whisper.cpp binaries (skip with `--skip-whisper`)
-4. Verify the Tauri CLI is available
-5. Run a Rust compilation check (skip with `--skip-verification`)
+2. Check Linux system packages (Linux only)
+3. Install frontend dependencies
+4. Download or build whisper.cpp binaries for your platform (skip with `--skip-whisper`)
+5. Verify the Tauri CLI is available
+6. Run a Rust compilation check (skip with `--skip-verification`)
 
 ### Manual Setup
-
-If you prefer to wire things up yourself:
 
 ```bash
 # Install frontend dependencies
@@ -152,43 +173,66 @@ pnpm tauri build
 
 ### whisper.cpp Binaries (required)
 
-The bootstrap script tries to download and place these automatically, but if it fails — or if you're setting up manually — you need to do this step yourself. The app won't build or run without it.
+The bootstrap script handles this automatically. For manual setup, you need to place a platform-appropriate binary in `src-tauri/binaries/`:
 
-**1. Download the release ZIP from the whisper.cpp GitHub releases page:**
+**Windows:**
 
-```
-https://github.com/ggerganov/whisper.cpp/releases/download/v1.7.1/whisper-bin-win-x64.zip
-```
+1. Download `whisper-bin-win-x64.zip` from the [whisper.cpp v1.7.1 release](https://github.com/ggerganov/whisper.cpp/releases/tag/v1.7.1)
+2. Extract and copy files:
 
-**2. Extract the ZIP.** Inside you'll find a `Release/` folder containing the binaries.
-
-**3. Copy the following files from `Release/` into `src-tauri/binaries/`:**
-
-| File | Rename to |
+| File | Destination |
 |---|---|
-| `whisper-cli.exe` | `whisper-cli-x86_64-pc-windows-msvc.exe` |
-| `ggml.dll` | `ggml.dll` |
-| `ggml-base.dll` | `ggml-base.dll` |
-| `ggml-cpu.dll` | `ggml-cpu.dll` |
-| `whisper.dll` | `whisper.dll` |
-| `SDL2.dll` | `SDL2.dll` |
+| `Release/whisper-cli.exe` | `src-tauri/binaries/whisper-cli-x86_64-pc-windows-msvc.exe` |
+| `Release/ggml.dll` | `src-tauri/ggml.dll` |
+| `Release/ggml-base.dll` | `src-tauri/ggml-base.dll` |
+| `Release/ggml-cpu.dll` | `src-tauri/ggml-cpu.dll` |
+| `Release/whisper.dll` | `src-tauri/whisper.dll` |
+| `Release/SDL2.dll` | `src-tauri/SDL2.dll` |
 
-> The `whisper-cli.exe` rename is required by Tauri's [sidecar naming convention](https://tauri.app/develop/sidecar/) — it must include the target triple suffix.
+**macOS (Apple Silicon):**
 
-**4. Your `src-tauri/binaries/` folder should look like this:**
-
-```
-src-tauri/binaries/
-  whisper-cli-x86_64-pc-windows-msvc.exe   ← renamed from whisper-cli.exe
-  ggml.dll
-  ggml-base.dll
-  ggml-cpu.dll
-  whisper.dll
-  SDL2.dll
-  .gitkeep
+```bash
+git clone --depth 1 --branch v1.7.1 https://github.com/ggerganov/whisper.cpp
+cd whisper.cpp && cmake -B build -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_EXAMPLES=ON
+cmake --build build --target whisper-cli -j$(sysctl -n hw.logicalcpu)
+cp build/bin/whisper-cli ../src-tauri/binaries/whisper-cli-aarch64-apple-darwin
 ```
 
-These files are excluded from version control (`.gitignore`). Every contributor needs to place them manually or run the bootstrap script.
+**macOS (Intel):** same steps, use target name `whisper-cli-x86_64-apple-darwin`.
+
+**Linux:**
+
+```bash
+git clone --depth 1 --branch v1.7.1 https://github.com/ggerganov/whisper.cpp
+cd whisper.cpp && cmake -B build -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_EXAMPLES=ON
+cmake --build build --target whisper-cli -j$(nproc)
+cp build/bin/whisper-cli ../src-tauri/binaries/whisper-cli-x86_64-unknown-linux-gnu
+```
+
+> All binary files are excluded from version control (`.gitignore`). Every contributor must provide them manually or run the bootstrap script.
+
+### Platform-specific notes
+
+**macOS — Auto-insert (paste):**
+`LocalVoice.app` must be granted Accessibility permission:
+System Settings → Privacy & Security → Accessibility → enable LocalVoice.
+
+**macOS — Autostart:**
+The autostart toggle writes a launchd plist to `~/Library/LaunchAgents/com.localvoice.app.plist`.
+
+**Linux — Auto-insert (paste):**
+Install the tool matching your display server:
+- X11: `sudo apt-get install xdotool`
+- Wayland: `sudo apt-get install wtype`
+
+**Linux — Tray icon:**
+Requires `libayatana-appindicator3` or `libappindicator3`. Install via:
+```bash
+sudo apt-get install libayatana-appindicator3-dev
+```
+
+**Linux — Autostart:**
+The autostart toggle writes an XDG `.desktop` file to `~/.config/autostart/localvoice.desktop`.
 
 ---
 

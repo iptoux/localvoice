@@ -3,13 +3,20 @@ name: Release
 # ─────────────────────────────────────────────────────────────────────────────
 # Pipeline overview
 #
-#   build  →  sign (SignPath)  →  release
+#   build-windows  →  sign (SignPath)  →  release
+#   build-macos    ──────────────────────────────┘
+#   build-linux    ──────────────────────────────┘
 #
-# 1. build   – compiles the Tauri app and uploads unsigned .msi / .exe to
-#              GitHub Actions artifact storage (no code signing here).
-# 2. sign    – submits the unsigned artifact to SignPath for Authenticode
-#              signing; waits for approval + completion; re-uploads the result.
-# 3. release – creates a draft GitHub Release with the signed installers.
+# 1. build-windows – compiles the Tauri app for Windows and uploads unsigned
+#                    .msi / .exe to GitHub Actions artifact storage.
+# 2. sign          – submits Windows installers to SignPath for Authenticode
+#                    signing; waits for approval + completion.
+# 3. build-macos   – compiles for macOS (Apple Silicon), produces .dmg/.app.
+#                    Whisper.cpp is built from source via cmake.
+# 4. build-linux   – compiles for Linux x86_64, produces .deb / .AppImage.
+#                    Whisper.cpp is built from source via cmake.
+# 5. release       – creates a draft GitHub Release with all signed/unsigned
+#                    artifacts attached.
 #
 # Required repository secrets
 #   SIGNPATH_API_TOKEN       – CI user token from your SignPath organisation
@@ -17,7 +24,7 @@ name: Release
 #
 # Required SignPath configuration
 #   project-slug             : localvoice
-#   signing-policy-slug      : release-signing   (adjust to your policy name)
+#   signing-policy-slug      : release-signing
 #   artifact-configuration-slug: windows-installers
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -37,11 +44,11 @@ permissions:
   id-token: write   # required for SignPath trusted-build OIDC attestation
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Job 1 – Build (unsigned)
+# Job 1 – Build Windows (unsigned)
 # ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  build:
-    name: Build (unsigned)
+  build-windows:
+    name: Build Windows (unsigned)
     runs-on: windows-latest
     outputs:
       tag: ${{ steps.resolve-tag.outputs.tag }}
@@ -85,21 +92,47 @@ jobs:
         run: pnpm install
 
       # ── whisper.cpp binaries ──────────────────────────────────────────────
-      # Always fetches the latest whisper.cpp release; result is cached by
-      # OS + version tag so repeated runs are instant.
-      - name: Setup whisper.cpp sidecar
-        uses: ./.github/actions/setup-whisper
+      - name: Download whisper.cpp binaries (Windows)
+        shell: pwsh
+        run: |
+          $url  = "https://github.com/ggerganov/whisper.cpp/releases/download/v1.7.1/whisper-bin-win-x64.zip"
+          $dest = "src-tauri\binaries"
+          $zip  = "$env:TEMP\whisper-bin.zip"
 
-      # ── Tauri build (no Authenticode signing — SignPath handles that) ──────
-      - name: Build Tauri app
+          Write-Host "Downloading whisper.cpp binaries..."
+          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+
+          Write-Host "Extracting..."
+          Expand-Archive -Path $zip -DestinationPath $dest -Force
+          Remove-Item $zip -Force
+
+          # Tauri sidecar naming: must include the target triple.
+          $src = "$dest\Release\whisper-cli.exe"
+          $tgt = "$dest\whisper-cli-x86_64-pc-windows-msvc.exe"
+          if (Test-Path $src) {
+            Move-Item $src $tgt -Force
+          }
+
+          # Copy required DLLs to src-tauri/ (tauri.windows.conf.json bundles them).
+          $dlls = @("ggml.dll","ggml-base.dll","ggml-cpu.dll","whisper.dll","SDL2.dll")
+          foreach ($dll in $dlls) {
+            $s = "$dest\Release\$dll"
+            if (Test-Path $s) {
+              Copy-Item $s "src-tauri\$dll" -Force
+              Write-Host "  Copied $dll"
+            } else {
+              Write-Warning "  $dll not found in archive"
+            }
+          }
+
+          Write-Host "Done."
+
+      - name: Build Tauri app (Windows)
         shell: bash
         run: pnpm tauri build
         env:
-          # Do NOT set TAURI_SIGNING_PRIVATE_KEY here; updater signing is a
-          # separate concern from Authenticode and is configured elsewhere.
           TAURI_SIGNING_PRIVATE_KEY: ""
 
-      # ── Collect .msi and NSIS .exe into a flat staging directory ──────────
       - name: Collect unsigned installers
         shell: pwsh
         run: |
@@ -122,25 +155,23 @@ jobs:
             exit 1
           }
 
-      - name: Upload unsigned installers
+      - name: Upload unsigned Windows installers
         id: upload
         uses: actions/upload-artifact@v4
         with:
           name: unsigned-installers
           path: dist/unsigned/
-          retention-days: 1   # short TTL — only needed until SignPath pulls them
+          retention-days: 1
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Job 2 – Sign with SignPath
+# Job 2 – Sign Windows installers with SignPath
 # ─────────────────────────────────────────────────────────────────────────────
   sign:
     name: Sign (SignPath)
-    needs: build
+    needs: build-windows
     runs-on: ubuntu-latest
 
     steps:
-      # SignPath pulls the artifact directly from GitHub Actions using the
-      # artifact ID; no manual download step is needed before submission.
       - name: Submit signing request
         id: signpath
         uses: SignPath/github-action-submit-signing-request@v1.1
@@ -150,7 +181,7 @@ jobs:
           project-slug:                localvoice
           signing-policy-slug:         release-signing
           artifact-configuration-slug: windows-installers
-          github-artifact-id:          ${{ needs.build.outputs.unsigned-artifact-id }}
+          github-artifact-id:          ${{ needs.build-windows.outputs.unsigned-artifact-id }}
           wait-for-completion:         "true"
           output-artifact-directory:   dist/signed
 
@@ -162,37 +193,248 @@ jobs:
           retention-days: 7
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Job 3 – Publish GitHub Release
+# Job 3 – Build macOS (Apple Silicon + Intel universal)
 # ─────────────────────────────────────────────────────────────────────────────
-  release:
-    name: Publish Release
-    needs: [build, sign]
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+
+    steps:
+      - name: Resolve tag
+        id: resolve-tag
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      # ── Build whisper.cpp from source (macOS) ─────────────────────────────
+      - name: Build whisper.cpp from source (macOS)
+        run: |
+          git clone --depth 1 --branch v1.7.1 https://github.com/ggerganov/whisper.cpp whisper-src
+          cd whisper-src
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DWHISPER_BUILD_TESTS=OFF \
+            -DWHISPER_BUILD_EXAMPLES=ON
+          cmake --build build --config Release --target whisper-cli -j$(sysctl -n hw.logicalcpu)
+          cd ..
+
+          # Place Tauri-named sidecar for arm64.
+          cp whisper-src/build/bin/whisper-cli \
+             src-tauri/binaries/whisper-cli-aarch64-apple-darwin
+          # Also provide x86_64 variant (used when building for Intel target).
+          cp whisper-src/build/bin/whisper-cli \
+             src-tauri/binaries/whisper-cli-x86_64-apple-darwin
+          chmod +x src-tauri/binaries/whisper-cli-aarch64-apple-darwin
+          chmod +x src-tauri/binaries/whisper-cli-x86_64-apple-darwin
+
+      - name: Build Tauri app (macOS arm64)
+        run: pnpm tauri build --target aarch64-apple-darwin
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ""
+
+      - name: Collect macOS artifacts
+        run: |
+          mkdir -p dist/macos
+          find src-tauri/target/aarch64-apple-darwin/release/bundle \
+            \( -name "*.dmg" -o -name "*.app.tar.gz" \) \
+            -exec cp {} dist/macos/ \;
+
+          if [ -z "$(ls -A dist/macos)" ]; then
+            echo "No macOS artifacts found!" && exit 1
+          fi
+          ls -lh dist/macos/
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-artifacts
+          path: dist/macos/
+          retention-days: 7
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 4 – Build Linux (x86_64)
+# ─────────────────────────────────────────────────────────────────────────────
+  build-linux:
+    name: Build Linux
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download signed installers
+      - name: Resolve tag
+        id: resolve-tag
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libasound2-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev \
+            cmake \
+            build-essential
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      # ── Build whisper.cpp from source (Linux) ─────────────────────────────
+      - name: Build whisper.cpp from source (Linux)
+        run: |
+          git clone --depth 1 --branch v1.7.1 https://github.com/ggerganov/whisper.cpp whisper-src
+          cd whisper-src
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DWHISPER_BUILD_TESTS=OFF \
+            -DWHISPER_BUILD_EXAMPLES=ON
+          cmake --build build --config Release --target whisper-cli -j$(nproc)
+          cd ..
+
+          # Place Tauri-named sidecar.
+          cp whisper-src/build/bin/whisper-cli \
+             src-tauri/binaries/whisper-cli-x86_64-unknown-linux-gnu
+          chmod +x src-tauri/binaries/whisper-cli-x86_64-unknown-linux-gnu
+
+      - name: Build Tauri app (Linux)
+        run: pnpm tauri build
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ""
+
+      - name: Collect Linux artifacts
+        run: |
+          mkdir -p dist/linux
+          find src-tauri/target/release/bundle \
+            \( -name "*.deb" -o -name "*.AppImage" -o -name "*.rpm" \) \
+            -exec cp {} dist/linux/ \;
+
+          if [ -z "$(ls -A dist/linux)" ]; then
+            echo "No Linux artifacts found!" && exit 1
+          fi
+          ls -lh dist/linux/
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-artifacts
+          path: dist/linux/
+          retention-days: 7
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 5 – Publish GitHub Release (all platforms)
+# ─────────────────────────────────────────────────────────────────────────────
+  release:
+    name: Publish Release
+    needs: [build-windows, sign, build-macos, build-linux]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download signed Windows installers
         uses: actions/download-artifact@v4
         with:
           name: signed-installers
           path: dist/signed
 
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-artifacts
+          path: dist/macos
+
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-artifacts
+          path: dist/linux
+
       - name: Create GitHub Release (draft)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name:   ${{ needs.build.outputs.tag }}
-          name:       "LocalVoice ${{ needs.build.outputs.tag }}"
+          tag_name:   ${{ needs.build-windows.outputs.tag }}
+          name:       "LocalVoice ${{ needs.build-windows.outputs.tag }}"
           draft:      true
           prerelease: false
-          files:      dist/signed/**
+          files: |
+            dist/signed/**
+            dist/macos/**
+            dist/linux/**
           body: |
-            ## LocalVoice ${{ needs.build.outputs.tag }}
+            ## LocalVoice ${{ needs.build-windows.outputs.tag }}
 
-            ### Installation
-            Download the `.msi` installer or the `-setup.exe` NSIS installer below.
-            All binaries are Authenticode-signed via [SignPath](https://signpath.io).
+            ### Downloads
+
+            | Platform | File |
+            |----------|------|
+            | Windows (MSI) | `LocalVoice_*.msi` |
+            | Windows (NSIS) | `LocalVoice_*-setup.exe` |
+            | macOS (Apple Silicon) | `LocalVoice_*.dmg` |
+            | Linux (Debian/Ubuntu) | `local-voice_*.deb` |
+            | Linux (AppImage) | `LocalVoice_*.AppImage` |
+
+            Windows binaries are Authenticode-signed via [SignPath](https://signpath.io).
+            macOS and Linux builds are unsigned — see the [security note](https://github.com/${{ github.repository }}#installation) in the README.
 
             > **Note:** Whisper models are not bundled — download them from the
             > Models page inside the app after installation.
 
             ### What's new
-            See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ needs.build.outputs.tag }}) for details.
+            See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ needs.build-windows.outputs.tag }}) for details.

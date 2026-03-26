@@ -22,6 +22,7 @@ Technical reference for contributors and maintainers.
 | [ms14-reprocess-pipeline.md](ms14-reprocess-pipeline.md) | MS-14 Session Reprocessing & Configurable Post-Processing | done |
 | MS-15 | [Stronger Dashboard & Confidence Viz](ms15-dashboard-confidence.md) | `done` |
 | [ms17-tests-ci-perf.md](ms17-tests-ci-perf.md) | MS-17 Test Suite, CI/CD & Performance | done |
+| [ms18-cross-platform.md](ms18-cross-platform.md) | MS-18 macOS & Linux Support | done |
 
 ## Reference
 
