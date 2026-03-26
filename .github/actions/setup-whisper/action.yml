@@ -1,0 +1,129 @@
+name: 'Setup whisper.cpp'
+description: >
+  Fetches the latest whisper.cpp release and places the Tauri sidecar binary
+  (and Windows DLLs) into src-tauri/. Caches the result by OS + version tag
+  so subsequent runs skip the download/build entirely.
+
+outputs:
+  version:
+    description: 'The whisper.cpp version that was set up (e.g. v1.8.4)'
+    value: ${{ steps.tag.outputs.value }}
+
+runs:
+  using: composite
+  steps:
+    # ------------------------------------------------------------------
+    # 1. Resolve the latest whisper.cpp release tag without hitting the
+    #    JSON API (no auth needed, no rate-limit risk).
+    # ------------------------------------------------------------------
+    - name: Resolve latest whisper.cpp tag
+      id: tag
+      shell: bash
+      run: |
+        TAG=$(curl -fsSI "https://github.com/ggml-org/whisper.cpp/releases/latest" \
+          | grep -i "^location:" \
+          | sed 's|.*releases/tag/||' \
+          | tr -d '[:space:]')
+        if [ -z "$TAG" ]; then
+          echo "::error::Could not resolve latest whisper.cpp tag"
+          exit 1
+        fi
+        echo "value=$TAG" >> "$GITHUB_OUTPUT"
+        echo "Latest whisper.cpp: $TAG"
+
+    # ------------------------------------------------------------------
+    # 2. Cache: key = OS + version tag.
+    #    Paths cover the sidecar binary AND the Windows runtime DLLs.
+    # ------------------------------------------------------------------
+    - name: Restore cached whisper.cpp binaries
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          src-tauri/binaries/whisper-cli-*
+          src-tauri/ggml.dll
+          src-tauri/ggml-base.dll
+          src-tauri/ggml-cpu.dll
+          src-tauri/whisper.dll
+          src-tauri/SDL2.dll
+        key: whisper-${{ runner.os }}-${{ steps.tag.outputs.value }}
+
+    # ------------------------------------------------------------------
+    # 3a. Windows — download the pre-built ZIP from GitHub releases.
+    # ------------------------------------------------------------------
+    - name: Download whisper.cpp binaries (Windows)
+      if: runner.os == 'Windows' && steps.cache.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        $tag  = "${{ steps.tag.outputs.value }}"
+        $dest = "src-tauri\binaries"
+        $ext  = "$env:TEMP\whisper-ext"
+        $zip  = "$env:TEMP\whisper-bin.zip"
+
+        New-Item -ItemType Directory -Force -Path $dest | Out-Null
+
+        $url = "https://github.com/ggml-org/whisper.cpp/releases/download/$tag/whisper-bin-win-x64.zip"
+        Write-Host "Downloading $url"
+        Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+        Expand-Archive -Path $zip -DestinationPath $ext -Force
+        Remove-Item $zip -Force
+
+        # Tauri sidecar: binary must carry the target-triple suffix
+        $cli = Get-ChildItem $ext -Recurse -Filter "whisper-cli.exe" | Select-Object -First 1
+        if (-not $cli) { Write-Error "whisper-cli.exe not found in archive"; exit 1 }
+        Move-Item $cli.FullName "$dest\whisper-cli-x86_64-pc-windows-msvc.exe" -Force
+        Write-Host "Placed whisper-cli-x86_64-pc-windows-msvc.exe"
+
+        # Runtime DLLs go next to the Tauri binary (listed as resources)
+        foreach ($dll in @("ggml.dll","ggml-base.dll","ggml-cpu.dll","whisper.dll","SDL2.dll")) {
+          $f = Get-ChildItem $ext -Recurse -Filter $dll | Select-Object -First 1
+          if ($f) {
+            Copy-Item $f.FullName "src-tauri\$dll" -Force
+            Write-Host "  Copied $dll"
+          } else {
+            Write-Warning "  $dll not found in archive — skipping"
+          }
+        }
+
+        Remove-Item $ext -Recurse -Force
+
+    # ------------------------------------------------------------------
+    # 3b. Linux / macOS — build from source (no pre-built binaries are
+    #     distributed for these platforms).  cmake is pre-installed on
+    #     all GitHub Actions runners.
+    # ------------------------------------------------------------------
+    - name: Build whisper.cpp from source (Linux / macOS)
+      if: runner.os != 'Windows' && steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        TAG="${{ steps.tag.outputs.value }}"
+        ARCH=$(uname -m)
+
+        if [ "${{ runner.os }}" = "Linux" ]; then
+          TRIPLE="${ARCH}-unknown-linux-gnu"
+        else
+          TRIPLE="${ARCH}-apple-darwin"
+        fi
+
+        mkdir -p src-tauri/binaries
+
+        echo "Building whisper.cpp $TAG → whisper-cli-${TRIPLE}"
+        git clone https://github.com/ggml-org/whisper.cpp \
+          --branch "$TAG" --depth 1 /tmp/whisper-src
+
+        cmake -S /tmp/whisper-src -B /tmp/whisper-build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DWHISPER_BUILD_TESTS=OFF \
+          -DWHISPER_BUILD_EXAMPLES=ON \
+          -DBUILD_SHARED_LIBS=OFF
+
+        cmake --build /tmp/whisper-build \
+          --config Release \
+          -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu)"
+
+        cp /tmp/whisper-build/bin/whisper-cli \
+           src-tauri/binaries/whisper-cli-${TRIPLE}
+        chmod +x src-tauri/binaries/whisper-cli-${TRIPLE}
+
+        echo "Done: $(ls -lh src-tauri/binaries/whisper-cli-${TRIPLE})"
+        rm -rf /tmp/whisper-src /tmp/whisper-build
