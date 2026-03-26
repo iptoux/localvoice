@@ -68,7 +68,7 @@ runs:
         $api  = "https://api.github.com/repos/ggml-org/whisper.cpp/releases/tags/$tag"
         $rel  = (Invoke-WebRequest -Uri $api -UseBasicParsing).Content | ConvertFrom-Json
         $asset = $rel.assets |
-          Where-Object { $_.name -match "win.*x64.*\.zip$|whisper.*windows.*x64.*\.zip$" } |
+          Where-Object { $_.name -match "^whisper-bin(-win)?-x64\.zip$" } |
           Select-Object -First 1
 
         if (-not $asset) {
