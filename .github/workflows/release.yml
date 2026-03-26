@@ -92,40 +92,8 @@ jobs:
         run: pnpm install
 
       # ── whisper.cpp binaries ──────────────────────────────────────────────
-      - name: Download whisper.cpp binaries (Windows)
-        shell: pwsh
-        run: |
-          $url  = "https://github.com/ggerganov/whisper.cpp/releases/download/v1.7.1/whisper-bin-win-x64.zip"
-          $dest = "src-tauri\binaries"
-          $zip  = "$env:TEMP\whisper-bin.zip"
-
-          Write-Host "Downloading whisper.cpp binaries..."
-          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
-
-          Write-Host "Extracting..."
-          Expand-Archive -Path $zip -DestinationPath $dest -Force
-          Remove-Item $zip -Force
-
-          # Tauri sidecar naming: must include the target triple.
-          $src = "$dest\Release\whisper-cli.exe"
-          $tgt = "$dest\whisper-cli-x86_64-pc-windows-msvc.exe"
-          if (Test-Path $src) {
-            Move-Item $src $tgt -Force
-          }
-
-          # Copy required DLLs to src-tauri/ (tauri.windows.conf.json bundles them).
-          $dlls = @("ggml.dll","ggml-base.dll","ggml-cpu.dll","whisper.dll","SDL2.dll")
-          foreach ($dll in $dlls) {
-            $s = "$dest\Release\$dll"
-            if (Test-Path $s) {
-              Copy-Item $s "src-tauri\$dll" -Force
-              Write-Host "  Copied $dll"
-            } else {
-              Write-Warning "  $dll not found in archive"
-            }
-          }
-
-          Write-Host "Done."
+      - name: Setup whisper.cpp sidecar
+        uses: ./.github/actions/setup-whisper
 
       - name: Build Tauri app (Windows)
         shell: bash
@@ -236,26 +204,9 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
 
-      # ── Build whisper.cpp from source (macOS) ─────────────────────────────
-      - name: Build whisper.cpp from source (macOS)
-        run: |
-          git clone --depth 1 --branch v1.7.1 https://github.com/ggerganov/whisper.cpp whisper-src
-          cd whisper-src
-          cmake -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DWHISPER_BUILD_TESTS=OFF \
-            -DWHISPER_BUILD_EXAMPLES=ON
-          cmake --build build --config Release --target whisper-cli -j$(sysctl -n hw.logicalcpu)
-          cd ..
-
-          # Place Tauri-named sidecar for arm64.
-          cp whisper-src/build/bin/whisper-cli \
-             src-tauri/binaries/whisper-cli-aarch64-apple-darwin
-          # Also provide x86_64 variant (used when building for Intel target).
-          cp whisper-src/build/bin/whisper-cli \
-             src-tauri/binaries/whisper-cli-x86_64-apple-darwin
-          chmod +x src-tauri/binaries/whisper-cli-aarch64-apple-darwin
-          chmod +x src-tauri/binaries/whisper-cli-x86_64-apple-darwin
+      # ── whisper.cpp binaries ──────────────────────────────────────────────
+      - name: Setup whisper.cpp sidecar
+        uses: ./.github/actions/setup-whisper
 
       - name: Build Tauri app (macOS arm64)
         run: pnpm tauri build --target aarch64-apple-darwin
@@ -338,22 +289,9 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
 
-      # ── Build whisper.cpp from source (Linux) ─────────────────────────────
-      - name: Build whisper.cpp from source (Linux)
-        run: |
-          git clone --depth 1 --branch v1.7.1 https://github.com/ggerganov/whisper.cpp whisper-src
-          cd whisper-src
-          cmake -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DWHISPER_BUILD_TESTS=OFF \
-            -DWHISPER_BUILD_EXAMPLES=ON
-          cmake --build build --config Release --target whisper-cli -j$(nproc)
-          cd ..
-
-          # Place Tauri-named sidecar.
-          cp whisper-src/build/bin/whisper-cli \
-             src-tauri/binaries/whisper-cli-x86_64-unknown-linux-gnu
-          chmod +x src-tauri/binaries/whisper-cli-x86_64-unknown-linux-gnu
+      # ── whisper.cpp binaries ──────────────────────────────────────────────
+      - name: Setup whisper.cpp sidecar
+        uses: ./.github/actions/setup-whisper
 
       - name: Build Tauri app (Linux)
         run: pnpm tauri build

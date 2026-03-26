@@ -13,8 +13,8 @@ runs:
   using: composite
   steps:
     # ------------------------------------------------------------------
-    # 1. Resolve the latest whisper.cpp release tag without hitting the
-    #    JSON API (no auth needed, no rate-limit risk).
+    # 1. Resolve the latest whisper.cpp release tag via redirect.
+    #    No JSON API call → no auth needed, no rate-limit risk.
     # ------------------------------------------------------------------
     - name: Resolve latest whisper.cpp tag
       id: tag
@@ -33,7 +33,7 @@ runs:
 
     # ------------------------------------------------------------------
     # 2. Cache: key = OS + version tag.
-    #    Paths cover the sidecar binary AND the Windows runtime DLLs.
+    #    Wildcard covers all triple-suffixed binaries + Windows DLLs.
     # ------------------------------------------------------------------
     - name: Restore cached whisper.cpp binaries
       id: cache
@@ -49,7 +49,9 @@ runs:
         key: whisper-${{ runner.os }}-${{ steps.tag.outputs.value }}
 
     # ------------------------------------------------------------------
-    # 3a. Windows — download the pre-built ZIP from GitHub releases.
+    # 3a. Windows — find and download the pre-built ZIP via the GitHub
+    #     Releases API so the asset name is resolved dynamically (it can
+    #     change between whisper.cpp versions).
     # ------------------------------------------------------------------
     - name: Download whisper.cpp binaries (Windows)
       if: runner.os == 'Windows' && steps.cache.outputs.cache-hit != 'true'
@@ -62,19 +64,31 @@ runs:
 
         New-Item -ItemType Directory -Force -Path $dest | Out-Null
 
-        $url = "https://github.com/ggml-org/whisper.cpp/releases/download/$tag/whisper-bin-win-x64.zip"
-        Write-Host "Downloading $url"
-        Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+        # Query the release to get the actual asset download URL.
+        $api  = "https://api.github.com/repos/ggml-org/whisper.cpp/releases/tags/$tag"
+        $rel  = (Invoke-WebRequest -Uri $api -UseBasicParsing).Content | ConvertFrom-Json
+        $asset = $rel.assets |
+          Where-Object { $_.name -match "win.*x64.*\.zip$|whisper.*windows.*x64.*\.zip$" } |
+          Select-Object -First 1
+
+        if (-not $asset) {
+          Write-Host "Available assets: $($rel.assets.name -join ', ')"
+          Write-Error "No Windows x64 ZIP asset found in release $tag"
+          exit 1
+        }
+
+        Write-Host "Downloading $($asset.browser_download_url)"
+        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zip -UseBasicParsing
         Expand-Archive -Path $zip -DestinationPath $ext -Force
         Remove-Item $zip -Force
 
-        # Tauri sidecar: binary must carry the target-triple suffix
+        # Tauri sidecar: binary must carry the target-triple suffix.
         $cli = Get-ChildItem $ext -Recurse -Filter "whisper-cli.exe" | Select-Object -First 1
         if (-not $cli) { Write-Error "whisper-cli.exe not found in archive"; exit 1 }
         Move-Item $cli.FullName "$dest\whisper-cli-x86_64-pc-windows-msvc.exe" -Force
         Write-Host "Placed whisper-cli-x86_64-pc-windows-msvc.exe"
 
-        # Runtime DLLs go next to the Tauri binary (listed as resources)
+        # Runtime DLLs go next to the Tauri binary (listed as resources).
         foreach ($dll in @("ggml.dll","ggml-base.dll","ggml-cpu.dll","whisper.dll","SDL2.dll")) {
           $f = Get-ChildItem $ext -Recurse -Filter $dll | Select-Object -First 1
           if ($f) {
@@ -89,8 +103,13 @@ runs:
 
     # ------------------------------------------------------------------
     # 3b. Linux / macOS — build from source (no pre-built binaries are
-    #     distributed for these platforms).  cmake is pre-installed on
+    #     distributed for these platforms). cmake is pre-installed on
     #     all GitHub Actions runners.
+    #
+    #     Note: Apple reports uname -m as "arm64", but Rust/Tauri triples
+    #     use "aarch64" — we normalise explicitly.
+    #     On macOS we also create the opposite-arch copy so the binary is
+    #     found regardless of which --target the Tauri build uses.
     # ------------------------------------------------------------------
     - name: Build whisper.cpp from source (Linux / macOS)
       if: runner.os != 'Windows' && steps.cache.outputs.cache-hit != 'true'
@@ -98,6 +117,7 @@ runs:
       run: |
         TAG="${{ steps.tag.outputs.value }}"
         ARCH=$(uname -m)
+        [ "$ARCH" = "arm64" ] && ARCH="aarch64"   # Apple alias → Rust/Tauri form
 
         if [ "${{ runner.os }}" = "Linux" ]; then
           TRIPLE="${ARCH}-unknown-linux-gnu"
@@ -125,5 +145,16 @@ runs:
            src-tauri/binaries/whisper-cli-${TRIPLE}
         chmod +x src-tauri/binaries/whisper-cli-${TRIPLE}
 
-        echo "Done: $(ls -lh src-tauri/binaries/whisper-cli-${TRIPLE})"
+        # macOS only: provide both arm64 and x86_64 named copies so Tauri
+        # finds the binary regardless of which --target is passed.
+        if [ "${{ runner.os }}" = "macOS" ]; then
+          for alt in aarch64-apple-darwin x86_64-apple-darwin; do
+            tgt="src-tauri/binaries/whisper-cli-${alt}"
+            [ ! -f "$tgt" ] && cp "src-tauri/binaries/whisper-cli-${TRIPLE}" "$tgt"
+            chmod +x "$tgt"
+          done
+        fi
+
+        echo "Placed binaries:"
+        ls -lh src-tauri/binaries/whisper-cli-*
         rm -rf /tmp/whisper-src /tmp/whisper-build
