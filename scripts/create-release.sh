@@ -256,8 +256,14 @@ fi
 step "Building Tauri app (this takes a few minutes)"
 cd "$ROOT_DIR"
 # APPIMAGE_EXTRACT_AND_RUN: linuxdeploy is itself an AppImage; without FUSE
-# (common on many desktops/CI) it refuses to run. Extract-and-run bypasses that.
-[[ "$PLATFORM" = "linux" ]] && export APPIMAGE_EXTRACT_AND_RUN=1
+# it refuses to run. Extract-and-run bypasses that.
+# NO_STRIP: the strip binary bundled inside linuxdeploy is outdated and fails on
+# modern ELF libraries that use .relr.dyn sections (SHT_RELR = 0x13), which are
+# standard on Arch Linux and other cutting-edge distros.
+if [[ "$PLATFORM" = "linux" ]]; then
+    export APPIMAGE_EXTRACT_AND_RUN=1
+    export NO_STRIP=1
+fi
 run pnpm tauri build
 ok "Build complete"
 
