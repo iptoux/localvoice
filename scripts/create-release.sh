@@ -7,8 +7,10 @@
 # Options:
 #   --version <x.y.z>       Explicit version (default: read from package.json)
 #   --bump major|minor|patch Bump version before releasing
-#   --draft                  Publish as draft
-#   --prerelease             Mark as pre-release
+#   --append                 Upload artifacts to an existing release/tag (no new tag)
+#   --draft                  Publish as draft (ignored with --append)
+#   --prerelease             Mark as pre-release (ignored with --append)
+#   --skip-whisper           Skip whisper.cpp build (use existing binaries)
 #   --dry-run                Print actions without executing them
 #   -h, --help               Show this help
 #
@@ -16,6 +18,7 @@
 #   ./scripts/create-release.sh                    # release current version
 #   ./scripts/create-release.sh --bump minor       # bump minor, build, release
 #   ./scripts/create-release.sh --version 1.0.0    # release explicit version
+#   ./scripts/create-release.sh --append           # add artifacts to existing release
 #   ./scripts/create-release.sh --dry-run          # preview only
 
 set -euo pipefail
@@ -28,6 +31,8 @@ VERSION=""
 BUMP=""
 DRAFT=false
 PRERELEASE=false
+APPEND=false
+SKIP_WHISPER=false
 DRY_RUN=false
 
 # ── Colours ───────────────────────────────────────────────────────────────────
@@ -48,10 +53,12 @@ run() {
 # ── Argument parsing ──────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --version)   VERSION="$2"; shift 2 ;;
-        --bump)      BUMP="$2";    shift 2 ;;
-        --draft)     DRAFT=true;   shift ;;
+        --version)    VERSION="$2"; shift 2 ;;
+        --bump)       BUMP="$2";    shift 2 ;;
+        --append)     APPEND=true;  shift ;;
+        --draft)      DRAFT=true;   shift ;;
         --prerelease) PRERELEASE=true; shift ;;
+        --skip-whisper) SKIP_WHISPER=true; shift ;;
         --dry-run|-n) DRY_RUN=true; shift ;;
         -h|--help)
             sed -n '2,/^$/p' "$0" | grep '^#' | sed 's/^# \?//'
@@ -60,10 +67,24 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# ── Detect platform ───────────────────────────────────────────────────────────
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+case "$OS" in
+    Linux)   PLATFORM="linux" ;;
+    Darwin)  PLATFORM="macos" ;;
+    MINGW*|MSYS*|CYGWIN*) PLATFORM="windows" ;;
+    *) fail "Unsupported platform: $OS" ;;
+esac
+info "Detected platform: $PLATFORM ($ARCH)"
+
 # ── Pre-flight ────────────────────────────────────────────────────────────────
 step "Checking prerequisites"
 
-for tool in git pnpm gh jq; do
+REQUIRED_TOOLS=(git pnpm gh jq)
+[[ "$PLATFORM" != "windows" ]] && REQUIRED_TOOLS+=(cmake)
+
+for tool in "${REQUIRED_TOOLS[@]}"; do
     command -v "$tool" &>/dev/null || fail "$tool not found in PATH."
     ok "$tool found"
 done
@@ -103,13 +124,23 @@ fi
 
 TAG="v$RELEASE_VERSION"
 
-# Check tag doesn't already exist remotely
+# ── Tag / release existence check ─────────────────────────────────────────────
+TAG_EXISTS_REMOTE=false
 if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
-    fail "Tag $TAG already exists on remote. Use a different version."
+    TAG_EXISTS_REMOTE=true
+fi
+
+if $APPEND; then
+    # In append mode the tag/release must already exist.
+    $TAG_EXISTS_REMOTE || fail "Tag $TAG does not exist on remote. Cannot append. Create the release first."
+    info "Append mode: will upload artifacts to existing release $TAG"
+else
+    # Normal mode: fail if tag already exists to prevent accidental overwrite.
+    $TAG_EXISTS_REMOTE && fail "Tag $TAG already exists on remote. Use --append to add artifacts, or choose a different version."
 fi
 
 # ── Bump version files if needed ──────────────────────────────────────────────
-if [[ "$RELEASE_VERSION" != "$CURRENT_VERSION" ]]; then
+if [[ "$RELEASE_VERSION" != "$CURRENT_VERSION" ]] && ! $APPEND; then
     step "Updating version files to $RELEASE_VERSION"
 
     set_version() {
@@ -138,11 +169,88 @@ if [[ "$RELEASE_VERSION" != "$CURRENT_VERSION" ]]; then
     fi
 fi
 
-# ── Create and push tag ───────────────────────────────────────────────────────
-step "Creating tag $TAG"
-run git tag -a "$TAG" -m "Release $TAG"
-run git push origin "$TAG"
-ok "Tag $TAG pushed"
+# ── Create and push tag (normal mode only) ────────────────────────────────────
+if ! $APPEND; then
+    step "Creating tag $TAG"
+    run git tag -a "$TAG" -m "Release $TAG"
+    run git push origin "$TAG"
+    ok "Tag $TAG pushed"
+fi
+
+# ── Build whisper.cpp sidecar ─────────────────────────────────────────────────
+if [[ "$PLATFORM" != "windows" ]]; then
+    step "Setting up whisper.cpp sidecar"
+
+    # Normalise arch for Rust/Tauri triple (Apple reports "arm64").
+    RUST_ARCH="$ARCH"
+    [[ "$RUST_ARCH" = "arm64" ]] && RUST_ARCH="aarch64"
+
+    if [[ "$PLATFORM" = "linux" ]]; then
+        WHISPER_TRIPLE="${RUST_ARCH}-unknown-linux-gnu"
+    else
+        WHISPER_TRIPLE="${RUST_ARCH}-apple-darwin"
+    fi
+
+    WHISPER_BIN="$ROOT_DIR/src-tauri/binaries/whisper-cli-${WHISPER_TRIPLE}"
+
+    if $SKIP_WHISPER && [[ -f "$WHISPER_BIN" ]]; then
+        ok "Skipping whisper.cpp build — binary already present: $(basename "$WHISPER_BIN")"
+    else
+        if $SKIP_WHISPER; then
+            info "--skip-whisper set but binary not found; building anyway"
+        fi
+
+        # Resolve latest whisper.cpp tag via redirect (no API auth needed).
+        info "Resolving latest whisper.cpp release tag..."
+        WHISPER_TAG=$(curl -fsSI "https://github.com/ggml-org/whisper.cpp/releases/latest" \
+            | grep -i "^location:" \
+            | sed 's|.*releases/tag/||' \
+            | tr -d '[:space:]')
+        [[ -n "$WHISPER_TAG" ]] || fail "Could not resolve latest whisper.cpp tag"
+        info "Latest whisper.cpp: $WHISPER_TAG"
+
+        if $DRY_RUN; then
+            dry "Would clone whisper.cpp $WHISPER_TAG and build whisper-cli-${WHISPER_TRIPLE}"
+        else
+            mkdir -p "$ROOT_DIR/src-tauri/binaries"
+
+            echo "  Cloning whisper.cpp $WHISPER_TAG (shallow)..."
+            git clone https://github.com/ggml-org/whisper.cpp \
+                --branch "$WHISPER_TAG" --depth 1 /tmp/whisper-src
+
+            cmake -S /tmp/whisper-src -B /tmp/whisper-build \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DWHISPER_BUILD_TESTS=OFF \
+                -DWHISPER_BUILD_EXAMPLES=ON \
+                -DBUILD_SHARED_LIBS=OFF \
+                -Wno-dev
+
+            cmake --build /tmp/whisper-build \
+                --config Release \
+                -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu)"
+
+            cp /tmp/whisper-build/bin/whisper-cli "$WHISPER_BIN"
+            chmod +x "$WHISPER_BIN"
+
+            # macOS: also provide the opposite-arch copy so Tauri finds the
+            # binary regardless of which --target is used.
+            if [[ "$PLATFORM" = "macos" ]]; then
+                for alt in aarch64-apple-darwin x86_64-apple-darwin; do
+                    tgt="$ROOT_DIR/src-tauri/binaries/whisper-cli-${alt}"
+                    [[ ! -f "$tgt" ]] && cp "$WHISPER_BIN" "$tgt"
+                    chmod +x "$tgt"
+                done
+            fi
+
+            rm -rf /tmp/whisper-src /tmp/whisper-build
+            ok "whisper-cli-${WHISPER_TRIPLE} placed"
+        fi
+    fi
+else
+    if ! $SKIP_WHISPER; then
+        info "Windows: whisper.cpp sidecar must be set up manually (use --skip-whisper if already present)"
+    fi
+fi
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 step "Building Tauri app (this takes a few minutes)"
@@ -156,42 +264,95 @@ step "Collecting build artifacts"
 BUNDLE_DIR="$ROOT_DIR/src-tauri/target/release/bundle"
 ARTIFACTS=()
 
-while IFS= read -r -d '' f; do ARTIFACTS+=("$f"); done < <(
-    find "$BUNDLE_DIR" \( -name "*${RELEASE_VERSION}*.msi" -o -name "*${RELEASE_VERSION}*setup.exe" \) -print0 2>/dev/null
-)
+case "$PLATFORM" in
+    linux)
+        while IFS= read -r -d '' f; do ARTIFACTS+=("$f"); done < <(
+            find "$BUNDLE_DIR" \( -name "*.deb" -o -name "*.AppImage" -o -name "*.rpm" \) -print0 2>/dev/null
+        )
+        ;;
+    macos)
+        # macOS cross-target builds land under target/<triple>/release/bundle
+        MACOS_BUNDLE_DIRS=("$BUNDLE_DIR")
+        for triple_dir in "$ROOT_DIR/src-tauri/target/"*-apple-darwin/release/bundle; do
+            [[ -d "$triple_dir" ]] && MACOS_BUNDLE_DIRS+=("$triple_dir")
+        done
+        for bdir in "${MACOS_BUNDLE_DIRS[@]}"; do
+            while IFS= read -r -d '' f; do ARTIFACTS+=("$f"); done < <(
+                find "$bdir" \( -name "*.dmg" -o -name "*.app.tar.gz" \) -print0 2>/dev/null
+            )
+        done
+        ;;
+    windows)
+        while IFS= read -r -d '' f; do ARTIFACTS+=("$f"); done < <(
+            find "$BUNDLE_DIR" \( -name "*.msi" -o -name "*-setup.exe" \) -print0 2>/dev/null
+        )
+        ;;
+esac
 
-[[ ${#ARTIFACTS[@]} -gt 0 ]] || fail "No artifacts found for version $RELEASE_VERSION in $BUNDLE_DIR"
+# Deduplicate (macOS may find the same file via multiple paths).
+SEEN=()
+UNIQUE_ARTIFACTS=()
+for f in "${ARTIFACTS[@]}"; do
+    base="$(basename "$f")"
+    if [[ ! " ${SEEN[*]} " =~ " ${base} " ]]; then
+        SEEN+=("$base")
+        UNIQUE_ARTIFACTS+=("$f")
+    fi
+done
+ARTIFACTS=("${UNIQUE_ARTIFACTS[@]}")
+
+[[ ${#ARTIFACTS[@]} -gt 0 ]] || fail "No artifacts found in $BUNDLE_DIR"
 
 for f in "${ARTIFACTS[@]}"; do
     size=$(du -m "$f" | cut -f1)
     info "$(basename "$f")  (${size} MB)"
 done
 
-# ── Publish GitHub release ────────────────────────────────────────────────────
-step "Publishing GitHub release $TAG"
+# ── Publish or append GitHub release ─────────────────────────────────────────
+if $APPEND; then
+    step "Uploading artifacts to existing release $TAG"
+    if $DRY_RUN; then
+        dry "gh release upload $TAG ${ARTIFACTS[*]}"
+    else
+        gh release upload "$TAG" "${ARTIFACTS[@]}" --clobber
+        ok "Artifacts uploaded to $TAG"
+    fi
+else
+    step "Publishing GitHub release $TAG"
 
-NOTES="## LocalVoice $TAG
+    NOTES="## LocalVoice $TAG
 
-### Installation
-Download the \`.msi\` (Windows Installer) or the \`-setup.exe\` (NSIS installer) below and run it.
+### Downloads
+
+| Platform | File |
+|----------|------|
+| Windows (MSI) | \`LocalVoice_*.msi\` |
+| Windows (NSIS) | \`LocalVoice_*-setup.exe\` |
+| macOS (Apple Silicon) | \`LocalVoice_*.dmg\` |
+| Linux (Debian/Ubuntu) | \`local-voice_*.deb\` |
+| Linux (AppImage) | \`LocalVoice_*.AppImage\` |
 
 > **Note:** Whisper models are not bundled. Download them from the **Models** page inside the app after installation.
 
 ### Changes
 See [commits since last release](https://github.com/iptoux/localvoice/commits/$TAG) for the full changelog."
 
-GH_ARGS=('release' 'create' "$TAG" '--title' "LocalVoice $TAG" '--notes' "$NOTES")
-$DRAFT      && GH_ARGS+=('--draft')
-$PRERELEASE && GH_ARGS+=('--prerelease')
-GH_ARGS+=("${ARTIFACTS[@]}")
+    GH_ARGS=('release' 'create' "$TAG" '--title' "LocalVoice $TAG" '--notes' "$NOTES")
+    $DRAFT      && GH_ARGS+=('--draft')
+    $PRERELEASE && GH_ARGS+=('--prerelease')
+    GH_ARGS+=("${ARTIFACTS[@]}")
 
-run gh "${GH_ARGS[@]}"
+    run gh "${GH_ARGS[@]}"
+fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${MAGENTA}========================================${NC}"
 if $DRY_RUN; then
     echo -e "${YELLOW}  DRY-RUN complete — no changes made.${NC}"
+elif $APPEND; then
+    echo -e "${GREEN}  Artifacts added to release $TAG.${NC}"
+    echo -e "${CYAN}  https://github.com/iptoux/localvoice/releases/tag/$TAG${NC}"
 else
     echo -e "${GREEN}  Release $TAG published successfully!${NC}"
     echo -e "${CYAN}  https://github.com/iptoux/localvoice/releases/tag/$TAG${NC}"
