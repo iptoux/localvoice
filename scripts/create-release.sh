@@ -255,6 +255,9 @@ fi
 # ── Build ─────────────────────────────────────────────────────────────────────
 step "Building Tauri app (this takes a few minutes)"
 cd "$ROOT_DIR"
+# APPIMAGE_EXTRACT_AND_RUN: linuxdeploy is itself an AppImage; without FUSE
+# (common on many desktops/CI) it refuses to run. Extract-and-run bypasses that.
+[[ "$PLATFORM" = "linux" ]] && export APPIMAGE_EXTRACT_AND_RUN=1
 run pnpm tauri build
 ok "Build complete"
 
