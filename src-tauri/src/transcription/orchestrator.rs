@@ -5,7 +5,10 @@ use tauri_plugin_notification::NotificationExt;
 use uuid::Uuid;
 
 use crate::db::models::Session;
-use crate::db::repositories::{ambiguous_terms_repo, dictionary_repo, filler_words_repo, models_repo, sessions_repo, settings_repo};
+use crate::db::repositories::{
+    ambiguous_terms_repo, dictionary_repo, filler_words_repo, models_repo, sessions_repo,
+    settings_repo,
+};
 use crate::dictionary::service as dict_service;
 use crate::errors::CmdResult;
 use crate::os::{clipboard, foreground_window, text_insertion};
@@ -43,13 +46,13 @@ pub fn transcribe(
         Some(p.to_string())
     } else {
         // Try the DB-registered default for this language first.
-        let db_default = models_repo::get_default_path(&state.db, &lang_code)
-            .unwrap_or(None);
+        let db_default = models_repo::get_default_path(&state.db, &lang_code).unwrap_or(None);
         if db_default.is_some() {
             db_default
         } else if lang_code == "auto" {
             // For "auto" language, fall back to any configured default model.
-            models_repo::get_any_default_path(&state.db).unwrap_or(None)
+            models_repo::get_any_default_path(&state.db)
+                .unwrap_or(None)
                 .or_else(|| settings.get("transcription.model_path").cloned())
         } else {
             // Fall back to the legacy settings key.
@@ -70,7 +73,9 @@ pub fn transcribe(
     let wav_path_buf = std::path::PathBuf::from(wav_path);
     let output_prefix = wav_path_buf
         .parent()
-        .unwrap_or(std::path::Path::new(std::env::temp_dir().to_str().unwrap_or(".")))
+        .unwrap_or(std::path::Path::new(
+            std::env::temp_dir().to_str().unwrap_or("."),
+        ))
         .join(format!("localvoice_out_{}", uuid::Uuid::new_v4()));
 
     let start = Instant::now();
@@ -101,15 +106,21 @@ pub fn transcribe(
     let raw_text = parser::segments_to_text(&segments);
 
     // Load active correction rules for the current language.
-    let active_rules = dictionary_repo::list_active_rules(&state.db, Some(&lang_code))
-        .unwrap_or_default();
+    let active_rules =
+        dictionary_repo::list_active_rules(&state.db, Some(&lang_code)).unwrap_or_default();
 
     // Load filler words for the current language from DB.
-    let filler_words = filler_words_repo::list_words_for_language(&state.db, &lang_code)
-        .unwrap_or_default();
+    let filler_words =
+        filler_words_repo::list_words_for_language(&state.db, &lang_code).unwrap_or_default();
 
-    let (cleaned_text, cleaned_segments, fired_rule_ids, removed_fillers) =
-        pipeline::run(&raw_text, segments, &settings, &active_rules, &lang_code, &filler_words);
+    let (cleaned_text, cleaned_segments, fired_rule_ids, removed_fillers) = pipeline::run(
+        &raw_text,
+        segments,
+        &settings,
+        &active_rules,
+        &lang_code,
+        &filler_words,
+    );
 
     // Increment usage counters for rules that fired.
     if !fired_rule_ids.is_empty() {
@@ -168,13 +179,19 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                  or switch the language to Auto-detect."
             );
             log::warn!("{msg}");
-            let _ = app.notification().builder()
+            let _ = app
+                .notification()
+                .builder()
                 .title("LocalVoice — No Model Set")
                 .body(&msg)
                 .show();
-            emit_recording_state(&app, RecordingState::Error, Some(
-                format!("No model for \"{lang_code}\". Go to Settings → Models.")
-            ));
+            emit_recording_state(
+                &app,
+                RecordingState::Error,
+                Some(format!(
+                    "No model for \"{lang_code}\". Go to Settings → Models."
+                )),
+            );
             schedule_idle_reset(app, Duration::from_millis(4000));
             return;
         }
@@ -198,13 +215,19 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                          Please assign a multilingual model in Settings → Models."
                     );
                     log::warn!("{msg}");
-                    let _ = app.notification().builder()
+                    let _ = app
+                        .notification()
+                        .builder()
                         .title("LocalVoice — Wrong Model")
                         .body(&msg)
                         .show();
-                    emit_recording_state(&app, RecordingState::Error, Some(
-                        format!("Model for \"{lang_code}\" is English-only. Check Settings → Models.")
-                    ));
+                    emit_recording_state(
+                        &app,
+                        RecordingState::Error,
+                        Some(format!(
+                            "Model for \"{lang_code}\" is English-only. Check Settings → Models."
+                        )),
+                    );
                     schedule_idle_reset(app, Duration::from_millis(4000));
                     return;
                 }
@@ -326,7 +349,11 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
             {
                 log::error!("Failed to persist session segments: {e}");
             } else {
-                log::info!("Session {} persisted ({} segments)", session.id, result.segments.len());
+                log::info!(
+                    "Session {} persisted ({} segments)",
+                    session.id,
+                    result.segments.len()
+                );
             }
 
             // Log filler word removals for stats tracking.
@@ -382,9 +409,18 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                     word_count,
                     if word_count == 1 { "" } else { "s" },
                     preview,
-                    if result.cleaned_text.len() > 80 { "…" } else { "" }
+                    if result.cleaned_text.len() > 80 {
+                        "…"
+                    } else {
+                        ""
+                    }
                 );
-                let _ = app.notification().builder().title("LocalVoice").body(&body).show();
+                let _ = app
+                    .notification()
+                    .builder()
+                    .title("LocalVoice")
+                    .body(&body)
+                    .show();
             }
 
             if let Err(e) = app.emit("transcription-completed", &result) {
@@ -395,7 +431,11 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                 "Transcription done in {}ms — {} words (output: {} {})",
                 result.duration_ms,
                 result.cleaned_text.split_whitespace().count(),
-                result.output.as_ref().map(|o| o.mode.as_str()).unwrap_or("?"),
+                result
+                    .output
+                    .as_ref()
+                    .map(|o| o.mode.as_str())
+                    .unwrap_or("?"),
                 if result.output.as_ref().map(|o| o.success).unwrap_or(false) {
                     "ok"
                 } else {
@@ -414,8 +454,8 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
 
             // Error notification (opt-out via settings).
             let state = app.state::<AppState>();
-            let settings = crate::db::repositories::settings_repo::get_all(&state.db)
-                .unwrap_or_default();
+            let settings =
+                crate::db::repositories::settings_repo::get_all(&state.db).unwrap_or_default();
             let notify_error = settings
                 .get("notifications.on_error")
                 .map(|v| v == "true")
@@ -490,13 +530,11 @@ fn persist_audio_file(app: &AppHandle, wav_path: &str) -> CmdResult<String> {
         .app_data_dir()
         .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
     let audio_dir = app_dir.join("audio");
-    std::fs::create_dir_all(&audio_dir)
-        .map_err(|e| format!("Failed to create audio dir: {e}"))?;
+    std::fs::create_dir_all(&audio_dir).map_err(|e| format!("Failed to create audio dir: {e}"))?;
 
     let filename = format!("{}.wav", Uuid::new_v4());
     let dest = audio_dir.join(&filename);
-    std::fs::copy(wav_path, &dest)
-        .map_err(|e| format!("Failed to copy audio file: {e}"))?;
+    std::fs::copy(wav_path, &dest).map_err(|e| format!("Failed to copy audio file: {e}"))?;
     // Remove the original temp file after copying.
     let _ = std::fs::remove_file(wav_path);
     Ok(dest.to_string_lossy().into_owned())

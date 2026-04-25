@@ -19,8 +19,7 @@ pub fn open(app: &tauri::AppHandle) -> Result<DbConn, String> {
         .app_data_dir()
         .map_err(|e| format!("Cannot resolve app data dir: {e}"))?;
 
-    std::fs::create_dir_all(&app_dir)
-        .map_err(|e| format!("Cannot create app data dir: {e}"))?;
+    std::fs::create_dir_all(&app_dir).map_err(|e| format!("Cannot create app data dir: {e}"))?;
 
     let db_path = app_dir.join("localvoice.db");
 

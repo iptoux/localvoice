@@ -140,7 +140,10 @@ pub fn set_default_for_language(
     // Keep legacy columns in sync for de/en.
     let now = chrono::Utc::now().to_rfc3339();
     if language == "de" {
-        conn.execute("UPDATE model_installations SET is_default_for_de = 0, updated_at = ?1", params![now])?;
+        conn.execute(
+            "UPDATE model_installations SET is_default_for_de = 0, updated_at = ?1",
+            params![now],
+        )?;
         if !model_key.is_empty() {
             conn.execute(
                 "UPDATE model_installations SET is_default_for_de = 1, updated_at = ?1 WHERE model_key = ?2",
@@ -148,7 +151,10 @@ pub fn set_default_for_language(
             )?;
         }
     } else if language == "en" {
-        conn.execute("UPDATE model_installations SET is_default_for_en = 0, updated_at = ?1", params![now])?;
+        conn.execute(
+            "UPDATE model_installations SET is_default_for_en = 0, updated_at = ?1",
+            params![now],
+        )?;
         if !model_key.is_empty() {
             conn.execute(
                 "UPDATE model_installations SET is_default_for_en = 1, updated_at = ?1 WHERE model_key = ?2",
@@ -218,10 +224,12 @@ pub fn get_any_default_path(db: &DbConn) -> Result<Option<String>, AppError> {
 /// Returns all language → model_key defaults.
 pub fn get_all_defaults(db: &DbConn) -> Result<Vec<(String, String)>, AppError> {
     let conn = db.lock().unwrap();
-    let mut stmt = conn.prepare(
-        "SELECT language, model_key FROM model_language_defaults ORDER BY language",
-    )?;
-    let x = stmt.query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?
+    let mut stmt =
+        conn.prepare("SELECT language, model_key FROM model_language_defaults ORDER BY language")?;
+    let x = stmt
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(x)
 }
@@ -232,7 +240,9 @@ pub fn get_model_path(db: &DbConn, model_key: &str) -> CmdResult<Option<String>>
     let mut stmt = conn
         .prepare("SELECT local_path FROM model_installations WHERE model_key = ?1 AND installed = 1 LIMIT 1")
         .map_err(AppError::from)?;
-    let mut rows = stmt.query(rusqlite::params![model_key]).map_err(AppError::from)?;
+    let mut rows = stmt
+        .query(rusqlite::params![model_key])
+        .map_err(AppError::from)?;
     if let Some(row) = rows.next().map_err(AppError::from)? {
         let path: String = row.get(0).map_err(AppError::from)?;
         Ok(Some(path))

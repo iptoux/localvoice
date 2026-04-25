@@ -83,10 +83,9 @@ fn get_autostart_impl() -> bool {
 
 #[cfg(target_os = "macos")]
 fn macos_plist_path() -> Result<std::path::PathBuf, String> {
-    let home = std::env::var("HOME")
-        .map_err(|_| "HOME environment variable not set".to_string())?;
-    Ok(std::path::Path::new(&home)
-        .join("Library/LaunchAgents/com.localvoice.app.plist"))
+    let home =
+        std::env::var("HOME").map_err(|_| "HOME environment variable not set".to_string())?;
+    Ok(std::path::Path::new(&home).join("Library/LaunchAgents/com.localvoice.app.plist"))
 }
 
 #[cfg(target_os = "macos")]

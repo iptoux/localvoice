@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
+use tokio::sync::mpsc::UnboundedSender;
 
 /// All possible recording states serialized to/from the frontend.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -53,6 +54,10 @@ pub struct ActiveRecording {
     /// Set to `true` by the audio callback when silence exceeds the configured timeout.
     /// Polled by the silence watcher thread to trigger auto-stop.
     pub silence_triggered: Arc<AtomicBool>,
+    /// Signals the audio-level relay task to stop when recording ends.
+    pub level_stop: Arc<AtomicBool>,
+    /// Sends throttled RMS values from the audio callback to an async relay task.
+    pub level_tx: UnboundedSender<f32>,
 }
 
 // cpal::Stream is unsafe impl Send on WASAPI (Windows desktop target).

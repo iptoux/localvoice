@@ -107,11 +107,7 @@ pub fn list_active(db: &DbConn, min_occurrences: i64) -> Result<Vec<AmbiguousTer
     Ok(rows)
 }
 
-pub fn set_suggested_target(
-    db: &DbConn,
-    id: &str,
-    target: Option<&str>,
-) -> Result<(), AppError> {
+pub fn set_suggested_target(db: &DbConn, id: &str, target: Option<&str>) -> Result<(), AppError> {
     let conn = db.lock().unwrap();
     let now = chrono::Utc::now().to_rfc3339();
     conn.execute(
