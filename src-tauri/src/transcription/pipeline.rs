@@ -143,10 +143,19 @@ mod tests {
             &filler_words,
         );
         let lower = cleaned.to_lowercase();
-        assert!(!lower.contains(" uh ") && !lower.starts_with("uh "), "filler 'uh' should be removed");
+        assert!(
+            !lower.contains(" uh ") && !lower.starts_with("uh "),
+            "filler 'uh' should be removed"
+        );
         assert!(!lower.contains(" um "), "filler 'um' should be removed");
-        assert!(lower.contains("hello"), "content word 'hello' should remain");
-        assert!(lower.contains("world"), "content word 'world' should remain");
+        assert!(
+            lower.contains("hello"),
+            "content word 'hello' should remain"
+        );
+        assert!(
+            lower.contains("world"),
+            "content word 'world' should remain"
+        );
         assert_eq!(removed.len(), 2);
     }
 
@@ -175,10 +184,8 @@ mod tests {
     #[test]
     fn pipeline_applies_correction_rules() {
         let db = test_db();
-        let rule = dictionary_repo::create_rule(
-            &db, "k8s", "Kubernetes", None, "manual", true,
-        )
-        .unwrap();
+        let rule =
+            dictionary_repo::create_rule(&db, "k8s", "Kubernetes", None, "manual", true).unwrap();
         let active_rules = vec![rule];
         let settings = default_settings();
         let (cleaned, _, fired_ids, _) = run(
@@ -199,10 +206,8 @@ mod tests {
     #[test]
     fn pipeline_records_no_fired_rules_when_no_match() {
         let db = test_db();
-        let rule = dictionary_repo::create_rule(
-            &db, "k8s", "Kubernetes", None, "manual", true,
-        )
-        .unwrap();
+        let rule =
+            dictionary_repo::create_rule(&db, "k8s", "Kubernetes", None, "manual", true).unwrap();
         let active_rules = vec![rule];
         let settings = default_settings();
         let (cleaned, _, fired_ids, _) = run(

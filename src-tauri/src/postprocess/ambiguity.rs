@@ -87,7 +87,10 @@ mod tests {
     fn skips_segment_at_exact_threshold() {
         let segs = vec![seg("hello world", Some(0.6))];
         let candidates = detect(&segs, 0.6);
-        assert!(candidates.is_empty(), "segment at threshold should not be flagged");
+        assert!(
+            candidates.is_empty(),
+            "segment at threshold should not be flagged"
+        );
     }
 
     #[test]
@@ -127,7 +130,10 @@ mod tests {
         let candidates = detect(&segs, 0.6);
         assert_eq!(candidates.len(), 1);
         let conf = candidates[0].confidence.unwrap();
-        assert!((conf - 0.2).abs() < 0.001, "lowest confidence should be kept");
+        assert!(
+            (conf - 0.2).abs() < 0.001,
+            "lowest confidence should be kept"
+        );
     }
 
     #[test]

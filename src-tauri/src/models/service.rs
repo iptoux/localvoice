@@ -85,8 +85,7 @@ pub fn list_available(app: &AppHandle) -> Result<Vec<ModelInfo>, AppError> {
 /// Emits `model-download-progress { key, percent, bytesDownloaded, totalBytes }`
 /// events during the download.
 pub async fn download_model(app: AppHandle, key: String) -> Result<(), AppError> {
-    let def = registry::find(&key)
-        .ok_or_else(|| AppError(format!("Unknown model key: {key}")))?;
+    let def = registry::find(&key).ok_or_else(|| AppError(format!("Unknown model key: {key}")))?;
 
     let dest_dir = models_dir(&app)?;
     let dest_path = dest_dir.join(format!("{}.bin", key));
@@ -95,13 +94,29 @@ pub async fn download_model(app: AppHandle, key: String) -> Result<(), AppError>
     const MAX_ATTEMPTS: u32 = 3;
     let mut last_err = None;
     for attempt in 1..=MAX_ATTEMPTS {
-        match downloader::download(&app, &key, def.download_url, &dest_path, def.file_size_bytes).await {
-            Ok(_) => { last_err = None; break; }
+        match downloader::download(
+            &app,
+            &key,
+            def.download_url,
+            &dest_path,
+            def.file_size_bytes,
+        )
+        .await
+        {
+            Ok(_) => {
+                last_err = None;
+                break;
+            }
             Err(e) => {
                 downloader::cleanup_tmp(&dest_path);
-                push_log("warn", "models::download", &format!(
-                    "Attempt {attempt}/{MAX_ATTEMPTS} failed for {}: {e}", def.display_name
-                ));
+                push_log(
+                    "warn",
+                    "models::download",
+                    &format!(
+                        "Attempt {attempt}/{MAX_ATTEMPTS} failed for {}: {e}",
+                        def.display_name
+                    ),
+                );
                 last_err = Some(e);
                 if attempt < MAX_ATTEMPTS {
                     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
@@ -110,9 +125,13 @@ pub async fn download_model(app: AppHandle, key: String) -> Result<(), AppError>
         }
     }
     if let Some(e) = last_err {
-        let msg = format!("Failed to download {} after {MAX_ATTEMPTS} attempts: {e}", def.display_name);
+        let msg = format!(
+            "Failed to download {} after {MAX_ATTEMPTS} attempts: {e}",
+            def.display_name
+        );
         push_log("error", "models::download", &msg);
-        let _ = app.notification()
+        let _ = app
+            .notification()
             .builder()
             .title("Download failed")
             .body(&msg)
@@ -125,7 +144,8 @@ pub async fn download_model(app: AppHandle, key: String) -> Result<(), AppError>
         let _ = std::fs::remove_file(&dest_path);
         let msg = format!("Checksum verification failed for {}: {e}", def.display_name);
         push_log("error", "models::verify", &msg);
-        let _ = app.notification()
+        let _ = app
+            .notification()
             .builder()
             .title("Download failed")
             .body(&msg)
@@ -148,7 +168,8 @@ pub async fn download_model(app: AppHandle, key: String) -> Result<(), AppError>
 
     let msg = format!("Model \"{}\" downloaded and ready.", def.display_name);
     push_log("info", "models::download", &msg);
-    let _ = app.notification()
+    let _ = app
+        .notification()
         .builder()
         .title("Model ready")
         .body(&msg)
@@ -160,9 +181,7 @@ pub async fn download_model(app: AppHandle, key: String) -> Result<(), AppError>
 /// Deletes the model file from disk and clears the DB install record.
 pub fn delete_model(app: &AppHandle, key: &str) -> Result<(), AppError> {
     let state = app.state::<AppState>();
-    let display_name = registry::find(key)
-        .map(|d| d.display_name)
-        .unwrap_or(key);
+    let display_name = registry::find(key).map(|d| d.display_name).unwrap_or(key);
 
     if let Some(record) = models_repo::get(&state.db, key)? {
         let path = PathBuf::from(&record.local_path);
@@ -173,7 +192,11 @@ pub fn delete_model(app: &AppHandle, key: &str) -> Result<(), AppError> {
     }
 
     models_repo::mark_uninstalled(&state.db, key)?;
-    push_log("info", "models::delete", &format!("Model \"{display_name}\" deleted."));
+    push_log(
+        "info",
+        "models::delete",
+        &format!("Model \"{display_name}\" deleted."),
+    );
     Ok(())
 }
 

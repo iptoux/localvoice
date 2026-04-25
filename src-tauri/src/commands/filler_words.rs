@@ -1,18 +1,25 @@
 use tauri::AppHandle;
 
-use crate::db::repositories::filler_words_repo::{self, FillerWord, FillerStat};
+use crate::db::repositories::filler_words_repo::{self, FillerStat, FillerWord};
 use crate::errors::CmdResult;
 use crate::state::AppState;
 use tauri::Manager;
 
 #[tauri::command]
-pub async fn list_filler_words(app: AppHandle, language: Option<String>) -> CmdResult<Vec<FillerWord>> {
+pub async fn list_filler_words(
+    app: AppHandle,
+    language: Option<String>,
+) -> CmdResult<Vec<FillerWord>> {
     let state = app.state::<AppState>();
     filler_words_repo::list(&state.db, language.as_deref()).map_err(Into::into)
 }
 
 #[tauri::command]
-pub async fn add_filler_word(app: AppHandle, word: String, language: String) -> CmdResult<FillerWord> {
+pub async fn add_filler_word(
+    app: AppHandle,
+    word: String,
+    language: String,
+) -> CmdResult<FillerWord> {
     let state = app.state::<AppState>();
     filler_words_repo::add(&state.db, &word, &language).map_err(Into::into)
 }
@@ -31,7 +38,10 @@ pub async fn reset_filler_words(app: AppHandle, language: String) -> CmdResult<V
 }
 
 #[tauri::command]
-pub async fn get_filler_stats(app: AppHandle, language: Option<String>) -> CmdResult<Vec<FillerStat>> {
+pub async fn get_filler_stats(
+    app: AppHandle,
+    language: Option<String>,
+) -> CmdResult<Vec<FillerStat>> {
     let state = app.state::<AppState>();
     filler_words_repo::get_stats(&state.db, language.as_deref()).map_err(Into::into)
 }

@@ -249,7 +249,7 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 | Theme | System, light, or dark |
 | Filler words | Language-specific list of words to strip |
 | Audio retention | Whether to keep raw audio after transcription |
-| Logging | Enable/disable in-app debug logging |
+| Logging | Enable/disable in-app debug logging and the persistent app log file |
 
 ---
 
@@ -295,7 +295,7 @@ Full developer reference: [docs/dev/index.md](docs/dev/index.md)
 Contributions are welcome. Here's how to get involved:
 
 **Reporting bugs**
-Open an issue with a clear description, steps to reproduce, your OS, and the LocalVoice version. Attach logs from the in-app log viewer if relevant.
+Open an issue with a clear description, steps to reproduce, your OS, and the LocalVoice version. Attach logs from the in-app log viewer or the plain-text log file at the app data directory (`%APPDATA%\com.localvoice.app\localvoice.log` on Windows) if relevant.
 
 **Suggesting features**
 Open a discussion or issue describing the use case and why it would be valuable. Check existing issues first to avoid duplicates.

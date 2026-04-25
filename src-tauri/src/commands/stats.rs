@@ -3,7 +3,7 @@ use tauri::State;
 use crate::errors::CmdResult;
 use crate::state::AppState;
 use crate::stats::aggregations::{
-    CorrectionStat, DailyStats, DateRange, DashboardStats, LanguageBreakdown, TimeseriesPoint,
+    CorrectionStat, DailyStats, DashboardStats, DateRange, LanguageBreakdown, TimeseriesPoint,
     WpmPoint,
 };
 use crate::stats::service;
@@ -11,10 +11,7 @@ use crate::stats::service;
 /// Returns scalar dashboard metrics (total words, sessions, avg WPM, duration)
 /// plus per-language session counts for the given date range.
 #[tauri::command]
-pub fn get_dashboard_stats(
-    state: State<AppState>,
-    range: DateRange,
-) -> CmdResult<DashboardStats> {
+pub fn get_dashboard_stats(state: State<AppState>, range: DateRange) -> CmdResult<DashboardStats> {
     service::get_dashboard_stats(&state.db, range)
 }
 

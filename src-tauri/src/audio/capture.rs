@@ -3,7 +3,9 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use cpal::traits::{DeviceTrait, StreamTrait};
-use cpal::{SampleFormat, SampleRate, SupportedStreamConfig};
+#[cfg(not(target_os = "windows"))]
+use cpal::SampleRate;
+use cpal::{SampleFormat, SupportedStreamConfig};
 use tauri::{AppHandle, Emitter};
 
 use crate::audio::level_meter::calculate_rms;
@@ -12,6 +14,7 @@ use crate::state::recording_state::ActiveRecording;
 
 /// Target capture format — whisper.cpp expects 16 kHz 16-bit mono.
 const TARGET_SAMPLE_RATE: u32 = 16_000;
+#[cfg(not(target_os = "windows"))]
 const TARGET_CHANNELS: u16 = 1;
 
 /// Default RMS threshold below which audio is considered silent.
@@ -61,31 +64,62 @@ pub fn start_capture(
     let samples: Arc<Mutex<Vec<i16>>> = Arc::new(Mutex::new(Vec::new()));
     let samples_cb = samples.clone();
 
-    let app_cb = app.clone();
     let last_emit = Arc::new(Mutex::new(Instant::now()));
     let silence_triggered = Arc::new(AtomicBool::new(false));
+    let level_stop = Arc::new(AtomicBool::new(false));
+    let (level_tx, mut level_rx) = tokio::sync::mpsc::unbounded_channel::<f32>();
+    let level_stop_task = level_stop.clone();
+    let app_level = app.clone();
+    tauri::async_runtime::spawn(async move {
+        while let Some(rms) = level_rx.recv().await {
+            if level_stop_task.load(Ordering::Relaxed) {
+                break;
+            }
+            let _ = app_level.emit("audio-level", rms);
+        }
+    });
 
-    let temp_path = std::env::temp_dir()
-        .join(format!("localvoice_{}.wav", uuid::Uuid::new_v4()));
+    let temp_path = std::env::temp_dir().join(format!("localvoice_{}.wav", uuid::Uuid::new_v4()));
 
     // Silence tracking state shared with the audio callback.
     let silence_start = Arc::new(Mutex::new(None::<Instant>));
 
     let stream = match config.sample_format() {
         SampleFormat::F32 => build_stream_f32(
-            device, &config.into(), samples_cb, app_cb, last_emit,
-            silence_cfg, silence_triggered.clone(), silence_start,
-            capture_sample_rate, capture_channels,
+            device,
+            &config.into(),
+            samples_cb,
+            level_tx.clone(),
+            last_emit,
+            silence_cfg,
+            silence_triggered.clone(),
+            silence_start,
+            capture_sample_rate,
+            capture_channels,
         )?,
         SampleFormat::I16 => build_stream_i16(
-            device, &config.into(), samples_cb, app_cb, last_emit,
-            silence_cfg, silence_triggered.clone(), silence_start,
-            capture_sample_rate, capture_channels,
+            device,
+            &config.into(),
+            samples_cb,
+            level_tx.clone(),
+            last_emit,
+            silence_cfg,
+            silence_triggered.clone(),
+            silence_start,
+            capture_sample_rate,
+            capture_channels,
         )?,
         SampleFormat::U8 => build_stream_u8(
-            device, &config.into(), samples_cb, app_cb, last_emit,
-            silence_cfg, silence_triggered.clone(), silence_start,
-            capture_sample_rate, capture_channels,
+            device,
+            &config.into(),
+            samples_cb,
+            level_tx.clone(),
+            last_emit,
+            silence_cfg,
+            silence_triggered.clone(),
+            silence_start,
+            capture_sample_rate,
+            capture_channels,
         )?,
         other => return Err(format!("Unsupported sample format: {other:?}").into()),
     };
@@ -102,6 +136,8 @@ pub fn start_capture(
         sample_rate: TARGET_SAMPLE_RATE,
         device_name,
         silence_triggered,
+        level_stop,
+        level_tx,
     })
 }
 
@@ -109,6 +145,8 @@ pub fn start_capture(
 pub fn stop_capture(recording: ActiveRecording) -> CmdResult<String> {
     // Drop the stream first to flush any buffered samples.
     drop(recording.stream);
+    recording.level_stop.store(true, Ordering::Relaxed);
+    drop(recording.level_tx);
 
     let samples = recording.samples.lock().unwrap();
     if samples.is_empty() {
@@ -117,15 +155,14 @@ pub fn stop_capture(recording: ActiveRecording) -> CmdResult<String> {
 
     crate::audio::wav_writer::write_wav(&samples, recording.sample_rate, &recording.temp_path)?;
 
-    Ok(recording
-        .temp_path
-        .to_string_lossy()
-        .into_owned())
+    Ok(recording.temp_path.to_string_lossy().into_owned())
 }
 
 /// Cancels capture without writing any file.
 pub fn cancel_capture(recording: ActiveRecording) {
     drop(recording.stream);
+    recording.level_stop.store(true, Ordering::Relaxed);
+    drop(recording.level_tx);
     let _ = std::fs::remove_file(&recording.temp_path);
 }
 
@@ -139,42 +176,52 @@ pub fn cancel_capture(recording: ActiveRecording) {
 /// 3. Mono at any rate (will be resampled)
 /// 4. Device default (will be downmixed + resampled)
 fn select_input_config(device: &cpal::Device) -> CmdResult<SupportedStreamConfig> {
-    let configs: Vec<_> = device
-        .supported_input_configs()
-        .map(|c| c.collect())
-        .unwrap_or_default();
-
-    // 1. Ideal: mono + supports 16 kHz exactly.
-    for range in &configs {
-        if range.channels() == TARGET_CHANNELS
-            && range.min_sample_rate().0 <= TARGET_SAMPLE_RATE
-            && range.max_sample_rate().0 >= TARGET_SAMPLE_RATE
-        {
-            return Ok(range.with_sample_rate(SampleRate(TARGET_SAMPLE_RATE)));
-        }
+    #[cfg(target_os = "windows")]
+    {
+        return device
+            .default_input_config()
+            .map_err(|e| format!("No supported input config: {e}").into());
     }
 
-    // 2. Any channel count that supports 16 kHz (will downmix in callback).
-    for range in &configs {
-        if range.min_sample_rate().0 <= TARGET_SAMPLE_RATE
-            && range.max_sample_rate().0 >= TARGET_SAMPLE_RATE
-        {
-            return Ok(range.with_sample_rate(SampleRate(TARGET_SAMPLE_RATE)));
-        }
-    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let configs: Vec<_> = device
+            .supported_input_configs()
+            .map(|c| c.collect())
+            .unwrap_or_default();
 
-    // 3. Mono at any rate (will resample in callback).
-    for range in &configs {
-        if range.channels() == TARGET_CHANNELS {
-            let rate = range.max_sample_rate().0.min(48_000);
-            return Ok(range.with_sample_rate(SampleRate(rate)));
+        // 1. Ideal: mono + supports 16 kHz exactly.
+        for range in &configs {
+            if range.channels() == TARGET_CHANNELS
+                && range.min_sample_rate().0 <= TARGET_SAMPLE_RATE
+                && range.max_sample_rate().0 >= TARGET_SAMPLE_RATE
+            {
+                return Ok(range.with_sample_rate(SampleRate(TARGET_SAMPLE_RATE)));
+            }
         }
-    }
 
-    // 4. Fall back to device default — downmix + resample will handle it.
-    device
-        .default_input_config()
-        .map_err(|e| format!("No supported input config: {e}").into())
+        // 2. Any channel count that supports 16 kHz (will downmix in callback).
+        for range in &configs {
+            if range.min_sample_rate().0 <= TARGET_SAMPLE_RATE
+                && range.max_sample_rate().0 >= TARGET_SAMPLE_RATE
+            {
+                return Ok(range.with_sample_rate(SampleRate(TARGET_SAMPLE_RATE)));
+            }
+        }
+
+        // 3. Mono at any rate (will resample in callback).
+        for range in &configs {
+            if range.channels() == TARGET_CHANNELS {
+                let rate = range.max_sample_rate().0.min(48_000);
+                return Ok(range.with_sample_rate(SampleRate(rate)));
+            }
+        }
+
+        // 4. Fall back to device default — downmix + resample will handle it.
+        device
+            .default_input_config()
+            .map_err(|e| format!("No supported input config: {e}").into())
+    }
 }
 
 /// Downmixes interleaved multi-channel f32 samples to mono, then resamples
@@ -182,11 +229,7 @@ fn select_input_config(device: &cpal::Device) -> CmdResult<SupportedStreamConfig
 ///
 /// When `channels == 1` and `from_rate == TARGET_SAMPLE_RATE` this is a no-op
 /// (returns the input converted to i16 directly).
-fn downmix_and_resample(
-    data: &[f32],
-    channels: usize,
-    from_rate: u32,
-) -> Vec<i16> {
+fn downmix_and_resample(data: &[f32], channels: usize, from_rate: u32) -> Vec<i16> {
     // Step 1: downmix to mono f32.
     let mono: Vec<f32> = if channels == 1 {
         data.to_vec()
@@ -250,7 +293,7 @@ fn build_stream_f32(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
     samples: Arc<Mutex<Vec<i16>>>,
-    app: AppHandle,
+    level_tx: tokio::sync::mpsc::UnboundedSender<f32>,
     last_emit: Arc<Mutex<Instant>>,
     silence_cfg: SilenceConfig,
     silence_triggered: Arc<AtomicBool>,
@@ -265,7 +308,7 @@ fn build_stream_f32(
                 let chunk = downmix_and_resample(data, capture_channels, capture_rate);
                 let rms = calculate_rms(data);
                 samples.lock().unwrap().extend_from_slice(&chunk);
-                maybe_emit_level(&app, &last_emit, rms);
+                maybe_emit_level(&level_tx, &last_emit, rms);
                 check_silence(rms, &silence_cfg, &silence_start, &silence_triggered);
             },
             |err| log::error!("Audio capture error: {err}"),
@@ -278,7 +321,7 @@ fn build_stream_i16(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
     samples: Arc<Mutex<Vec<i16>>>,
-    app: AppHandle,
+    level_tx: tokio::sync::mpsc::UnboundedSender<f32>,
     last_emit: Arc<Mutex<Instant>>,
     silence_cfg: SilenceConfig,
     silence_triggered: Arc<AtomicBool>,
@@ -291,17 +334,14 @@ fn build_stream_i16(
             config,
             move |data: &[i16], _| {
                 // Convert i16 -> f32 for unified downmix/resample path.
-                let as_f32: Vec<f32> = data
-                    .iter()
-                    .map(|&x| x as f32 / i16::MAX as f32)
-                    .collect();
+                let as_f32: Vec<f32> = data.iter().map(|&x| x as f32 / i16::MAX as f32).collect();
                 let chunk = downmix_and_resample(&as_f32, capture_channels, capture_rate);
                 let rms = {
                     let sum_sq: f32 = as_f32.iter().map(|&x| x.powi(2)).sum();
                     (sum_sq / as_f32.len() as f32).sqrt()
                 };
                 samples.lock().unwrap().extend_from_slice(&chunk);
-                maybe_emit_level(&app, &last_emit, rms);
+                maybe_emit_level(&level_tx, &last_emit, rms);
                 check_silence(rms, &silence_cfg, &silence_start, &silence_triggered);
             },
             |err| log::error!("Audio capture error: {err}"),
@@ -314,7 +354,7 @@ fn build_stream_u8(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
     samples: Arc<Mutex<Vec<i16>>>,
-    app: AppHandle,
+    level_tx: tokio::sync::mpsc::UnboundedSender<f32>,
     last_emit: Arc<Mutex<Instant>>,
     silence_cfg: SilenceConfig,
     silence_triggered: Arc<AtomicBool>,
@@ -327,17 +367,14 @@ fn build_stream_u8(
             config,
             move |data: &[u8], _| {
                 // Convert u8 -> f32 for unified downmix/resample path.
-                let as_f32: Vec<f32> = data
-                    .iter()
-                    .map(|&x| (x as f32 - 128.0) / 128.0)
-                    .collect();
+                let as_f32: Vec<f32> = data.iter().map(|&x| (x as f32 - 128.0) / 128.0).collect();
                 let chunk = downmix_and_resample(&as_f32, capture_channels, capture_rate);
                 let rms = {
                     let sum_sq: f32 = as_f32.iter().map(|&x| x.powi(2)).sum();
                     (sum_sq / as_f32.len() as f32).sqrt()
                 };
                 samples.lock().unwrap().extend_from_slice(&chunk);
-                maybe_emit_level(&app, &last_emit, rms);
+                maybe_emit_level(&level_tx, &last_emit, rms);
                 check_silence(rms, &silence_cfg, &silence_start, &silence_triggered);
             },
             |err| log::error!("Audio capture error: {err}"),
@@ -347,10 +384,14 @@ fn build_stream_u8(
 }
 
 /// Emits `audio-level` at most once per ~80 ms to avoid flooding the frontend.
-fn maybe_emit_level(app: &AppHandle, last_emit: &Mutex<Instant>, rms: f32) {
+fn maybe_emit_level(
+    level_tx: &tokio::sync::mpsc::UnboundedSender<f32>,
+    last_emit: &Mutex<Instant>,
+    rms: f32,
+) {
     let mut last = last_emit.lock().unwrap();
     if last.elapsed() >= Duration::from_millis(80) {
         *last = Instant::now();
-        let _ = app.emit("audio-level", rms);
+        let _ = level_tx.send(rms);
     }
 }

@@ -14,10 +14,9 @@ mod stats;
 mod transcription;
 
 use commands::{
-    benchmark as cmd_benchmark,
-    dictionary as cmd_dictionary, filler_words as cmd_filler_words, history as cmd_history,
-    logs as cmd_logs, models as cmd_models, recording, settings, stats as cmd_stats,
-    system as cmd_system, transcription as cmd_transcription, window,
+    benchmark as cmd_benchmark, dictionary as cmd_dictionary, filler_words as cmd_filler_words,
+    history as cmd_history, logs as cmd_logs, models as cmd_models, recording, settings,
+    stats as cmd_stats, system as cmd_system, transcription as cmd_transcription, window,
 };
 use db::repositories::settings_repo;
 use state::AppState;
@@ -37,8 +36,7 @@ pub fn run() {
         )
         .setup(|app| {
             // Open / create SQLite database and run migrations.
-            let db = db::open(app.handle())
-                .map_err(|e| Box::<dyn std::error::Error>::from(e))?;
+            let db = db::open(app.handle()).map_err(|e| Box::<dyn std::error::Error>::from(e))?;
 
             // Read persisted settings before moving the DB into AppState.
             let persisted = settings_repo::get_all(&db).unwrap_or_default();
@@ -48,7 +46,11 @@ pub fn run() {
                 .get("logging.enabled")
                 .map(|v| v != "false")
                 .unwrap_or(true);
-            logging::init(logging_enabled, db.clone());
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| Box::<dyn std::error::Error>::from(e.to_string()))?;
+            logging::init(logging_enabled, db.clone(), app_data_dir);
 
             // Register shared state.
             app.manage(AppState::new(db));
@@ -58,8 +60,7 @@ pub fn run() {
                 .map_err(|e| Box::<dyn std::error::Error>::from(e.to_string()))?;
 
             // Register the global recording shortcut (critical — user expects it immediately).
-            os::hotkeys::setup(app.handle())
-                .map_err(|e| Box::<dyn std::error::Error>::from(e))?;
+            os::hotkeys::setup(app.handle()).map_err(|e| Box::<dyn std::error::Error>::from(e))?;
 
             // Defer non-critical work (audio cleanup) to after the window is rendered
             // so it does not delay the initial display.  TASK-245.
@@ -135,9 +136,9 @@ pub fn run() {
                     db::repositories::models_repo::get_default_path(&state.db, "de")
                         .map(|p| p.is_some())
                         .unwrap_or(false)
-                    || db::repositories::models_repo::get_default_path(&state.db, "en")
-                        .map(|p| p.is_some())
-                        .unwrap_or(false)
+                        || db::repositories::models_repo::get_default_path(&state.db, "en")
+                            .map(|p| p.is_some())
+                            .unwrap_or(false)
                 } else {
                     db::repositories::models_repo::get_default_path(&state.db, &lang)
                         .map(|p| p.is_some())
