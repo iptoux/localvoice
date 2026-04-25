@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Temporarily disabled the SignPath release job until OSS signing support is available; Windows release artifacts are published unsigned for now.
+- Bumped the app version to 0.2.2.
+- Added a square 256x256 Linux bundle icon and removed non-square PNGs from the Tauri icon list to fix AppImage packaging.
 
 ## MS-18 — macOS & Linux Support (2026-03-23)
 
