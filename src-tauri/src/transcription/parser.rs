@@ -37,10 +37,7 @@ pub fn parse_json_file(json_path: &Path) -> Option<Vec<TranscriptSegment>> {
 /// Each non-empty line looks like:
 /// `[00:00:00.000 --> 00:00:02.500]   Some transcribed text.`
 pub fn parse_stdout(stdout: &str) -> Vec<TranscriptSegment> {
-    stdout
-        .lines()
-        .filter_map(parse_stdout_line)
-        .collect()
+    stdout.lines().filter_map(parse_stdout_line).collect()
 }
 
 fn parse_stdout_line(line: &str) -> Option<TranscriptSegment> {

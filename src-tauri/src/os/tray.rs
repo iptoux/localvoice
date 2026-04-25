@@ -4,7 +4,10 @@ use tauri::{
     AppHandle, Manager,
 };
 
-use crate::commands::{recording::{ start_recording_internal, stop_recording_internal }, window};
+use crate::commands::{
+    recording::{start_recording_internal, stop_recording_internal},
+    window,
+};
 use crate::state::recording_state::RecordingState;
 use crate::state::AppState;
 

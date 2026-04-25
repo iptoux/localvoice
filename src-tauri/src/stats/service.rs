@@ -1,7 +1,7 @@
 use crate::db::DbConn;
 use crate::errors::CmdResult;
 use crate::stats::aggregations::{
-    self, CorrectionStat, DailyStats, DateRange, DashboardStats, LanguageBreakdown,
+    self, CorrectionStat, DailyStats, DashboardStats, DateRange, LanguageBreakdown,
     TimeseriesPoint, WpmPoint,
 };
 

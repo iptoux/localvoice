@@ -289,11 +289,7 @@ pub struct WpmPoint {
 }
 
 /// Returns average WPM per time bucket (day or week).
-pub fn get_wpm_trend(
-    db: &DbConn,
-    range: &DateRange,
-    bucket: &str,
-) -> CmdResult<Vec<WpmPoint>> {
+pub fn get_wpm_trend(db: &DbConn, range: &DateRange, bucket: &str) -> CmdResult<Vec<WpmPoint>> {
     let conn = db.lock().unwrap();
     let (where_clause, params) = build_where(range);
     let date_expr = match bucket {
@@ -407,7 +403,14 @@ mod tests {
                  raw_text, cleaned_text, word_count, char_count, output_mode,
                  inserted_successfully, created_at, reprocessed_count, estimated_wpm)
              VALUES (?1, ?2, ?2, ?3, ?4, 'hotkey', '', '', ?5, 0, 'clipboard', 0, ?2, 0, ?6)",
-            params![id, started_at, duration_ms, language, word_count, estimated_wpm],
+            params![
+                id,
+                started_at,
+                duration_ms,
+                language,
+                word_count,
+                estimated_wpm
+            ],
         )
         .unwrap();
     }
@@ -427,8 +430,24 @@ mod tests {
     #[test]
     fn dashboard_stats_aggregates_sessions() {
         let db = test_db();
-        insert_session(&db, "1", "2026-01-01T10:00:00Z", "de", 100, 60_000, Some(100.0));
-        insert_session(&db, "2", "2026-01-02T10:00:00Z", "en", 200, 120_000, Some(100.0));
+        insert_session(
+            &db,
+            "1",
+            "2026-01-01T10:00:00Z",
+            "de",
+            100,
+            60_000,
+            Some(100.0),
+        );
+        insert_session(
+            &db,
+            "2",
+            "2026-01-02T10:00:00Z",
+            "en",
+            200,
+            120_000,
+            Some(100.0),
+        );
         let range = DateRange::default();
         let stats = get_dashboard_stats(&db, &range).unwrap();
         assert_eq!(stats.total_session_count, 2);
@@ -515,8 +534,24 @@ mod tests {
     #[test]
     fn wpm_trend_averages_per_bucket() {
         let db = test_db();
-        insert_session(&db, "1", "2026-01-01T10:00:00Z", "de", 100, 60_000, Some(100.0));
-        insert_session(&db, "2", "2026-01-01T14:00:00Z", "de", 100, 60_000, Some(200.0));
+        insert_session(
+            &db,
+            "1",
+            "2026-01-01T10:00:00Z",
+            "de",
+            100,
+            60_000,
+            Some(100.0),
+        );
+        insert_session(
+            &db,
+            "2",
+            "2026-01-01T14:00:00Z",
+            "de",
+            100,
+            60_000,
+            Some(200.0),
+        );
         let range = DateRange::default();
         let trend = get_wpm_trend(&db, &range, "day").unwrap();
         assert_eq!(trend.len(), 1);
@@ -529,8 +564,24 @@ mod tests {
     #[test]
     fn daily_comparison_returns_per_date_stats() {
         let db = test_db();
-        insert_session(&db, "1", "2026-01-01T10:00:00Z", "de", 100, 60_000, Some(100.0));
-        insert_session(&db, "2", "2026-01-02T10:00:00Z", "en", 200, 120_000, Some(150.0));
+        insert_session(
+            &db,
+            "1",
+            "2026-01-01T10:00:00Z",
+            "de",
+            100,
+            60_000,
+            Some(100.0),
+        );
+        insert_session(
+            &db,
+            "2",
+            "2026-01-02T10:00:00Z",
+            "en",
+            200,
+            120_000,
+            Some(150.0),
+        );
         let (day_a, day_b) = get_daily_comparison(&db, "2026-01-01", "2026-01-02").unwrap();
         assert_eq!(day_a.word_count, 100);
         assert_eq!(day_a.session_count, 1);

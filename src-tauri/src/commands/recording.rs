@@ -22,8 +22,7 @@ pub fn start_recording_internal(app: &AppHandle, state: &State<AppState>) -> Cmd
     }
 
     // Read settings.
-    let settings =
-        crate::db::repositories::settings_repo::get_all(&state.db).unwrap_or_default();
+    let settings = crate::db::repositories::settings_repo::get_all(&state.db).unwrap_or_default();
 
     // Preferred audio device.
     let device_id: Option<String> = settings
@@ -81,7 +80,8 @@ pub fn start_recording_internal(app: &AppHandle, state: &State<AppState>) -> Cmd
                     if let Err(e) = stop_recording_internal(&app_for_stop, &state) {
                         log::error!("Silence auto-stop failed: {e}");
                     }
-                }).await;
+                })
+                .await;
                 break;
             }
         }
@@ -108,7 +108,10 @@ pub fn stop_recording_internal(app: &AppHandle, state: &State<AppState>) -> CmdR
         Err(e) => {
             emit_recording_state(app, RecordingState::Error, Some(e.to_string()));
             // Auto-reset to Idle so the hotkey works again after the error.
-            crate::transcription::orchestrator::schedule_idle_reset(app.clone(), Duration::from_millis(2000));
+            crate::transcription::orchestrator::schedule_idle_reset(
+                app.clone(),
+                Duration::from_millis(2000),
+            );
             return Err(e);
         }
     };

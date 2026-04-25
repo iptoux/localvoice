@@ -26,10 +26,7 @@ pub fn delete_session(state: State<AppState>, session_id: String) -> CmdResult<(
 
 /// Deletes multiple sessions in a single transaction. Returns the number of deleted rows.
 #[tauri::command]
-pub fn bulk_delete_sessions(
-    state: State<AppState>,
-    session_ids: Vec<String>,
-) -> CmdResult<usize> {
+pub fn bulk_delete_sessions(state: State<AppState>, session_ids: Vec<String>) -> CmdResult<usize> {
     if session_ids.is_empty() {
         return Err(AppError("No sessions selected".to_string()));
     }
@@ -68,8 +65,8 @@ pub fn export_sessions(
 
     let (content, ext) = match format.as_str() {
         "json" => (export::to_json(&sessions)?, "json"),
-        "csv"  => (export::to_csv(&sessions), "csv"),
-        _      => (export::to_text(&sessions), "txt"),
+        "csv" => (export::to_csv(&sessions), "csv"),
+        _ => (export::to_text(&sessions), "txt"),
     };
 
     let path = rfd::FileDialog::new()
@@ -113,12 +110,7 @@ pub async fn reprocess_session(
     let sid = session_id.clone();
 
     tauri::async_runtime::spawn_blocking(move || {
-        reprocess::reprocess_session(
-            &app_clone,
-            &sid,
-            language.as_deref(),
-            model_id.as_deref(),
-        )
+        reprocess::reprocess_session(&app_clone, &sid, language.as_deref(), model_id.as_deref())
     })
     .await
     .map_err(|e| AppError(format!("Task join error: {e}")))??;

@@ -62,8 +62,7 @@ pub async fn download(
     let mut last_percent: i16 = -1;
 
     while let Some(chunk) = stream.next().await {
-        let chunk =
-            chunk.map_err(|e| AppError(format!("Download stream error: {e}")))?;
+        let chunk = chunk.map_err(|e| AppError(format!("Download stream error: {e}")))?;
         file.write_all(&chunk)
             .map_err(|e| AppError(format!("Write error: {e}")))?;
         downloaded += chunk.len() as u64;

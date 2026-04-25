@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added a plain-text `localvoice.log` file in the app data directory so crash reports can include logs even when the in-app viewer is unavailable.
+- Moved audio-level UI event emission out of the real-time capture callback and uses the default Windows input stream configuration to reduce driver-level recording crashes.
+
 ## MS-18 — macOS & Linux Support (2026-03-23)
 
 - macOS autostart via launchd plist (`~/Library/LaunchAgents/com.localvoice.app.plist`)
