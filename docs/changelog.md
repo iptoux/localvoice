@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Temporarily disabled the SignPath release job until OSS signing support is available; Windows release artifacts are published unsigned for now.
+
 ## MS-18 — macOS & Linux Support (2026-03-23)
 
 - macOS autostart via launchd plist (`~/Library/LaunchAgents/com.localvoice.app.plist`)

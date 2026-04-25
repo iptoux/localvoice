@@ -3,26 +3,27 @@ name: Release
 # ─────────────────────────────────────────────────────────────────────────────
 # Pipeline overview
 #
-#   build-windows  →  sign (SignPath)  →  release
+#   build-windows  →  release
 #   build-macos    ──────────────────────────────┘
 #   build-linux    ──────────────────────────────┘
 #
 # 1. build-windows – compiles the Tauri app for Windows and uploads unsigned
 #                    .msi / .exe to GitHub Actions artifact storage.
-# 2. sign          – submits Windows installers to SignPath for Authenticode
-#                    signing; waits for approval + completion.
-# 3. build-macos   – compiles for macOS (Apple Silicon), produces .dmg/.app.
+# 2. build-macos   – compiles for macOS (Apple Silicon), produces .dmg/.app.
 #                    Whisper.cpp is built from source via cmake.
-# 4. build-linux   – compiles for Linux x86_64, produces .deb / .AppImage.
+# 3. build-linux   – compiles for Linux x86_64, produces .deb / .AppImage.
 #                    Whisper.cpp is built from source via cmake.
-# 5. release       – creates a draft GitHub Release with all signed/unsigned
+# 4. release       – creates a draft GitHub Release with all unsigned
 #                    artifacts attached.
 #
-# Required repository secrets
+# SignPath is intentionally disabled until OSS support is approved.
+# Keep this configuration for reactivation later.
+#
+# Required repository secrets when SignPath is enabled
 #   SIGNPATH_API_TOKEN       – CI user token from your SignPath organisation
 #   SIGNPATH_ORGANIZATION_ID – GUID shown in SignPath → Organisation → General
 #
-# Required SignPath configuration
+# Required SignPath configuration when enabled
 #   project-slug             : localvoice
 #   signing-policy-slug      : release-signing
 #   artifact-configuration-slug: windows-installers
@@ -41,7 +42,7 @@ on:
 
 permissions:
   contents: write   # create GitHub Release + upload assets
-  id-token: write   # required for SignPath trusted-build OIDC attestation
+  # id-token: write # required for SignPath trusted-build OIDC attestation
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Job 1 – Build Windows (unsigned)
@@ -133,32 +134,34 @@ jobs:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Job 2 – Sign Windows installers with SignPath
+# Disabled until SignPath OSS support is available. The release job downloads
+# unsigned Windows installers directly from build-windows for now.
 # ─────────────────────────────────────────────────────────────────────────────
-  sign:
-    name: Sign (SignPath)
-    needs: build-windows
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Submit signing request
-        id: signpath
-        uses: SignPath/github-action-submit-signing-request@v1.1
-        with:
-          api-token:                   ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id:             ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
-          project-slug:                localvoice
-          signing-policy-slug:         release-signing
-          artifact-configuration-slug: windows-installers
-          github-artifact-id:          ${{ needs.build-windows.outputs.unsigned-artifact-id }}
-          wait-for-completion:         "true"
-          output-artifact-directory:   dist/signed
-
-      - name: Upload signed installers
-        uses: actions/upload-artifact@v4
-        with:
-          name: signed-installers
-          path: dist/signed/
-          retention-days: 7
+  # sign:
+  #   name: Sign (SignPath)
+  #   needs: build-windows
+  #   runs-on: ubuntu-latest
+  #
+  #   steps:
+  #     - name: Submit signing request
+  #       id: signpath
+  #       uses: SignPath/github-action-submit-signing-request@v1.1
+  #       with:
+  #         api-token:                   ${{ secrets.SIGNPATH_API_TOKEN }}
+  #         organization-id:             ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+  #         project-slug:                localvoice
+  #         signing-policy-slug:         release-signing
+  #         artifact-configuration-slug: windows-installers
+  #         github-artifact-id:          ${{ needs.build-windows.outputs.unsigned-artifact-id }}
+  #         wait-for-completion:         "true"
+  #         output-artifact-directory:   dist/signed
+  #
+  #     - name: Upload signed installers
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: signed-installers
+  #         path: dist/signed/
+  #         retention-days: 7
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Job 3 – Build macOS (Apple Silicon + Intel universal)
@@ -322,15 +325,15 @@ jobs:
 # ─────────────────────────────────────────────────────────────────────────────
   release:
     name: Publish Release
-    needs: [build-windows, sign, build-macos, build-linux]
+    needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download signed Windows installers
+      - name: Download unsigned Windows installers
         uses: actions/download-artifact@v4
         with:
-          name: signed-installers
-          path: dist/signed
+          name: unsigned-installers
+          path: dist/windows
 
       - name: Download macOS artifacts
         uses: actions/download-artifact@v4
@@ -352,7 +355,7 @@ jobs:
           draft:      true
           prerelease: false
           files: |
-            dist/signed/**
+            dist/windows/**
             dist/macos/**
             dist/linux/**
           body: |
@@ -368,8 +371,7 @@ jobs:
             | Linux (Debian/Ubuntu) | `local-voice_*.deb` |
             | Linux (AppImage) | `LocalVoice_*.AppImage` |
 
-            Windows binaries are Authenticode-signed via [SignPath](https://signpath.io).
-            macOS and Linux builds are unsigned — see the [security note](https://github.com/${{ github.repository }}#installation) in the README.
+            Windows, macOS, and Linux builds are currently unsigned — see the [security note](https://github.com/${{ github.repository }}#installation) in the README.
 
             > **Note:** Whisper models are not bundled — download them from the
             > Models page inside the app after installation.
