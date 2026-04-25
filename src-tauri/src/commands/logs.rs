@@ -9,10 +9,7 @@ use crate::logging::{get_db, set_enabled, LogEntry};
 /// `level_filter`: `"warn"`, `"error"`, `"info"`, or `None` for all.
 /// `limit`: max rows to return (default 500).
 #[tauri::command]
-pub fn list_logs(
-    level_filter: Option<String>,
-    limit: Option<usize>,
-) -> CmdResult<Vec<LogEntry>> {
+pub fn list_logs(level_filter: Option<String>, limit: Option<usize>) -> CmdResult<Vec<LogEntry>> {
     let db = get_db().ok_or_else(|| AppError("Log database not initialized".into()))?;
     let conn = db
         .lock()
@@ -78,8 +75,7 @@ pub fn export_logs() -> CmdResult<()> {
         rows
     };
 
-    let json =
-        serde_json::to_string_pretty(&entries).map_err(|e| AppError(e.to_string()))?;
+    let json = serde_json::to_string_pretty(&entries).map_err(|e| AppError(e.to_string()))?;
 
     let path = rfd::FileDialog::new()
         .set_title("Export Logs")

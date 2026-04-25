@@ -1,5 +1,7 @@
 use rusqlite::params;
 use serde::Serialize;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     OnceLock,
@@ -22,6 +24,7 @@ pub struct LogEntry {
 static LOG_SENDER: OnceLock<UnboundedSender<LogEntry>> = OnceLock::new();
 /// Shared DB handle so `commands/logs.rs` can query from it.
 static LOG_DB: OnceLock<DbConn> = OnceLock::new();
+static LOG_FILE_PATH: OnceLock<PathBuf> = OnceLock::new();
 static LOGGING_ENABLED: AtomicBool = AtomicBool::new(true);
 
 /// Initialises the persistent logger.
@@ -29,9 +32,11 @@ static LOGGING_ENABLED: AtomicBool = AtomicBool::new(true);
 /// Call once in app setup **after** the DB is open.  Spawns a background
 /// tokio task that writes every log entry to the `app_logs` table so entries
 /// survive app restarts.
-pub fn init(enabled: bool, db: DbConn) {
+pub fn init(enabled: bool, db: DbConn, app_data_dir: PathBuf) {
     LOGGING_ENABLED.store(enabled, Ordering::Relaxed);
     LOG_DB.set(db.clone()).ok();
+    let log_file_path = app_data_dir.join("localvoice.log");
+    LOG_FILE_PATH.set(log_file_path.clone()).ok();
 
     let (tx, mut rx) = mpsc::unbounded_channel::<LogEntry>();
     LOG_SENDER.set(tx).ok();
@@ -65,6 +70,8 @@ pub fn init(enabled: bool, db: DbConn) {
     log::set_boxed_logger(Box::new(AppLogger)).ok();
     // Allow info through for stderr; warn/error/info get buffered.
     log::set_max_level(log::LevelFilter::Info);
+    install_panic_hook();
+    log::info!("Logging initialized at {}", app_data_dir.display());
 }
 
 /// Enable or disable log buffering at runtime.
@@ -99,8 +106,49 @@ fn send_entry(level: &str, area: &str, message: &str) {
             message: message.to_string(),
             created_at: chrono::Utc::now().to_rfc3339(),
         };
+        if let Some(path) = LOG_FILE_PATH.get() {
+            append_to_file(path, &entry);
+        }
         tx.send(entry).ok();
     }
+}
+
+fn append_to_file(path: &Path, entry: &LogEntry) {
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+    {
+        let _ = writeln!(
+            file,
+            "{} [{}] {} - {}",
+            entry.created_at, entry.level, entry.area, entry.message
+        );
+    }
+}
+
+fn install_panic_hook() {
+    static PANIC_HOOK_INSTALLED: OnceLock<()> = OnceLock::new();
+    PANIC_HOOK_INSTALLED.get_or_init(|| {
+        let previous = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |info| {
+            if let Some(path) = LOG_FILE_PATH.get() {
+                let entry = LogEntry {
+                    id: uuid::Uuid::new_v4().to_string(),
+                    level: "error".to_string(),
+                    area: "panic".to_string(),
+                    message: info.to_string(),
+                    created_at: chrono::Utc::now().to_rfc3339(),
+                };
+                append_to_file(path, &entry);
+            }
+            previous(info);
+        }));
+    });
 }
 
 // ── Logger implementation ─────────────────────────────────────────────────────

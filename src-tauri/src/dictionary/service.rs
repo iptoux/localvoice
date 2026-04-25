@@ -76,7 +76,8 @@ pub fn update_rule(
     auto_apply: bool,
 ) -> Result<(), AppError> {
     dictionary_repo::update_rule(
-        db, id,
+        db,
+        id,
         source_phrase.trim(),
         target_phrase.trim(),
         language,
@@ -99,7 +100,10 @@ pub fn record_rule_usage(db: &DbConn, fired_ids: &[String]) -> Result<(), AppErr
 
 // ── Ambiguity ─────────────────────────────────────────────────────────────────
 
-pub fn list_ambiguous_terms(db: &DbConn, min_occurrences: i64) -> Result<Vec<AmbiguousTerm>, AppError> {
+pub fn list_ambiguous_terms(
+    db: &DbConn,
+    min_occurrences: i64,
+) -> Result<Vec<AmbiguousTerm>, AppError> {
     ambiguous_terms_repo::list_active(db, min_occurrences)
 }
 

@@ -4,7 +4,9 @@ pub fn remove_fillers(text: &str, words: &[String]) -> String {
     let mut sorted: Vec<&String> = words.iter().collect();
     sorted.sort_by(|a, b| b.len().cmp(&a.len()));
     let mut r = text.to_string();
-    for filler in &sorted { r = remove_filler_occurrences(&r, filler); }
+    for filler in &sorted {
+        r = remove_filler_occurrences(&r, filler);
+    }
     r.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
@@ -83,15 +85,52 @@ mod tests {
     use super::*;
 
     fn en() -> Vec<String> {
-        ["uh", "um", "uhm", "hmm", "hm", "mhm", "you know", "like",
-         "basically", "actually", "sort of", "kind of", "i mean", "right", "well", "so", "okay so"]
-            .iter().map(|s| s.to_string()).collect()
+        [
+            "uh",
+            "um",
+            "uhm",
+            "hmm",
+            "hm",
+            "mhm",
+            "you know",
+            "like",
+            "basically",
+            "actually",
+            "sort of",
+            "kind of",
+            "i mean",
+            "right",
+            "well",
+            "so",
+            "okay so",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect()
     }
 
     fn de() -> Vec<String> {
-        ["äh", "ähm", "öhm", "hm", "hmm", "mhm", "halt", "sozusagen",
-         "quasi", "irgendwie", "also", "ja", "ne", "naja", "gewissermaßen", "sagen wir mal"]
-            .iter().map(|s| s.to_string()).collect()
+        [
+            "äh",
+            "ähm",
+            "öhm",
+            "hm",
+            "hmm",
+            "mhm",
+            "halt",
+            "sozusagen",
+            "quasi",
+            "irgendwie",
+            "also",
+            "ja",
+            "ne",
+            "naja",
+            "gewissermaßen",
+            "sagen wir mal",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect()
     }
 
     #[test]

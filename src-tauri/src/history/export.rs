@@ -190,7 +190,8 @@ pub fn to_csv(sessions: &[Session]) -> String {
         format!("\"{}\"", s.replace('"', "\"\""))
     }
 
-    let mut out = String::from("date,language,model,duration_s,word_count,wpm,raw_text,cleaned_text\n");
+    let mut out =
+        String::from("date,language,model,duration_s,word_count,wpm,raw_text,cleaned_text\n");
     for s in sessions {
         let model = s.model_id.as_deref().unwrap_or("");
         let duration_s = s.duration_ms / 1000;

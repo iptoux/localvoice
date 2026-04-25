@@ -159,8 +159,7 @@ pub fn list_sessions(db: &DbConn, filter: &SessionFilter) -> CmdResult<Vec<Sessi
 
     let conn = db.lock().unwrap();
     let mut stmt = conn.prepare(&sql).map_err(AppError::from)?;
-    let params_refs: Vec<&dyn rusqlite::ToSql> =
-        param_values.iter().map(|b| b.as_ref()).collect();
+    let params_refs: Vec<&dyn rusqlite::ToSql> = param_values.iter().map(|b| b.as_ref()).collect();
     let rows = stmt
         .query_map(params_refs.as_slice(), row_to_session)
         .map_err(AppError::from)?
@@ -239,7 +238,8 @@ pub fn bulk_delete_sessions(db: &DbConn, ids: &[String]) -> CmdResult<usize> {
         .collect::<Vec<_>>()
         .join(",");
     let sql = format!("DELETE FROM sessions WHERE id IN ({placeholders})");
-    let params_refs: Vec<&dyn rusqlite::ToSql> = ids.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+    let params_refs: Vec<&dyn rusqlite::ToSql> =
+        ids.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
     let n = conn
         .execute(&sql, params_refs.as_slice())
         .map_err(AppError::from)?;
@@ -268,7 +268,8 @@ pub fn get_sessions_by_ids(db: &DbConn, ids: &[String]) -> CmdResult<Vec<Session
     );
     let conn = db.lock().unwrap();
     let mut stmt = conn.prepare(&sql).map_err(AppError::from)?;
-    let params_refs: Vec<&dyn rusqlite::ToSql> = ids.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
+    let params_refs: Vec<&dyn rusqlite::ToSql> =
+        ids.iter().map(|s| s as &dyn rusqlite::ToSql).collect();
     let rows = stmt
         .query_map(params_refs.as_slice(), row_to_session)
         .map_err(AppError::from)?
@@ -328,7 +329,15 @@ pub fn update_session_reprocess(
                 language = ?5, model_id = ?6,
                 reprocessed_count = reprocessed_count + 1
              WHERE id = ?7",
-            params![raw_text, cleaned_text, word_count, char_count, language, model_id, session_id],
+            params![
+                raw_text,
+                cleaned_text,
+                word_count,
+                char_count,
+                language,
+                model_id,
+                session_id
+            ],
         )
         .map_err(AppError::from)?;
     if n == 0 {

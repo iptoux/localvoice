@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use crate::db::DbConn;
 use crate::db::repositories::settings_repo;
+use crate::db::DbConn;
 
 /// Deletes audio files older than the configured retention period.
 ///

@@ -38,10 +38,17 @@ pub fn user_friendly_message(raw: &str) -> String {
     if lower.contains("no model") || (lower.contains("model") && lower.contains("not found")) {
         return "No model installed. Open Models to download one.".into();
     }
-    if lower.contains("whisper-cli") || lower.contains("whisper_sidecar") || lower.contains("whisper sidecar") {
+    if lower.contains("whisper-cli")
+        || lower.contains("whisper_sidecar")
+        || lower.contains("whisper sidecar")
+    {
         return "Transcription failed. Make sure a model is installed and working.".into();
     }
-    if lower.contains("audio") || lower.contains("microphone") || lower.contains("input device") || lower.contains("cpal") {
+    if lower.contains("audio")
+        || lower.contains("microphone")
+        || lower.contains("input device")
+        || lower.contains("cpal")
+    {
         return "Microphone not accessible. Check your audio settings.".into();
     }
     if lower.contains("disk") || lower.contains("no space") || lower.contains("storage") {

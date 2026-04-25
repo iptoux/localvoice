@@ -6,6 +6,8 @@
 - Bumped the app version to 0.2.2.
 - Added a square 256x256 Linux bundle icon and removed non-square PNGs from the Tauri icon list to fix AppImage packaging.
 - Updated frontend dependencies to resolve npm/pnpm security advisories while keeping the Vite toolchain on the latest compatible 7.x line.
+- Added a plain-text `localvoice.log` file in the app data directory so crash reports can include logs even when the in-app viewer is unavailable.
+- Moved audio-level UI event emission out of the real-time capture callback and uses the default Windows input stream configuration to reduce driver-level recording crashes.
 
 ## MS-18 — macOS & Linux Support (2026-03-23)
 

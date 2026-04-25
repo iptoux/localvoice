@@ -115,7 +115,10 @@ pub fn delete_entry(db: &DbConn, id: &str) -> Result<(), AppError> {
 /// Returns all active, auto-apply rules — optionally filtered by language.
 /// Language `None` returns rules that apply to all languages (language IS NULL)
 /// as well as rules matching the given language code.
-pub fn list_active_rules(db: &DbConn, language: Option<&str>) -> Result<Vec<CorrectionRule>, AppError> {
+pub fn list_active_rules(
+    db: &DbConn,
+    language: Option<&str>,
+) -> Result<Vec<CorrectionRule>, AppError> {
     let conn = db.lock().unwrap();
     if let Some(lang) = language {
         let mut stmt = conn.prepare(
@@ -183,8 +186,15 @@ pub fn create_rule(
              rule_mode, is_active, auto_apply, usage_count, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1, ?7, 0, ?8, ?9)",
         params![
-            id, source_phrase, normalized_source, target_phrase, language,
-            rule_mode, auto_apply as i64, now, now
+            id,
+            source_phrase,
+            normalized_source,
+            target_phrase,
+            language,
+            rule_mode,
+            auto_apply as i64,
+            now,
+            now
         ],
     )?;
     Ok(CorrectionRule {
@@ -221,8 +231,14 @@ pub fn update_rule(
              language = ?4, is_active = ?5, auto_apply = ?6, updated_at = ?7
          WHERE id = ?8",
         params![
-            source_phrase, normalized_source, target_phrase, language,
-            is_active as i64, auto_apply as i64, now, id
+            source_phrase,
+            normalized_source,
+            target_phrase,
+            language,
+            is_active as i64,
+            auto_apply as i64,
+            now,
+            id
         ],
     )?;
     Ok(())

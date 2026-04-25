@@ -44,9 +44,10 @@ pub fn resolve_binary(app: &AppHandle) -> CmdResult<PathBuf> {
         if p.exists() {
             return Ok(p);
         }
-        return Err(
-            format!("WHISPER_BIN_PATH is set to '{env_path}' but the file does not exist.").into(),
-        );
+        return Err(format!(
+            "WHISPER_BIN_PATH is set to '{env_path}' but the file does not exist."
+        )
+        .into());
     }
 
     // 2. Alongside the running executable (production bundle — binary is in exe dir).
@@ -122,7 +123,11 @@ pub fn resolve_binary(app: &AppHandle) -> CmdResult<PathBuf> {
          • Place whisper-cli.exe and its DLLs into src-tauri/binaries/\n\
          • Set WHISPER_BIN_PATH=/full/path/to/whisper-cli.exe\n\
          • Download from https://github.com/ggerganov/whisper.cpp/releases",
-        searched.iter().map(|p| format!("  • {p}")).collect::<Vec<_>>().join("\n")
+        searched
+            .iter()
+            .map(|p| format!("  • {p}"))
+            .collect::<Vec<_>>()
+            .join("\n")
     )
     .into())
 }
@@ -194,10 +199,7 @@ fn dir_contains_dll(dir: &Path) -> bool {
 /// 1. `WHISPER_MODEL_PATH` environment variable.
 /// 2. `transcription.model_path` setting in the database (via `model_path_override`).
 /// 3. First `*.bin` file found in `{app_data_dir}/models/`.
-pub fn resolve_model(
-    _app: &AppHandle,
-    model_path_override: Option<&str>,
-) -> CmdResult<PathBuf> {
+pub fn resolve_model(_app: &AppHandle, model_path_override: Option<&str>) -> CmdResult<PathBuf> {
     // 1. Env override.
     if let Ok(env_path) = std::env::var("WHISPER_MODEL_PATH") {
         let p = PathBuf::from(&env_path);
@@ -212,9 +214,7 @@ pub fn resolve_model(
         if p.exists() {
             return Ok(p);
         }
-        return Err(
-            format!("Model path from settings does not exist: {path_str}").into(),
-        );
+        return Err(format!("Model path from settings does not exist: {path_str}").into());
     }
 
     // 3. No model configured — hard error, no fallback.
@@ -256,24 +256,33 @@ pub fn invoke(
     let mut full_cmd = Command::new(binary);
     full_cmd
         .args([
-            "-m", &model_str,
-            "-f", &wav_str,
-            "-l", language,
+            "-m",
+            &model_str,
+            "-f",
+            &wav_str,
+            "-l",
+            language,
             "-ojf",
-            "-of", &prefix_str,
+            "-of",
+            &prefix_str,
         ])
         .current_dir(binary_dir)
         .env("PATH", &extended_path);
     #[cfg(target_os = "windows")]
     full_cmd.creation_flags(CREATE_NO_WINDOW);
-    let full_out = full_cmd.output()
+    let full_out = full_cmd
+        .output()
         .map_err(|e| format!("Failed to spawn whisper-cli: {e}"))?;
 
     if full_out.status.success() {
         let stdout = String::from_utf8_lossy(&full_out.stdout).into_owned();
         let json_path = {
             let candidate = output_prefix.with_extension("json");
-            if candidate.exists() { Some(candidate) } else { None }
+            if candidate.exists() {
+                Some(candidate)
+            } else {
+                None
+            }
         };
         return Ok(SidecarOutput { stdout, json_path });
     }
@@ -289,21 +298,21 @@ pub fn invoke(
     #[allow(unused_mut)]
     let mut min_cmd = Command::new(binary);
     min_cmd
-        .args([
-            "-m", &model_str,
-            "-f", &wav_str,
-            "-l", language,
-        ])
+        .args(["-m", &model_str, "-f", &wav_str, "-l", language])
         .current_dir(binary_dir)
         .env("PATH", &extended_path);
     #[cfg(target_os = "windows")]
     min_cmd.creation_flags(CREATE_NO_WINDOW);
-    let min_out = min_cmd.output()
+    let min_out = min_cmd
+        .output()
         .map_err(|e| format!("Failed to spawn whisper-cli (fallback): {e}"))?;
 
     if min_out.status.success() {
         let stdout = String::from_utf8_lossy(&min_out.stdout).into_owned();
-        return Ok(SidecarOutput { stdout, json_path: None });
+        return Ok(SidecarOutput {
+            stdout,
+            json_path: None,
+        });
     }
 
     let min_stderr = String::from_utf8_lossy(&min_out.stderr).into_owned();
@@ -388,8 +397,6 @@ fn collect_dll_dirs(dir: &Path, out: &mut Vec<PathBuf>) {
 
 fn which_in_path(bin: &str) -> bool {
     std::env::var_os("PATH")
-        .map(|path_var| {
-            std::env::split_paths(&path_var).any(|dir| dir.join(bin).exists())
-        })
+        .map(|path_var| std::env::split_paths(&path_var).any(|dir| dir.join(bin).exists()))
         .unwrap_or(false)
 }

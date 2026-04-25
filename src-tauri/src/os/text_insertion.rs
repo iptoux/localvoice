@@ -171,5 +171,7 @@ fn send_paste_key() {
 
 #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
 fn send_paste_key() {
-    log::warn!("Automatic paste not implemented on this platform. Text has been copied to clipboard.");
+    log::warn!(
+        "Automatic paste not implemented on this platform. Text has been copied to clipboard."
+    );
 }

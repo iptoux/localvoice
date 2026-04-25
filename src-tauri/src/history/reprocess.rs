@@ -1,6 +1,8 @@
 use tauri::{AppHandle, Manager};
 
-use crate::db::repositories::{dictionary_repo, filler_words_repo, models_repo, sessions_repo, settings_repo};
+use crate::db::repositories::{
+    dictionary_repo, filler_words_repo, models_repo, sessions_repo, settings_repo,
+};
 use crate::errors::CmdResult;
 use crate::state::AppState;
 use crate::transcription::{language, parser, pipeline, whisper_sidecar};
@@ -22,10 +24,9 @@ pub fn reprocess_session(
     let detail = sessions_repo::get_session(&state.db, session_id)?;
     let session = &detail.session;
 
-    let audio_path = session
-        .audio_path
-        .as_deref()
-        .ok_or_else(|| "No audio file available for this session — reprocessing requires kept audio".to_string())?;
+    let audio_path = session.audio_path.as_deref().ok_or_else(|| {
+        "No audio file available for this session — reprocessing requires kept audio".to_string()
+    })?;
 
     // Verify the audio file still exists.
     if !std::path::Path::new(audio_path).exists() {
@@ -59,8 +60,7 @@ pub fn reprocess_session(
         // Look up the model by key to get its local_path.
         models_repo::get_model_path(&state.db, mid)?
     } else {
-        models_repo::get_default_path(&state.db, &lang_code)
-            .unwrap_or(None)
+        models_repo::get_default_path(&state.db, &lang_code).unwrap_or(None)
     };
 
     let binary = whisper_sidecar::resolve_binary(app)?;
@@ -99,14 +99,20 @@ pub fn reprocess_session(
 
     let raw_text = parser::segments_to_text(&segments);
 
-    let active_rules = dictionary_repo::list_active_rules(&state.db, Some(&lang_code))
-        .unwrap_or_default();
+    let active_rules =
+        dictionary_repo::list_active_rules(&state.db, Some(&lang_code)).unwrap_or_default();
 
-    let filler_words = filler_words_repo::list_words_for_language(&state.db, &lang_code)
-        .unwrap_or_default();
+    let filler_words =
+        filler_words_repo::list_words_for_language(&state.db, &lang_code).unwrap_or_default();
 
-    let (cleaned_text, cleaned_segments, _fired_ids, _removed_fillers) =
-        pipeline::run(&raw_text, segments, &settings, &active_rules, &lang_code, &filler_words);
+    let (cleaned_text, cleaned_segments, _fired_ids, _removed_fillers) = pipeline::run(
+        &raw_text,
+        segments,
+        &settings,
+        &active_rules,
+        &lang_code,
+        &filler_words,
+    );
 
     // Update session record.
     sessions_repo::update_session_reprocess(
