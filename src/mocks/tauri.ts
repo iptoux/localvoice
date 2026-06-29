@@ -12,11 +12,13 @@ import type {
   LogEntry,
   ModelInfo,
   RecordingState,
+  RuntimeHealth,
   Session,
   SessionFilter,
   SessionWithSegments,
   Settings,
   TimeseriesPoint,
+  TranscriptionEngineInfo,
   TranscriptionResult,
   WpmPoint,
 } from "../types";
@@ -29,11 +31,90 @@ export const mockDevices: DeviceInfo[] = [
 export const mockSettings: Settings = {
   "transcription.default_language": "auto",
   "transcription.default_model": "ggml-base",
+  "transcription.default_engine": "whisper-cpp",
+  "transcription.preferred_runtime": "bundled-sidecar",
+  "transcription.streaming.enabled": "false",
+  "transcription.streaming.chunk_ms": "500",
+  "transcription.nemo.python_path": "",
+  "transcription.parakeet.device": "cpu",
   "output.mode": "clipboard",
   "recording.hotkey": "CommandOrControl+Shift+D",
   "recording.auto_gain": "true",
   "recording.noise_reduction": "true",
   "ui.pill_opacity": "100",
+};
+
+const whisperSessionRuntime = {
+  engine: "whisper-cpp",
+  modelArtifactFormat: "ggml-bin",
+  runtime: "bundled-sidecar",
+} satisfies Pick<Session, "engine" | "modelArtifactFormat" | "runtime">;
+
+const whisperTranscriptionRuntime = {
+  engine: "whisper-cpp",
+  artifactFormat: "ggml-bin",
+  runtime: "bundled-sidecar",
+} satisfies Pick<TranscriptionResult, "engine" | "artifactFormat" | "runtime">;
+
+const whisperModelRuntime = {
+  engine: "whisper-cpp",
+  artifactFormat: "ggml-bin",
+  runtime: "bundled-sidecar",
+  supportsStreaming: false,
+  supportsWordTimestamps: false,
+  supportsConfidence: true,
+  licenseId: "mit",
+  licenseUrl: "https://github.com/ggerganov/whisper.cpp",
+} satisfies Pick<
+  ModelInfo,
+  | "engine"
+  | "artifactFormat"
+  | "runtime"
+  | "supportsStreaming"
+  | "supportsWordTimestamps"
+  | "supportsConfidence"
+  | "licenseId"
+  | "licenseUrl"
+>;
+
+export const mockTranscriptionEngines: TranscriptionEngineInfo[] = [
+  {
+    key: "whisper-cpp",
+    displayName: "Whisper.cpp",
+    runtime: "bundled-sidecar",
+    artifactFormats: ["ggml-bin"],
+    bundled: true,
+    optional: false,
+    supportsStreaming: false,
+    description: "Bundled local Whisper runtime.",
+  },
+  {
+    key: "parakeet-cpp",
+    displayName: "Parakeet.cpp",
+    runtime: "bundled-sidecar",
+    artifactFormats: ["gguf"],
+    bundled: true,
+    optional: false,
+    supportsStreaming: true,
+    description: "Bundled Parakeet GGUF runtime.",
+  },
+  {
+    key: "nemo",
+    displayName: "NVIDIA NeMo",
+    runtime: "optional-nemo",
+    artifactFormats: ["nemo"],
+    bundled: false,
+    optional: true,
+    supportsStreaming: true,
+    description: "Optional Python NeMo runtime for .nemo models.",
+  },
+];
+
+export const mockNemoHealth: RuntimeHealth = {
+  runtime: "optional-nemo",
+  available: false,
+  configured: false,
+  message: "NeMo runtime is not configured.",
 };
 
 export const mockSession: Session = {
@@ -43,6 +124,7 @@ export const mockSession: Session = {
   durationMs: 90000,
   language: "de",
   modelId: "ggml-base",
+  ...whisperSessionRuntime,
   triggerType: "hotkey",
   inputDeviceId: "mic-1",
   rawText: "Das ist ein Test. Hallo Welt. Wie geht es dir?",
@@ -97,8 +179,10 @@ export const mockTranscription: TranscriptionResult = {
     { startMs: 2000, endMs: 4000, text: "Hallo Welt.", confidence: 0.92 },
     { startMs: 4000, endMs: 6000, text: "Wie geht es dir?", confidence: 0.88 },
   ],
+  words: [],
   language: "de",
   modelId: "ggml-base",
+  ...whisperTranscriptionRuntime,
   durationMs: 6000,
   output: { mode: "clipboard", success: true },
   removedFillers: [],
@@ -178,6 +262,7 @@ export const mockModels: ModelInfo[] = [
     key: "ggml-base",
     displayName: "Base (EN)",
     languageScope: "en-only",
+    ...whisperModelRuntime,
     fileSizeBytes: 140000000,
     installed: true,
     isDefaultForDe: false,
@@ -190,11 +275,13 @@ export const mockModels: ModelInfo[] = [
     accuracy: "low",
     category: "standard",
     recommendedFor: "Quick dictation, English",
+    languageLocales: ["en-US"],
   },
   {
     key: "ggml-small",
     displayName: "Small (Multilingual)",
     languageScope: "multilingual",
+    ...whisperModelRuntime,
     fileSizeBytes: 480000000,
     installed: true,
     isDefaultForDe: true,
@@ -207,11 +294,13 @@ export const mockModels: ModelInfo[] = [
     accuracy: "medium",
     category: "standard",
     recommendedFor: "German, French, Spanish",
+    languageLocales: ["de-DE", "en-US", "fr-FR", "es-ES"],
   },
   {
     key: "ggml-medium",
     displayName: "Medium (Multilingual)",
     languageScope: "multilingual",
+    ...whisperModelRuntime,
     fileSizeBytes: 1500000000,
     installed: true,
     isDefaultForDe: false,
@@ -224,11 +313,13 @@ export const mockModels: ModelInfo[] = [
     accuracy: "good",
     category: "standard",
     recommendedFor: "Accurate transcription",
+    languageLocales: ["de-DE", "en-US", "fr-FR", "es-ES"],
   },
   {
     key: "ggml-large-v3",
     displayName: "Large v3 (Multilingual)",
     languageScope: "multilingual",
+    ...whisperModelRuntime,
     fileSizeBytes: 2900000000,
     installed: false,
     isDefaultForDe: false,
@@ -239,6 +330,7 @@ export const mockModels: ModelInfo[] = [
     accuracy: "great",
     category: "large",
     recommendedFor: "Maximum accuracy",
+    languageLocales: ["de-DE", "en-US", "fr-FR", "es-ES"],
   },
 ];
 
@@ -354,6 +446,7 @@ export const mockSessionDetail: SessionWithSegments = {
     { id: "seg-2", sessionId: "session-1", startMs: 2000, endMs: 4000, text: "Hallo Welt.", confidence: 0.92, segmentIndex: 1 },
     { id: "seg-3", sessionId: "session-1", startMs: 4000, endMs: 6000, text: "Wie geht es dir?", confidence: 0.88, segmentIndex: 2 },
   ],
+  words: [],
 };
 
 export const mockInvoke = async (cmd: string, args?: Record<string, unknown>): Promise<unknown> => {
@@ -396,6 +489,20 @@ export const mockInvoke = async (cmd: string, args?: Record<string, unknown>): P
       return mockTranscription;
     case "get_last_transcription":
       return mockTranscription;
+    case "list_transcription_engines":
+      return mockTranscriptionEngines;
+    case "check_transcription_runtime": {
+      const runtime = String(args?.runtime ?? "bundled-sidecar");
+      if (runtime === "optional-nemo") {
+        return mockNemoHealth;
+      }
+      return {
+        runtime,
+        available: true,
+        configured: true,
+        message: "Runtime is available.",
+      } satisfies RuntimeHealth;
+    }
     case "list_sessions": {
       const filter = (args?.filter as SessionFilter) ?? {};
       let result = [...mockSessions];

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a hybrid transcription runtime with Whisper GGML, Parakeet GGUF, and optional NVIDIA NeMo `.nemo` model support.
+- Bundled the Parakeet CPU/portable sidecar in CI and release builds while keeping all model weights and Python/NeMo/CUDA stacks out of base installers.
+- Added model/runtime metadata, word-level timestamp persistence, runtime health checks, and release artifact audits for transcription sidecars.
 - Temporarily disabled the SignPath release job until OSS signing support is available; Windows release artifacts are published unsigned for now.
 - Bumped the app version to 0.2.2.
 - Added a square 256x256 Linux bundle icon and removed non-square PNGs from the Tauri icon list to fix AppImage packaging.

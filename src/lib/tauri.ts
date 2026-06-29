@@ -20,6 +20,8 @@ import type {
   SessionWithSegments,
   Settings,
   TimeseriesPoint,
+  RuntimeHealth,
+  TranscriptionEngineInfo,
   TranscriptionResult,
   WpmPoint,
 } from "../types";
@@ -109,6 +111,12 @@ export const transcribeLastRecording = (
 
 export const getLastTranscription = (): Promise<TranscriptionResult | null> =>
   invoke<TranscriptionResult | null>("get_last_transcription");
+
+export const listTranscriptionEngines = (): Promise<TranscriptionEngineInfo[]> =>
+  invoke<TranscriptionEngineInfo[]>("list_transcription_engines");
+
+export const checkTranscriptionRuntime = (runtime: string): Promise<RuntimeHealth> =>
+  invoke<RuntimeHealth>("check_transcription_runtime", { runtime });
 
 // ── History ───────────────────────────────────────────────────────────────────
 

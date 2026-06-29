@@ -18,6 +18,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   quantized: "Quantized",
   turbo: "Turbo",
   large: "Large",
+  parakeet: "Parakeet",
+  nemo: "NeMo",
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -25,6 +27,14 @@ const CATEGORY_COLORS: Record<string, string> = {
   quantized: "bg-cyan-900/60 text-cyan-300",
   turbo: "bg-orange-900/60 text-orange-300",
   large: "bg-purple-900/60 text-purple-300",
+  parakeet: "bg-emerald-900/60 text-emerald-300",
+  nemo: "bg-lime-900/60 text-lime-300",
+};
+
+const ENGINE_LABELS: Record<string, string> = {
+  "whisper-cpp": "Whisper.cpp",
+  "parakeet-cpp": "Parakeet.cpp",
+  nemo: "NeMo",
 };
 
 const SPEED_DOTS: Record<string, number> = {
@@ -129,6 +139,17 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
                 <CheckCircle size={11} /> Installed
               </span>
             )}
+            <span className="px-1.5 py-0.5 rounded text-xs bg-neutral-800 text-neutral-300 font-medium">
+              {ENGINE_LABELS[model.engine] ?? model.engine}
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-xs bg-neutral-800 text-neutral-300 font-medium uppercase">
+              {model.artifactFormat}
+            </span>
+            {model.supportsStreaming && (
+              <span className="px-1.5 py-0.5 rounded text-xs bg-blue-900/60 text-blue-300 font-medium">
+                Streaming
+              </span>
+            )}
             {(model.defaultForLanguages ?? []).map((lang) => (
               <span key={lang} className="px-1.5 py-0.5 rounded text-xs bg-blue-900/60 text-blue-300 font-medium uppercase">
                 {lang}
@@ -145,6 +166,10 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
             <span className="text-xs text-muted-foreground capitalize">
               {model.languageScope === "multilingual" ? <><Globe size={11} className="inline mr-1" />Multilingual</> : "🇬🇧 EN only"}
             </span>
+            <span className="text-xs text-muted-foreground">
+              {model.runtime === "optional-nemo" ? "Runtime required" : "Bundled runtime"}
+            </span>
+            <span className="text-xs text-muted-foreground uppercase">{model.licenseId}</span>
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>Speed</span>
               <Dots filled={speedDots} color="bg-green-500" />
@@ -210,7 +235,7 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
 
 // ── page ──────────────────────────────────────────────────────────────────────
 
-const CATEGORIES = ["all", "standard", "quantized", "turbo", "large"] as const;
+const CATEGORIES = ["all", "standard", "quantized", "turbo", "large", "parakeet", "nemo"] as const;
 type CategoryFilter = typeof CATEGORIES[number];
 type SortKey = "default" | "speed" | "accuracy" | "size";
 
@@ -298,7 +323,7 @@ export default function Models() {
     <div className="p-8">
       <h1 className="text-2xl font-semibold text-foreground mb-1">Models</h1>
       <p className="text-muted-foreground text-sm mb-8">
-        Download and manage local whisper.cpp transcription models.
+        Download and manage local Whisper, Parakeet, and optional NeMo transcription models.
       </p>
 
       {/* Default model selectors */}

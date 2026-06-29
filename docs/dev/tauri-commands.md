@@ -107,15 +107,19 @@ Re-transcribes the most recently recorded WAV file.
 ```typescript
 invoke('transcribe_last_recording', {
   language?: string,    // ISO 639-1 code (e.g. "de", "en"); defaults to `transcription.default_language`
-  modelId?: string      // currently unused (placeholder for MS-07)
+  modelId?: string      // optional installed model key or direct model path
 }): Promise<TranscriptionResult>
 
 interface TranscriptionResult {
-  rawText: string;         // raw whisper output (before post-processing)
+  rawText: string;         // raw engine output (before post-processing)
   cleanedText: string;      // after normalization, filler removal, corrections
   segments: TranscriptSegment[];
+  words: TranscriptWord[];
   language: string;         // actual language used (e.g. "de", "en", "auto")
-  modelId: string;          // stem of the model file (e.g. "ggml-base")
+  modelId: string;          // registry key or stem of the model file
+  engine: string;           // "whisper-cpp" | "parakeet-cpp" | "nemo"
+  artifactFormat: string;   // "ggml-bin" | "gguf" | "nemo"
+  runtime: string;          // "bundled-sidecar" | "optional-nemo" | "external-path"
   durationMs: number;       // wall-clock transcription time in ms
   output?: OutputResult;    // set by orchestrator after output step
   removedFillers: string[];  // fillers removed during post-processing
@@ -126,6 +130,13 @@ interface TranscriptSegment {
   endMs: number;
   text: string;
   confidence?: number;   // mean token probability [0, 1]
+}
+
+interface TranscriptWord {
+  startMs: number;
+  endMs: number;
+  text: string;
+  confidence?: number;
 }
 
 interface OutputResult {
@@ -139,7 +150,7 @@ interface OutputResult {
 | Error | Cause |
 |-------|-------|
 | `"No recording available to transcribe"` | `stop_recording` was never called or WAV file is missing |
-| whisper errors | Model not found, invalid audio format, etc. |
+| engine errors | Model not found, sidecar unavailable, optional runtime unavailable, invalid audio format, etc. |
 
 ---
 
@@ -149,6 +160,46 @@ Returns the most recently completed transcription result.
 
 ```typescript
 invoke('get_last_transcription'): Promise<TranscriptionResult | null>
+```
+
+---
+
+### `list_transcription_engines`
+
+Returns supported local transcription engines and their runtime capabilities.
+
+```typescript
+invoke('list_transcription_engines'): Promise<TranscriptionEngineInfo[]>
+
+interface TranscriptionEngineInfo {
+  key: string;
+  displayName: string;
+  runtime: string;
+  artifactFormats: string[];
+  bundled: boolean;
+  optional: boolean;
+  supportsStreaming: boolean;
+  description: string;
+}
+```
+
+---
+
+### `check_transcription_runtime`
+
+Checks whether a runtime is currently usable. `optional-nemo` performs the Python/NeMo health check.
+
+```typescript
+invoke('check_transcription_runtime', { runtime: string }): Promise<RuntimeHealth>
+
+interface RuntimeHealth {
+  runtime: string;
+  available: boolean;
+  configured: boolean;
+  message: string;
+  pythonPath?: string;
+  detail?: string;
+}
 ```
 
 ---
@@ -168,6 +219,7 @@ interface SessionFilter {
   dateFrom?: string;       // ISO 8601 lower bound for startedAt
   dateTo?: string;         // ISO 8601 upper bound for startedAt
   modelId?: string;        // model stem filter
+  engine?: string;         // engine key filter
   limit?: number;
   offset?: number;
 }
@@ -179,6 +231,9 @@ interface Session {
   durationMs: number;
   language: string;
   modelId?: string;
+  engine: string;
+  modelArtifactFormat: string;
+  runtime: string;
   triggerType: string;     // "hotkey" | "button" | ...
   inputDeviceId?: string;
   rawText: string;
@@ -210,6 +265,7 @@ invoke('get_session', { sessionId: string }): Promise<SessionWithSegments>
 interface SessionWithSegments {
   session: Session;
   segments: SessionSegment[];
+  words: TranscriptWord[];
 }
 
 interface SessionSegment {
@@ -555,6 +611,9 @@ interface ModelInfo {
   key: string;                    // registry key (e.g. "tiny", "base", "small")
   displayName: string;
   languageScope: string;
+  engine: "whisper-cpp" | "parakeet-cpp" | "nemo";
+  artifactFormat: "ggml-bin" | "gguf" | "nemo";
+  runtime: "bundled-sidecar" | "optional-nemo" | "external-path";
   fileSizeBytes: number;
   installed: boolean;
   isDefaultForDe: boolean;
@@ -567,6 +626,12 @@ interface ModelInfo {
   accuracy: string;
   category: string;
   recommendedFor: string;
+  supportsStreaming: boolean;
+  supportsWordTimestamps: boolean;
+  supportsConfidence: boolean;
+  licenseId: string;
+  licenseUrl: string;
+  languageLocales: string[];
 }
 ```
 
@@ -578,7 +643,7 @@ Downloads, verifies, and installs a model. Emits `model-download-progress` event
 
 ```typescript
 invoke('download_model', { key: string }): Promise<void>
-// key: registry key (e.g. "tiny", "base", "small")
+// key: registry key (e.g. "ggml-base", "parakeet-tdt-0-6b-v3-q5")
 ```
 
 **Error codes:**
@@ -610,6 +675,8 @@ invoke('set_default_model', {
 }): Promise<void>
 ```
 
+`.nemo` models require a passing `optional-nemo` runtime health check before they can be selected as defaults.
+
 ---
 
 ## Settings
@@ -622,6 +689,17 @@ Returns all settings as a flat key-value map.
 invoke('get_settings'): Promise<Record<string, string>>
 // Keys use dot-notation, e.g. "recording.device_id", "transcription.default_language"
 ```
+
+Hybrid transcription settings include:
+
+| Key | Meaning |
+|---|---|
+| `transcription.default_engine` | Preferred engine key |
+| `transcription.preferred_runtime` | Bundled sidecar or optional runtime preference |
+| `transcription.streaming.enabled` | Enables partial streaming UI updates where supported |
+| `transcription.streaming.chunk_ms` | Target streaming chunk size |
+| `transcription.nemo.python_path` | Optional Python interpreter path |
+| `transcription.parakeet.device` | Reserved Parakeet device selector |
 
 ---
 

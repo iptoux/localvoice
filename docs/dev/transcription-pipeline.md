@@ -1,76 +1,73 @@
-# Whisper.cpp Sidecar Pipeline
+# Hybrid Transcription Pipeline
 
-This document explains how LocalVoice integrates whisper.cpp as a **sidecar process** — spawning it as a separate child process and communicating via stdin/stdout.
+This document explains how LocalVoice runs local transcription through a shared orchestrator and engine-specific runtimes.
 
 ## Overview
 
-LocalVoice does not link against whisper.cpp directly. Instead, it runs the `whisper-cli` executable as a subprocess. This architectural choice:
+LocalVoice does not link against native transcription libraries directly. Rust spawns local child processes and normalizes their output into one `TranscriptionResult` shape:
 
-- **Simplifies builds** — no C++ compilation required during Rust builds
-- **Isolates failures** — transcription crashes don't crash the main app
-- **Enables flexibility** — swap whisper binaries without recompiling
+- `WhisperCppEngine` runs `whisper-cli` for GGML `.bin` models.
+- `ParakeetCppEngine` runs `parakeet-cli` for GGUF `.gguf` models.
+- `NemoEngine` runs an optional Python worker for NVIDIA `.nemo` checkpoints.
 
-## Architecture
+After an engine returns raw text, segments, and optional words, the existing post-processing path still applies:
 
+1. Whitespace normalization.
+2. Optional filler-word removal.
+3. Optional capitalization and punctuation.
+4. Dictionary and correction rules.
+5. History persistence, output, and UI events.
+
+Partial streaming updates are allowed where supported, but final output semantics stay unchanged.
+
+## Engine Selection
+
+The orchestrator resolves the runtime from the installed model registry first. If no registry model is selected, legacy Whisper settings and direct model paths remain supported.
+
+| Field | Purpose |
+|---|---|
+| `engine` | `whisper-cpp`, `parakeet-cpp`, or `nemo` |
+| `artifactFormat` | `ggml-bin`, `gguf`, or `nemo` |
+| `runtime` | `bundled-sidecar`, `optional-nemo`, or `external-path` |
+| `supportsStreaming` | Whether partial UI updates can be emitted |
+| `supportsWordTimestamps` | Whether word-level timestamps can be stored |
+| `supportsConfidence` | Whether confidence scores are expected |
+
+The model registry in `src-tauri/src/models/registry.rs` is the source of truth for engine metadata, artifact names, checksums, license URLs, and language locales.
+
+## Sidecar Resolution
+
+Whisper and Parakeet use Tauri `externalBin` entries and are named without target triples in `tauri.conf.json`:
+
+```json
+{
+  "externalBin": [
+    "binaries/whisper-cli",
+    "binaries/parakeet-cli"
+  ]
+}
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        LocalVoice (Tauri)                       │
-│                                                                 │
-│  ┌──────────────┐    ┌─────────────────┐    ┌────────────────┐ │
-│  │ Audio Capture │───▶│ WAV File (.wav)│───▶│ Transcription  │ │
-│  │   (cpal)     │    │   (temp file)   │    │  Orchestrator  │ │
-│  └──────────────┘    └─────────────────┘    └───────┬────────┘ │
-│                                                       │         │
-│                                                       ▼         │
-│                                             ┌────────────────┐ │
-│                                             │  Post-Process  │ │
-│                                             │  Pipeline      │ │
-│                                             └───────┬────────┘ │
-│                                                     │         │
-└─────────────────────────────────────────────────────┼─────────┘
-                                                      │
-                                                      ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    whisper-cli (Sidecar)                        │
-│                                                                 │
-│   stdin: nothing (file path passed as argument)                │
-│   stdout: transcription text or JSON                           │
-│   stderr: progress logs, warnings                               │
-│                                                                 │
-│   Binary location: see "Binary Resolution" below                │
-└─────────────────────────────────────────────────────────────────┘
-```
 
-## Binary Resolution
+Tauri validates target-triple files during local checks and builds. Bootstrap scripts and CI place binaries such as:
 
-The Rust backend searches for `whisper-cli` in this order:
+- `src-tauri/binaries/whisper-cli-x86_64-pc-windows-msvc.exe`
+- `src-tauri/binaries/parakeet-cli-x86_64-pc-windows-msvc.exe`
+- `src-tauri/binaries/parakeet-cli-aarch64-apple-darwin`
+- `src-tauri/binaries/parakeet-cli-x86_64-unknown-linux-gnu`
 
-| Priority | Location | Notes |
-|----------|----------|-------|
-| 1 | `WHISPER_BIN_PATH` env var | Absolute path override |
-| 2 | Next to app executable | Production bundle |
-| 3 | `src-tauri/binaries/` | Development mode |
-| 4 | Tauri resource dir | Packed resources |
-| 5 | System `PATH` | Fallback |
+Runtime resolution order:
 
-### Binary Names Checked
+| Priority | Whisper | Parakeet | Notes |
+|---|---|---|---|
+| 1 | `WHISPER_BIN_PATH` | `PARAKEET_BIN_PATH` | Absolute override |
+| 2 | App executable directory | App executable directory | Production bundle |
+| 3 | `src-tauri/binaries/` | `src-tauri/binaries/` | Development |
+| 4 | Tauri resource directory | Tauri resource directory | Packed resources |
+| 5 | `PATH` | `PATH` | Last fallback |
 
-Windows: `whisper-cli.exe`, `main.exe`  
-Unix: `whisper-cli`, `main`
+## Whisper Protocol
 
-### Model Resolution
-
-Models are resolved similarly:
-
-| Priority | Location | Notes |
-|----------|----------|-------|
-| 1 | `WHISPER_MODEL_PATH` env var | Absolute path override |
-| 2 | `transcription.model_path` setting | From database |
-| 3 | `{app_data}/models/*.bin` | Auto-scanned |
-
-## Command-Line Protocol
-
-### Primary Invocation (Full Features)
+Primary invocation:
 
 ```bash
 whisper-cli \
@@ -81,201 +78,123 @@ whisper-cli \
   -of <output_prefix>
 ```
 
-| Flag | Description |
-|------|-------------|
-| `-m` | Model file path |
-| `-f` | Input audio file (WAV) |
-| `-l` | Language code (`de`, `en`, `auto`, etc.) |
-| `-ojf` | Output JSON with timestamps and confidence |
-| `-of` | Output file prefix (`.json` extension added) |
+The JSON output file is parsed for segments and confidence. If JSON mode fails, LocalVoice retries with a plain text invocation and parses timestamped lines where available.
 
-### Fallback Invocation (Compatibility)
+## Parakeet Protocol
 
-If the primary invocation fails, LocalVoice retries with minimal flags:
+Parakeet GGUF invocation:
 
 ```bash
-whisper-cli \
-  -m <model_path> \
-  -f <audio_file.wav> \
-  -l <language>
+parakeet-cli transcribe \
+  --model <model_path> \
+  --input <audio_file.wav> \
+  --json \
+  --timestamps \
+  --lang <language>
 ```
 
-This older format outputs plain text to stdout without JSON.
+`src-tauri/src/transcription/parakeet_parser.rs` accepts fixture-driven JSON shapes and normalizes them to transcript text, segments, and words. `src-tauri/src/transcription/parakeet_sidecar.rs` owns sidecar resolution, process spawning, timeout handling, and smoke tests.
 
-## Output Formats
+## NeMo Worker Protocol
 
-### JSON Output (`-ojf`)
+NeMo is optional and app-managed. The Python worker is bundled as a resource at:
 
-When successful, whisper-cli writes a JSON file containing:
-
-```json
-{
-  "transcription": [
-    {
-      "offsets": { "from": 0, "to": 2500 },
-      "text": " Hello world",
-      "tokens": [
-        { "p": 0.95 },
-        { "p": 0.92 }
-      ]
-    }
-  ]
-}
+```text
+src-tauri/resources/nemo_worker/localvoice_nemo_worker.py
 ```
 
-LocalVoice parses this to extract:
-- **Segment timestamps** (`start_ms`, `end_ms`)
-- **Confidence scores** (average token probability per segment)
+Rust starts the worker directly with the configured Python interpreter. No Tauri shell plugin is required.
 
-### Plain Text Output (Fallback)
+The worker script is packaged with `manifest.json`, which declares the protocol version, entrypoint, runtime, message names, and optional Python modules. The worker itself speaks NDJSON. Supported message types:
 
-```
-[00:00:00.000 --> 00:00:02.500]   Hello world
-[00:00:02.500 --> 00:00:05.000]   This is a test.
-```
+| Type | Direction | Purpose |
+|---|---|---|
+| `health` | CLI mode | Check Python, NeMo import, and runtime readiness |
+| `load` | Rust -> worker | Load a `.nemo` checkpoint for the worker process |
+| `transcribe_file` | Rust -> worker | Transcribe a WAV file |
+| `stream_chunk` | Rust -> worker | Reserved for streaming chunks |
+| `finalize` | Rust -> worker | Reserved for ending a stream |
+| `cancel` | Rust -> worker | Reserved for cancellation |
 
-Lines are parsed with a regex: `[TIMESTAMP] text`
+The initial worker supports health checks and file transcription. Streaming message types are part of the protocol contract and return a clear unsupported response until the warm streaming loop is enabled.
 
-## Post-Processing Pipeline
+## Runtime Settings
 
-After whisper returns, LocalVoice applies:
+Migration 10 seeds:
 
-1. **Whitespace normalization** — collapse multiple spaces, trim
-2. **Filler-word removal** (optional) — removes "uh", "um", etc.
-3. **Capitalization** (optional) — sentence-start capitals
-4. **Punctuation** (optional) — adds periods, commas
-5. **Correction rules** — user dictionary replacements
+| Key | Default | Purpose |
+|---|---|---|
+| `transcription.default_engine` | `whisper-cpp` | Preferred engine |
+| `transcription.preferred_runtime` | `bundled-sidecar` | Runtime preference |
+| `transcription.streaming.enabled` | `false` | Enables partial streaming UI updates |
+| `transcription.streaming.chunk_ms` | `320` | Target chunk size for streaming engines |
+| `transcription.nemo.python_path` | empty | Optional Python interpreter path |
+| `transcription.parakeet.device` | empty | Reserved Parakeet device selection |
+
+## Persistence
+
+Sessions now store engine metadata:
+
+- `sessions.engine`
+- `sessions.model_artifact_format`
+- `sessions.runtime`
+
+Segment storage is unchanged. Word-level timestamps are stored in `session_words` when an engine returns them.
+
+## Build And Release Packaging
+
+CI runs `.github/actions/setup-whisper` and `.github/actions/setup-parakeet-cpp` before Rust tests and release builds. The Parakeet action pins `mudler/parakeet.cpp` to `v0.3.2`, downloads CPU/portable assets, verifies SHA-256 checksums, and writes target-triple sidecar binaries.
+
+Release jobs audit that the bundled sidecars and NeMo worker resource are present before building installers. Public installers bundle:
+
+- `whisper-cli`
+- `parakeet-cli`
+- NeMo worker script and manifest resources
+
+Public installers do not bundle:
+
+- Whisper, Parakeet, Nemotron, or `.nemo` model weights.
+- Python, NeMo, CUDA, or Vulkan runtime stacks.
+- GPU-specific Parakeet runtime packs.
 
 ## Debugging Transcription Issues
 
-### Enable Verbose Logging
+### Environment Overrides
 
-Run the app with `RUST_LOG=debug`:
-
-```bash
-set RUST_LOG=debug
-cargo tauri dev
-```
-
-This outputs whisper CLI invocations and stderr from the sidecar.
+| Variable | Purpose |
+|---|---|
+| `WHISPER_BIN_PATH` | Override `whisper-cli` location |
+| `WHISPER_MODEL_PATH` | Legacy Whisper model override |
+| `PARAKEET_BIN_PATH` | Override `parakeet-cli` location |
+| `RUST_LOG` | Rust logging level |
 
 ### Common Errors
 
 | Error | Cause | Solution |
-|-------|-------|----------|
-| `whisper-cli binary not found` | Binary not in expected locations | Set `WHISPER_BIN_PATH` or place binary in `src-tauri/binaries/` |
-| `Failed to spawn whisper-cli` | Binary not executable or missing DLLs | Check DLLs are co-located with the executable |
-| `Model path does not exist` | Model file missing or moved | Update model path in Settings, or set `WHISPER_MODEL_PATH` |
-| `whisper-cli failed (exit code N)` | Model/audio incompatibility or corrupted file | Try a different model, re-download model |
+|---|---|---|
+| `whisper-cli binary not found` | Missing Whisper sidecar | Run bootstrap or set `WHISPER_BIN_PATH` |
+| `parakeet-cli binary not found` | Missing Parakeet sidecar | Run bootstrap or set `PARAKEET_BIN_PATH` |
+| `Model path does not exist` | Model deleted or download failed | Re-download from Models |
+| `.nemo runtime is not available` | Python/NeMo health check failed | Configure Python and install NeMo |
+| `sidecar failed` | Runtime/model/audio mismatch | Check model format and sidecar version |
 
-### Verify Binary Works Manually
-
-Test the whisper binary directly from command line:
-
-```bash
-cd src-tauri/binaries
-whisper-cli.exe -m ../models/ggml-base.bin -f test.wav -l de
-```
-
-### Check JSON Output
-
-If transcription succeeds but segments appear empty:
-
-1. Enable debug logging
-2. Look for the JSON file path in logs
-3. Inspect the file directly:
+### Manual Checks
 
 ```bash
-type %TEMP%\localvoice_out_*.json
+src-tauri/binaries/whisper-cli-x86_64-pc-windows-msvc.exe --help
+src-tauri/binaries/parakeet-cli-x86_64-pc-windows-msvc.exe --help
 ```
 
-### DLL Resolution on Windows
-
-If you see `Entry Point Not Found` or similar DLL errors:
-
-1. Ensure `whisper.dll` and `ggml.dll` are in the same directory as `whisper-cli.exe`
-2. Or set `PATH` to include the DLL directory:
-
-```powershell
-$env:PATH = "C:\path\to\whisper\bin;$env:PATH"
-cargo tauri dev
-```
-
-## Swapping Whisper Builds
-
-### Using a Custom Binary
-
-1. Build or download a whisper.cpp binary
-2. Either:
-   - Place it in `src-tauri/binaries/` named `whisper-cli.exe`
-   - Set `WHISPER_BIN_PATH=C:\full\path\to\your\whisper.exe`
-
-### Using Different Model Files
-
-Models are GGML format files (`.bin`). Sources:
-
-- Official releases: https://github.com/ggerganov/whisper.cpp/releases
-- HuggingFace: https://huggingface.co/ggerganov/whisper.cpp
-
-Popular models by size:
-
-| Model | Size | Speed | Quality |
-|-------|------|-------|---------|
-| `ggml-tiny.bin` | 75 MB | Fastest | Basic |
-| `ggml-base.bin` | 142 MB | Fast | Good |
-| `ggml-small.bin` | 466 MB | Medium | Better |
-| `ggml-medium.bin` | 1.5 GB | Slow | High |
-| `ggml-large.bin` | 2.9 GB | Slowest | Best |
-
-### Build whisper.cpp from Source
+For NeMo:
 
 ```bash
-# Clone the repository
-git clone https://github.com/ggerganov/whisper.cpp.git
-cd whisper.cpp
-
-# Build the CLI
-mkdir build && cd build
-cmake ..
-cmake --build . --config Release
-
-# The binary will be in: build/bin/Release/whisper-cli.exe
+python src-tauri/resources/nemo_worker/localvoice_nemo_worker.py --health
 ```
-
-### CMake Build Options
-
-Enable additional features when building:
-
-```bash
-cmake .. -DBUILD_SHARED_LIBS=ON -DWHISPER_ENABLE_CLARBIE=ON
-```
-
-Or for CUDA support (if available):
-
-```bash
-cmake .. -DWHISPER_CUBLAS=ON
-```
-
-## Environment Variables
-
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `WHISPER_BIN_PATH` | Override whisper binary location | `C:\tools\whisper\whisper-cli.exe` |
-| `WHISPER_MODEL_PATH` | Override model location | `C:\models\ggml-base.bin` |
-| `RUST_LOG` | Logging level | `debug`, `info`, `warn` |
-
-## File Locations
-
-| File | Default Location |
-|------|------------------|
-| App data | `%APPDATA%\com.localvoice.app\` |
-| Models | `%APPDATA%\com.localvoice.app\models\` |
-| Temp audio | System temp directory |
-| Persisted audio | `%APPDATA%\com.localvoice.app\audio\` |
 
 ## Related Documentation
 
+- [Hybrid Runtime Feature](parakeet-hybrid-runtime.md)
 - [ADR-001: whisper.cpp as Sidecar Process](../adrs/001-whispercpp-sidecar.md)
-- [MS-03 Transcription](../adrs/ms03-transcription.md)
-- [User: Transcription Setup](../user/transcription.md)
-- [Post-Processing Pipeline](./ms14-reprocess-pipeline.md)
+- [User: Transcription](../user/transcription.md)
+- [User: Models](../user/models.md)
+- [Post-Processing Pipeline](ms14-reprocess-pipeline.md)

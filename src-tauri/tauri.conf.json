@@ -60,8 +60,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": [
+      "resources/nemo_worker/localvoice_nemo_worker.py",
+      "resources/nemo_worker/manifest.json"
+    ],
     "externalBin": [
-      "binaries/whisper-cli"
+      "binaries/whisper-cli",
+      "binaries/parakeet-cli"
     ]
   }
 }

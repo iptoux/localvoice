@@ -31,7 +31,8 @@ Technical reference for contributors and maintainers.
 - [error-handling.md](error-handling.md) — Rust error conventions and frontend event patterns
 - [i18n.md](i18n.md) — internationalization approach, translation structure, and language settings
 - [tauri-commands.md](tauri-commands.md) — all Tauri command signatures (parameters, return types, error codes, examples)
-- [transcription-pipeline.md](transcription-pipeline.md) — whisper.cpp sidecar, protocol, debugging *(done)*
+- [transcription-pipeline.md](transcription-pipeline.md) — hybrid Whisper/Parakeet/NeMo runtime, sidecar protocols, debugging *(done)*
+- [parakeet-hybrid-runtime.md](parakeet-hybrid-runtime.md) — Parakeet GGUF and optional NeMo deployment design *(done)*
 
 ## See Also
 

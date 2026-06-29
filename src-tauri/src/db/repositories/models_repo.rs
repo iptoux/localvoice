@@ -196,6 +196,44 @@ pub fn get_default_path(db: &DbConn, language: &str) -> Result<Option<String>, A
     Ok(None)
 }
 
+/// Returns the installed default model record for `language`.
+pub fn get_default_model(
+    db: &DbConn,
+    language: &str,
+) -> Result<Option<ModelInstallation>, AppError> {
+    let conn = db.lock().unwrap();
+
+    let mut stmt = conn.prepare(
+        "SELECT mi.id, mi.model_key, mi.display_name, mi.language_scope, mi.local_path,
+                mi.file_size_bytes, mi.checksum, mi.installed, mi.installed_at,
+                mi.is_default_for_de, mi.is_default_for_en, mi.created_at, mi.updated_at
+         FROM model_language_defaults mld
+         JOIN model_installations mi ON mi.model_key = mld.model_key
+         WHERE mld.language = ?1 AND mi.installed = 1 LIMIT 1",
+    )?;
+    let mut rows = stmt.query(params![language])?;
+    if let Some(row) = rows.next()? {
+        return Ok(Some(row_to_model(row)?));
+    }
+
+    let col = match language {
+        "de" => "is_default_for_de",
+        "en" => "is_default_for_en",
+        _ => return Ok(None),
+    };
+    let mut stmt2 = conn.prepare(&format!(
+        "SELECT id, model_key, display_name, language_scope, local_path,
+                file_size_bytes, checksum, installed, installed_at,
+                is_default_for_de, is_default_for_en, created_at, updated_at
+         FROM model_installations WHERE {col} = 1 AND installed = 1 LIMIT 1"
+    ))?;
+    let mut rows2 = stmt2.query([])?;
+    if let Some(row) = rows2.next()? {
+        return Ok(Some(row_to_model(row)?));
+    }
+    Ok(None)
+}
+
 /// Returns the `local_path` of any installed model that has been set as a default
 /// for any language. Used as a fallback when language is "auto".
 pub fn get_any_default_path(db: &DbConn) -> Result<Option<String>, AppError> {
@@ -221,6 +259,36 @@ pub fn get_any_default_path(db: &DbConn) -> Result<Option<String>, AppError> {
     Ok(None)
 }
 
+/// Returns any installed model that is configured as a default for some language.
+pub fn get_any_default_model(db: &DbConn) -> Result<Option<ModelInstallation>, AppError> {
+    let conn = db.lock().unwrap();
+    let mut stmt = conn.prepare(
+        "SELECT mi.id, mi.model_key, mi.display_name, mi.language_scope, mi.local_path,
+                mi.file_size_bytes, mi.checksum, mi.installed, mi.installed_at,
+                mi.is_default_for_de, mi.is_default_for_en, mi.created_at, mi.updated_at
+         FROM model_language_defaults mld
+         JOIN model_installations mi ON mi.model_key = mld.model_key
+         WHERE mi.installed = 1 LIMIT 1",
+    )?;
+    let mut rows = stmt.query([])?;
+    if let Some(row) = rows.next()? {
+        return Ok(Some(row_to_model(row)?));
+    }
+
+    let mut stmt2 = conn.prepare(
+        "SELECT id, model_key, display_name, language_scope, local_path,
+                file_size_bytes, checksum, installed, installed_at,
+                is_default_for_de, is_default_for_en, created_at, updated_at
+         FROM model_installations
+         WHERE (is_default_for_en = 1 OR is_default_for_de = 1) AND installed = 1 LIMIT 1",
+    )?;
+    let mut rows2 = stmt2.query([])?;
+    if let Some(row) = rows2.next()? {
+        return Ok(Some(row_to_model(row)?));
+    }
+    Ok(None)
+}
+
 /// Returns all language → model_key defaults.
 pub fn get_all_defaults(db: &DbConn) -> Result<Vec<(String, String)>, AppError> {
     let conn = db.lock().unwrap();
@@ -235,6 +303,7 @@ pub fn get_all_defaults(db: &DbConn) -> Result<Vec<(String, String)>, AppError> 
 }
 
 /// Returns the `local_path` of an installed model identified by `model_key`.
+#[allow(dead_code)]
 pub fn get_model_path(db: &DbConn, model_key: &str) -> CmdResult<Option<String>> {
     let conn = db.lock().unwrap();
     let mut stmt = conn

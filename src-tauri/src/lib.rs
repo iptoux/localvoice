@@ -204,6 +204,8 @@ pub fn run() {
             // Transcription
             cmd_transcription::transcribe_last_recording,
             cmd_transcription::get_last_transcription,
+            cmd_transcription::list_transcription_engines,
+            cmd_transcription::check_transcription_runtime,
             // History
             cmd_history::list_sessions,
             cmd_history::get_session,

@@ -386,6 +386,34 @@ static MIGRATIONS: &[(i64, &str)] = &[(
     ALTER TABLE sessions ADD COLUMN original_language TEXT;
     ALTER TABLE sessions ADD COLUMN original_avg_confidence REAL;
     ",
+),
+(
+    10,
+    "
+    -- Hybrid transcription engine metadata.
+    ALTER TABLE sessions ADD COLUMN engine TEXT NOT NULL DEFAULT 'whisper-cpp';
+    ALTER TABLE sessions ADD COLUMN model_artifact_format TEXT NOT NULL DEFAULT 'ggml-bin';
+    ALTER TABLE sessions ADD COLUMN runtime TEXT NOT NULL DEFAULT 'bundled-sidecar';
+
+    CREATE TABLE IF NOT EXISTS session_words (
+        id          TEXT PRIMARY KEY,
+        session_id  TEXT NOT NULL,
+        start_ms    INTEGER NOT NULL,
+        end_ms      INTEGER NOT NULL,
+        text        TEXT NOT NULL,
+        confidence  REAL,
+        word_index  INTEGER NOT NULL,
+        FOREIGN KEY(session_id) REFERENCES sessions(id) ON DELETE CASCADE
+    );
+
+    INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES
+        ('transcription.default_engine',      'whisper-cpp',      datetime('now')),
+        ('transcription.preferred_runtime',   'bundled-sidecar',  datetime('now')),
+        ('transcription.streaming.enabled',   'false',            datetime('now')),
+        ('transcription.streaming.chunk_ms',  '320',              datetime('now')),
+        ('transcription.nemo.python_path',    '',                 datetime('now')),
+        ('transcription.parakeet.device',     '',                 datetime('now'));
+    ",
 )];
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -424,6 +452,7 @@ mod tests {
             "model_language_defaults",
             "schema_migrations",
             "session_segments",
+            "session_words",
             "sessions",
             "settings",
         ] {

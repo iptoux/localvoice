@@ -2,48 +2,61 @@
 
 ## What It Does
 
-After you stop a recording, LocalVoice automatically transcribes it offline using
-[whisper.cpp](https://github.com/ggerganov/whisper.cpp). No audio ever leaves your computer.
+After you stop a recording, LocalVoice transcribes the audio offline. The selected model determines which local engine runs:
+
+- **Whisper.cpp** for GGML `.bin` models.
+- **Parakeet.cpp** for GGUF `.gguf` models.
+- **NVIDIA NeMo** for optional `.nemo` models.
+
+No audio is sent to a cloud service. Partial streaming updates may appear in the UI when the selected model/runtime supports streaming, but the final transcript still goes through the same cleanup, dictionary rules, history persistence, and clipboard or auto-insert output flow.
 
 The pill transitions through:
-- **Transcribing…** (amber) — whisper.cpp is running
-- **Done** / transcript preview (green) — transcription succeeded
-- **Error** (red) — something went wrong (see error text in pill)
+
+- **Transcribing...** - the selected local engine is running.
+- **Done** / transcript preview - transcription succeeded.
+- **Error** - something went wrong; the pill shows the user-facing error.
 
 ## First-Time Setup
 
-Transcription requires two files you must provide manually:
+Public installers include the required Whisper and Parakeet sidecar executables. Model weights are not bundled.
 
-### 1. whisper-cli binary
+1. Open **Models**.
+2. Download a Whisper GGML or Parakeet GGUF model.
+3. Set it as the default model for the language you use.
+4. Record again.
 
-1. Download a release from https://github.com/ggerganov/whisper.cpp/releases
-2. Rename it to `whisper-cli-x86_64-pc-windows-msvc.exe`
-3. Place it in `src-tauri/binaries/` (development) or alongside the app executable (installed)
+For development builds, run the bootstrap script so Tauri can find the target-triple sidecars in `src-tauri/binaries/`.
 
-Alternatively, set the `WHISPER_BIN_PATH` environment variable to the full path of any
-whisper.cpp CLI binary.
+## Optional NeMo Runtime
 
-### 2. Whisper model
+`.nemo` models require a local Python environment with NVIDIA NeMo installed. LocalVoice does not bundle Python, CUDA, or NeMo in public installers.
 
-1. Download a model from HuggingFace (search "ggerganov/whisper.cpp") or the releases page.
-   Recommended starting model: `ggml-base.bin` (~142 MB, good balance of speed/accuracy).
-2. Place it in `%APPDATA%\com.localvoice.app\models\` on Windows.
+1. Configure `transcription.nemo.python_path` or use a Python available on `PATH`.
+2. Run the NeMo runtime health check from the app before selecting a `.nemo` model.
+3. Select a `.nemo` model only after the runtime is reported as available.
 
-Alternatively, set `WHISPER_MODEL_PATH` to the full path of the model file, or update
-`transcription.model_path` in Settings.
+If the NeMo health check fails, LocalVoice keeps working with Whisper and Parakeet GGUF choices.
 
 ## Changing the Language
 
-1. Open the main window and go to **Settings → Recording → Transcription Language**.
-2. Select the language that matches your speech.
-3. "Auto-detect" works for any language but is slightly slower.
+1. Open the main window and go to **Settings -> Recording -> Transcription Language**.
+2. Select the language that matches your speech, or use auto-detect where supported.
+3. Choose a default model whose language metadata includes the selected language.
 
 ## Troubleshooting
 
-If transcription fails, see the [developer debugging guide](../dev/transcription-pipeline.md#debugging-transcription-issues).
+If transcription fails:
+
+- Confirm the selected model is installed.
+- Confirm the runtime shown on the model card is available.
+- For `.nemo`, run the NeMo health check and verify the configured Python path.
+- For development builds, make sure `whisper-cli-*` and `parakeet-cli-*` exist in `src-tauri/binaries/`.
+
+See the [developer debugging guide](../dev/transcription-pipeline.md#debugging-transcription-issues) for protocol-level details.
 
 ## Related
 
-- [Recording](recording.md) — how to record audio
-- [Developer notes: MS-03 Transcription](../dev/ms03-transcription.md)
-- [Whisper Sidecar Pipeline](../dev/transcription-pipeline.md)
+- [Recording](recording.md)
+- [Models](models.md)
+- [Developer: Hybrid Runtime](../dev/parakeet-hybrid-runtime.md)
+- [Transcription Pipeline](../dev/transcription-pipeline.md)

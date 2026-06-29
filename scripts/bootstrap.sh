@@ -5,12 +5,17 @@
 set -e
 
 SKIP_WHISPER=false
+SKIP_PARAKEET=false
 SKIP_VERIFICATION=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --skip-whisper)
             SKIP_WHISPER=true
+            shift
+            ;;
+        --skip-parakeet)
+            SKIP_PARAKEET=true
             shift
             ;;
         --skip-verification)
@@ -20,6 +25,7 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             echo "Usage: $0 [--skip-whisper] [--skip-verification]"
             echo "  --skip-whisper       Skip downloading/building whisper.cpp binaries"
+            echo "  --skip-parakeet      Skip downloading parakeet.cpp sidecar"
             echo "  --skip-verification  Skip verification steps"
             exit 0
             ;;
@@ -48,7 +54,10 @@ case "$OS" in
         ;;
     Linux)
         PLATFORM="linux"
-        RUST_TRIPLE="x86_64-unknown-linux-gnu"
+        case "$ARCH" in
+            aarch64|arm64) RUST_TRIPLE="aarch64-unknown-linux-gnu" ;;
+            *)             RUST_TRIPLE="x86_64-unknown-linux-gnu" ;;
+        esac
         ;;
     *)
         echo "Unsupported platform: $OS"
@@ -57,6 +66,7 @@ case "$OS" in
 esac
 
 WHISPER_BIN="$WHISPER_DIR/whisper-cli-${RUST_TRIPLE}"
+PARAKEET_BIN="$WHISPER_DIR/parakeet-cli-${RUST_TRIPLE}"
 
 # Colors
 RED='\033[0;31m'
@@ -211,6 +221,71 @@ if [[ "$SKIP_WHISPER" != "true" ]]; then
 fi
 
 # ── Tauri CLI ─────────────────────────────────────────────────────────────────
+# parakeet.cpp sidecar
+if [[ "$SKIP_PARAKEET" != "true" ]]; then
+    print_step "Setting up parakeet.cpp sidecar..."
+    mkdir -p "$WHISPER_DIR"
+
+    if [[ -f "$PARAKEET_BIN" ]]; then
+        print_success "parakeet-cli already present at $PARAKEET_BIN"
+    else
+        PARAKEET_TAG="v0.3.2"
+        if [[ "$PLATFORM" == "linux" ]]; then
+            if [[ "$RUST_TRIPLE" == "aarch64-unknown-linux-gnu" ]]; then
+                PARAKEET_ASSET="parakeet-v0.3.2-bin-linux-cpu-arm64.tar.gz"
+                PARAKEET_SHA256="a6f4fd94d373cc7d7f863074e0707e696c3c364dd9cc448deeb4bea350e41c17"
+            else
+                PARAKEET_ASSET="parakeet-v0.3.2-bin-linux-cpu-x64.tar.gz"
+                PARAKEET_SHA256="d84385fa934dc05cd18e94b85069b7b7664569baea0a05fb6e3c09b06613d23d"
+            fi
+        else
+            if [[ "$RUST_TRIPLE" == "aarch64-apple-darwin" ]]; then
+                PARAKEET_ASSET="parakeet-v0.3.2-bin-macos-metal-arm64.tar.gz"
+                PARAKEET_SHA256="665cc533f504e3ee1b887a42492176ce0aecdd38f692f5bbaefcab669471c035"
+            else
+                PARAKEET_ASSET="parakeet-v0.3.2-bin-macos-cpu-x64.tar.gz"
+                PARAKEET_SHA256="04ff73ed21b29bb9e05c5475c42128a523c399e084de312219b9fce1f6f4e179"
+            fi
+        fi
+
+        PARAKEET_URL="https://github.com/mudler/parakeet.cpp/releases/download/${PARAKEET_TAG}/${PARAKEET_ASSET}"
+        TEMP_ARCHIVE="/tmp/${PARAKEET_ASSET}"
+        EXTRACT_DIR="/tmp/localvoice-parakeet-$$"
+
+        echo "Downloading from $PARAKEET_URL..."
+        if curl -L --fail --progress-bar "$PARAKEET_URL" -o "$TEMP_ARCHIVE"; then
+            if command -v sha256sum &>/dev/null; then
+                ACTUAL_SHA256="$(sha256sum "$TEMP_ARCHIVE" | awk '{print $1}')"
+            else
+                ACTUAL_SHA256="$(shasum -a 256 "$TEMP_ARCHIVE" | awk '{print $1}')"
+            fi
+
+            if [[ "$ACTUAL_SHA256" != "$PARAKEET_SHA256" ]]; then
+                rm -f "$TEMP_ARCHIVE"
+                print_warn "Checksum mismatch for $PARAKEET_ASSET"
+            else
+                rm -rf "$EXTRACT_DIR"
+                mkdir -p "$EXTRACT_DIR"
+                tar -xzf "$TEMP_ARCHIVE" -C "$EXTRACT_DIR"
+                FOUND_BIN=$(find "$EXTRACT_DIR" -type f -name "parakeet-cli" | head -1)
+                if [[ -n "$FOUND_BIN" ]]; then
+                    cp "$FOUND_BIN" "$PARAKEET_BIN"
+                    chmod +x "$PARAKEET_BIN"
+                    print_success "parakeet-cli installed to $PARAKEET_BIN"
+                else
+                    print_warn "parakeet-cli not found in archive"
+                fi
+                rm -f "$TEMP_ARCHIVE"
+                rm -rf "$EXTRACT_DIR"
+            fi
+        else
+            print_warn "Failed to download parakeet.cpp sidecar"
+            echo "  Manually download: $PARAKEET_URL"
+            echo "  Place parakeet-cli at: $PARAKEET_BIN"
+        fi
+    fi
+fi
+
 print_step "Checking Tauri CLI..."
 if pnpm tauri --version &> /dev/null; then
     print_success "Tauri CLI installed"
@@ -242,6 +317,11 @@ if [[ ! -f "$WHISPER_BIN" ]]; then
     echo "  2. whisper-cli is missing — place it at:"
     echo "     $WHISPER_BIN"
     echo "     Or set WHISPER_BIN_PATH=/path/to/whisper-cli in your environment."
+fi
+if [[ ! -f "$PARAKEET_BIN" ]]; then
+    echo "  3. parakeet-cli is missing - place it at:"
+    echo "     $PARAKEET_BIN"
+    echo "     Or set PARAKEET_BIN_PATH=/path/to/parakeet-cli in your environment."
 fi
 echo "  See docs/dev/index.md for developer documentation"
 echo ""

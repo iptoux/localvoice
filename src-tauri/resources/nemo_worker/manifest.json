@@ -1,0 +1,17 @@
+{
+  "name": "localvoice-nemo-worker",
+  "protocolVersion": 1,
+  "entrypoint": "localvoice_nemo_worker.py",
+  "runtime": "optional-nemo",
+  "artifactFormats": ["nemo"],
+  "messages": [
+    "health",
+    "load",
+    "transcribe_file",
+    "stream_chunk",
+    "finalize",
+    "cancel"
+  ],
+  "optionalPythonModules": ["nemo.collections.asr", "torch"],
+  "bundlesRuntime": false
+}

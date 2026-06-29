@@ -14,6 +14,20 @@ pub struct TranscriptSegment {
     pub confidence: Option<f32>,
 }
 
+/// A single word-level transcript item from engines that expose word timestamps.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TranscriptWord {
+    /// Start of word in milliseconds.
+    pub start_ms: i64,
+    /// End of word in milliseconds.
+    pub end_ms: i64,
+    /// Word text.
+    pub text: String,
+    /// Word confidence [0, 1] when exposed by the engine.
+    pub confidence: Option<f32>,
+}
+
 /// Outcome of the output step (clipboard write or auto-insert).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,10 +50,19 @@ pub struct TranscriptionResult {
     pub cleaned_text: String,
     /// Time-stamped segments.
     pub segments: Vec<TranscriptSegment>,
+    /// Word-level timestamps/confidence for engines that provide them.
+    #[serde(default)]
+    pub words: Vec<TranscriptWord>,
     /// ISO 639-1 language code actually used (e.g. "de", "en", "auto").
     pub language: String,
     /// Stem of the model filename used (e.g. "ggml-base").
     pub model_id: String,
+    /// Engine used for this transcription (e.g. "whisper-cpp", "parakeet-cpp", "nemo").
+    pub engine: String,
+    /// Model artifact format (e.g. "ggml-bin", "gguf", "nemo").
+    pub artifact_format: String,
+    /// Runtime used by the engine (e.g. "bundled-sidecar", "optional-nemo").
+    pub runtime: String,
     /// Wall-clock transcription time in milliseconds.
     pub duration_ms: u64,
     /// Result of the output step (set by the orchestrator after transcription).
