@@ -740,7 +740,7 @@ Updates the global recording shortcut.
 
 ```typescript
 invoke('update_shortcut', { shortcut: string }): Promise<void>
-// Format: Electron-style (e.g. "Ctrl+Shift+Space", "CommandOrControl+Shift+Space")
+// Format: Electron-style (e.g. "F8", "Ctrl+Shift+Space", "CommandOrControl+Shift+Space")
 ```
 
 **Behavior:**

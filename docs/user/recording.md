@@ -26,9 +26,11 @@ All audio stays on your device — nothing is sent to the internet.
 
 ## Changing the Shortcut
 
+Open **Settings -> Recording -> Global Shortcut**, select **Change**, then press the
+new shortcut. You can use either a single non-modifier key such as `F8` or a key
+combination such as `Ctrl+Shift+Space`.
+
 The shortcut is stored in the settings database under the key `recording.shortcut`.
-A graphical shortcut editor is planned for a later release. For now, the Settings page
-shows the current shortcut with instructions.
 
 ## Related
 

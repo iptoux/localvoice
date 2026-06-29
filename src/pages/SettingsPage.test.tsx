@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import SettingsPage from "./SettingsPage";
 import { useSettingsStore } from "../stores/settings-store";
 import { useAppStore } from "../stores/app-store";
+import { updateShortcut } from "../lib/tauri";
 
 // Mock all Tauri command wrappers.
 vi.mock("../lib/tauri", () => ({
@@ -180,6 +181,25 @@ describe("SettingsPage", () => {
     // ShortcutBadge renders "CommandOrControl" as "Ctrl"
     expect(screen.getByText("Ctrl")).toBeInTheDocument();
     expect(screen.getByText("Space")).toBeInTheDocument();
+  });
+
+  it("records and saves a single-key shortcut", async () => {
+    const updateMock = vi.fn().mockResolvedValue(undefined);
+    useSettingsStore.setState((s) => ({ ...s, update: updateMock }));
+    render(<SettingsPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    expect(screen.getByText("Press a key or shortcut…")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "F8" });
+    expect(screen.getByText("F8")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(updateShortcut).toHaveBeenCalledWith("F8");
+      expect(updateMock).toHaveBeenCalledWith("recording.shortcut", "F8");
+    });
   });
 
   // ── Audio devices ─────────────────────────────────────────────────────────

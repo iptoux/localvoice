@@ -279,7 +279,7 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 
 | Setting | Description |
 |---|---|
-| Recording shortcut | Global hotkey to start/stop recording |
+| Recording shortcut | Single key or key combination to start/stop recording |
 | Output mode | Insert to active app, clipboard, or preview |
 | Default language | Language used for transcription |
 | Default transcription engine | Preferred engine (`whisper-cpp`, `parakeet-cpp`, or optional `nemo`) |
