@@ -56,4 +56,7 @@ playwright-report/
 *.njsproj
 *.sln
 *.sw?
-plan/
+plan/*
+!plan/tasks/
+plan/tasks/*
+!plan/tasks/ms21_streaming_transcription.md
