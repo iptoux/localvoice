@@ -18,7 +18,8 @@ runs:
         path: |
           src-tauri/binaries/parakeet-cli-*
           src-tauri/binaries/parakeet-stream-worker-*
-        key: parakeet-${{ runner.os }}-v0.3.2-stream-worker-v1
+          src-tauri/parakeet-runtime/*
+        key: parakeet-${{ runner.os }}-v0.3.2-stream-worker-v2
 
     - name: Download parakeet.cpp sidecar (Windows)
       if: runner.os == 'Windows' && steps.cache.outputs.cache-hit != 'true'
@@ -56,20 +57,30 @@ runs:
         $tag = "v0.3.2"
         $src = Join-Path $env:TEMP "parakeet-src"
         $build = Join-Path $env:TEMP "parakeet-build"
+        $runtime = "src-tauri\parakeet-runtime"
         $workerSrc = "src-tauri\sidecars\parakeet-stream-worker"
         $workerDst = Join-Path $src "examples\localvoice-stream-worker"
 
+        New-Item -ItemType Directory -Force -Path $runtime | Out-Null
         Remove-Item $src -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item $build -Recurse -Force -ErrorAction SilentlyContinue
         git clone --depth 1 --recurse-submodules --shallow-submodules --branch $tag https://github.com/mudler/parakeet.cpp.git $src
         Copy-Item $workerSrc $workerDst -Recurse
         Add-Content -Path (Join-Path $src "CMakeLists.txt") -Value "add_subdirectory(examples/localvoice-stream-worker)"
 
-        cmake -S $src -B $build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DPARAKEET_BUILD_CLI=OFF -DPARAKEET_BUILD_SERVER=OFF
+        cmake -S $src -B $build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DPARAKEET_BUILD_CLI=OFF -DPARAKEET_BUILD_SERVER=OFF
         cmake --build $build --config Release --target parakeet-stream-worker --parallel
         $worker = Get-ChildItem $build -Recurse -Filter "parakeet-stream-worker.exe" | Select-Object -First 1
         if (-not $worker) { Write-Error "parakeet-stream-worker.exe not found"; exit 1 }
         Move-Item $worker.FullName "src-tauri\binaries\parakeet-stream-worker-x86_64-pc-windows-msvc.exe" -Force
+        foreach ($dll in @("ggml.dll","ggml-base.dll","ggml-cpu.dll","parakeet.dll")) {
+          $f = Get-ChildItem $build -Recurse -Filter $dll -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($f) {
+            Copy-Item $f.FullName (Join-Path $runtime $dll) -Force
+            Copy-Item $f.FullName "src-tauri\binaries\$dll" -Force
+            Write-Host "  Copied Parakeet runtime $dll"
+          }
+        }
         Remove-Item $src -Recurse -Force
         Remove-Item $build -Recurse -Force
 
@@ -115,21 +126,24 @@ runs:
         ARCH="$(uname -m)"
         SRC="/tmp/parakeet-src"
         BUILD="/tmp/parakeet-build"
+        RUNTIME="src-tauri/parakeet-runtime"
         TRIPLE="x86_64-unknown-linux-gnu"
         if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
           TRIPLE="aarch64-unknown-linux-gnu"
         fi
 
+        mkdir -p "$RUNTIME"
         rm -rf "$SRC" "$BUILD"
         git clone --depth 1 --recurse-submodules --shallow-submodules --branch "$TAG" https://github.com/mudler/parakeet.cpp.git "$SRC"
         cp -R src-tauri/sidecars/parakeet-stream-worker "$SRC/examples/localvoice-stream-worker"
         printf '\nadd_subdirectory(examples/localvoice-stream-worker)\n' >> "$SRC/CMakeLists.txt"
-        cmake -S "$SRC" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DPARAKEET_BUILD_CLI=OFF -DPARAKEET_BUILD_SERVER=OFF
+        cmake -S "$SRC" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DPARAKEET_BUILD_CLI=OFF -DPARAKEET_BUILD_SERVER=OFF
         cmake --build "$BUILD" --config Release --target parakeet-stream-worker --parallel
         WORKER="$(find "$BUILD" -type f -name parakeet-stream-worker | head -n 1)"
         [ -n "$WORKER" ] || { echo "parakeet-stream-worker not found"; exit 1; }
         cp "$WORKER" "src-tauri/binaries/parakeet-stream-worker-${TRIPLE}"
         chmod +x "src-tauri/binaries/parakeet-stream-worker-${TRIPLE}"
+        find "$BUILD" -type f \( -name 'libggml*.so*' -o -name 'libparakeet*.so*' \) -exec cp {} "$RUNTIME/" \;
         rm -rf "$SRC" "$BUILD"
 
     - name: Download parakeet.cpp sidecar (macOS)
@@ -180,21 +194,24 @@ runs:
         ARCH="$(uname -m)"
         SRC="/tmp/parakeet-src"
         BUILD="/tmp/parakeet-build"
+        RUNTIME="src-tauri/parakeet-runtime"
         TRIPLE="x86_64-apple-darwin"
         if [ "$ARCH" = "arm64" ]; then
           TRIPLE="aarch64-apple-darwin"
         fi
 
+        mkdir -p "$RUNTIME"
         rm -rf "$SRC" "$BUILD"
         git clone --depth 1 --recurse-submodules --shallow-submodules --branch "$TAG" https://github.com/mudler/parakeet.cpp.git "$SRC"
         cp -R src-tauri/sidecars/parakeet-stream-worker "$SRC/examples/localvoice-stream-worker"
         printf '\nadd_subdirectory(examples/localvoice-stream-worker)\n' >> "$SRC/CMakeLists.txt"
-        cmake -S "$SRC" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DPARAKEET_BUILD_CLI=OFF -DPARAKEET_BUILD_SERVER=OFF
+        cmake -S "$SRC" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_BMI2=OFF -DPARAKEET_BUILD_CLI=OFF -DPARAKEET_BUILD_SERVER=OFF
         cmake --build "$BUILD" --config Release --target parakeet-stream-worker --parallel
         WORKER="$(find "$BUILD" -type f -name parakeet-stream-worker | head -n 1)"
         [ -n "$WORKER" ] || { echo "parakeet-stream-worker not found"; exit 1; }
         cp "$WORKER" "src-tauri/binaries/parakeet-stream-worker-${TRIPLE}"
         chmod +x "src-tauri/binaries/parakeet-stream-worker-${TRIPLE}"
+        find "$BUILD" -type f \( -name 'libggml*.dylib' -o -name 'libparakeet*.dylib' \) -exec cp {} "$RUNTIME/" \;
         if [ "$TRIPLE" = "aarch64-apple-darwin" ]; then
           cp "src-tauri/binaries/parakeet-stream-worker-${TRIPLE}" \
              "src-tauri/binaries/parakeet-stream-worker-x86_64-apple-darwin"
@@ -206,16 +223,28 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
+        RUNTIME_DIR="$(pwd)/src-tauri/parakeet-runtime"
         if [ "${{ runner.os }}" = "Windows" ]; then
           BIN="src-tauri/binaries/parakeet-cli-x86_64-pc-windows-msvc.exe"
           WORKER="src-tauri/binaries/parakeet-stream-worker-x86_64-pc-windows-msvc.exe"
+          export PATH="${RUNTIME_DIR}:$(pwd)/src-tauri/binaries:${PATH}"
         else
           BIN="$(ls src-tauri/binaries/parakeet-cli-* | head -n 1)"
           WORKER="$(ls src-tauri/binaries/parakeet-stream-worker-* | head -n 1)"
+          export LD_LIBRARY_PATH="${RUNTIME_DIR}:${LD_LIBRARY_PATH:-}"
+          export DYLD_LIBRARY_PATH="${RUNTIME_DIR}:${DYLD_LIBRARY_PATH:-}"
         fi
         test -f "$BIN"
         test -f "$WORKER"
         OUT="$("$BIN" 2>&1 || true)"
-        echo "$OUT" | grep -q "parakeet-cli transcribe"
-        WORKER_OUT="$("$WORKER" --health 2>&1)"
-        echo "$WORKER_OUT" | grep -q "parakeet.cpp streaming worker"
+        echo "$OUT" | grep -q "parakeet-cli transcribe" || {
+          echo "$OUT"
+          echo "::error::parakeet-cli smoke test failed"
+          exit 1
+        }
+        WORKER_OUT="$("$WORKER" --health 2>&1 || true)"
+        echo "$WORKER_OUT" | grep -q "parakeet.cpp streaming worker" || {
+          echo "$WORKER_OUT"
+          echo "::error::parakeet-stream-worker smoke test failed"
+          exit 1
+        }

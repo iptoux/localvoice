@@ -25,8 +25,12 @@ src-tauri/src/transcription/
   orchestrator.rs       engine selection and final result normalization
   parakeet_sidecar.rs   parakeet-cli resolution and process execution
   parakeet_parser.rs    JSON fixture parser for GGUF transcripts
+  parakeet_runtime.rs   loader path setup for Parakeet runtime resources
   nemo_worker.rs        Python worker health and file transcription bridge
   types.rs              shared segment, word, and result payloads
+
+src-tauri/parakeet-runtime/
+  generated runtime libraries staged by CI/release builds
 
 src-tauri/resources/nemo_worker/
   localvoice_nemo_worker.py
@@ -43,7 +47,7 @@ The model registry is the contract between UI, database, and runtime selection. 
 - `scripts/bootstrap.ps1` and `scripts/bootstrap.sh` install `parakeet-cli-*` for local development.
 - `ci.yml` runs `setup-whisper` and `setup-parakeet-cpp` before Rust tests.
 - `release.yml` runs both setup actions before each platform build.
-- Release jobs audit `whisper-cli-*`, `parakeet-cli-*`, `resources/nemo_worker/localvoice_nemo_worker.py`, and `resources/nemo_worker/manifest.json`.
+- Release jobs audit `whisper-cli-*`, `parakeet-cli-*`, `parakeet-stream-worker-*`, `src-tauri/parakeet-runtime/`, `resources/nemo_worker/localvoice_nemo_worker.py`, and `resources/nemo_worker/manifest.json`.
 - `.nemo` load/streaming tests remain manual or self-hosted GPU work because GitHub-hosted runners do not provide a stable NeMo/CUDA environment.
 
 ## Public Release Behavior
@@ -61,4 +65,4 @@ Fresh installs work without NeMo installed. Users can download Whisper or Parake
 - The NeMo worker currently implements health checks and file transcription. `stream_chunk`, `finalize`, and `cancel` are reserved protocol messages and return unsupported responses until warm streaming is enabled.
 - Parakeet streaming metadata is present, but UI partial-update plumbing is still conservative.
 - GPU Parakeet packs are intentionally not bundled until artifact size, code signing, and driver compatibility are validated.
-- The release action smoke test verifies sidecar presence; deeper `parakeet-cli info` behavior should be expanded per platform if the upstream CLI guarantees a stable info/version command.
+- The release action smoke test verifies that Parakeet sidecars start with their packaged runtime paths; deeper `parakeet-cli info` behavior should be expanded per platform if the upstream CLI guarantees a stable info/version command.

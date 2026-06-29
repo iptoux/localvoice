@@ -184,6 +184,8 @@ The bootstrap script handles this automatically. For manual setup, you need to p
 
 Parakeet sidecars are pinned to `mudler/parakeet.cpp` `v0.3.2` and must be checksum-verified or built from the pinned source before release packaging. Public installers bundle the CPU/portable sidecars only; model weights, `.nemo` checkpoints, CUDA stacks, and Python/NeMo environments are never bundled in the base installer.
 
+The Parakeet streaming worker can also produce small runtime libraries during CI/release builds. Those files are staged under `src-tauri/parakeet-runtime/` and bundled as Tauri resources; the directory is kept in Git, but generated runtime files are ignored.
+
 #### whisper.cpp
 
 **Windows:**

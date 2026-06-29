@@ -7,6 +7,7 @@ use std::os::windows::process::CommandExt;
 use tauri::{AppHandle, Manager};
 
 use crate::errors::CmdResult;
+use crate::transcription::parakeet_runtime;
 
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
@@ -131,6 +132,7 @@ pub fn invoke(
 
     #[allow(unused_mut)]
     let mut cmd = Command::new(binary);
+    parakeet_runtime::configure_command_environment(&mut cmd, binary);
     cmd.args([
         "transcribe",
         "--model",
@@ -175,6 +177,7 @@ pub fn invoke(
 pub fn smoke_test(app: &AppHandle) -> CmdResult<()> {
     let binary = resolve_binary(app)?;
     let mut cmd = Command::new(&binary);
+    parakeet_runtime::configure_command_environment(&mut cmd, &binary);
     cmd.current_dir(binary.parent().unwrap_or(Path::new(".")));
     #[cfg(target_os = "windows")]
     cmd.creation_flags(CREATE_NO_WINDOW);

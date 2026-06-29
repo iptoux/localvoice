@@ -284,6 +284,10 @@ impl WorkerLaunch {
         let mut command = match self {
             Self::Parakeet { binary } => {
                 let mut command = Command::new(binary);
+                crate::transcription::parakeet_runtime::configure_command_environment(
+                    &mut command,
+                    binary,
+                );
                 command.current_dir(binary.parent().unwrap_or_else(|| std::path::Path::new(".")));
                 command
             }

@@ -20,6 +20,8 @@ src-tauri/binaries/whisper-cli-*
 src-tauri/binaries/parakeet-cli-*
 src-tauri/binaries/*.exe
 src-tauri/binaries/*.dll
+src-tauri/parakeet-runtime/*
+!src-tauri/parakeet-runtime/.gitkeep
 
 # Environment variables
 .env
