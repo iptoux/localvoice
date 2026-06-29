@@ -5,6 +5,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::audio::capture::{self, SilenceConfig};
 use crate::audio::devices;
+use crate::commands::window;
 use crate::errors::CmdResult;
 use crate::state::app_state::emit_recording_state;
 use crate::state::recording_state::RecordingState;
@@ -52,9 +53,22 @@ pub fn start_recording_internal(app: &AppHandle, state: &State<AppState>) -> Cmd
 
     // Grab the silence flag before moving the recording into state.
     let silence_flag = recording.silence_triggered.clone();
+    let samples = recording.samples.clone();
+    let sample_rate = recording.sample_rate;
 
     *state.active_recording.lock().unwrap() = Some(recording);
     *state.recording_started_at.lock().unwrap() = Some(chrono::Utc::now());
+    window::show_recording_pill_for_mode(app);
+    match state.streaming_session.lock().unwrap().start_if_eligible(
+        app,
+        samples,
+        sample_rate,
+        &settings,
+    ) {
+        Ok(Some(session_id)) => log::info!("Streaming transcription session started: {session_id}"),
+        Ok(None) => {}
+        Err(e) => log::warn!("Streaming transcription could not start: {e}"),
+    }
     emit_recording_state(app, RecordingState::Listening, None);
 
     // Spawn a background thread that polls the silence flag every 200ms.
@@ -102,10 +116,12 @@ pub fn stop_recording_internal(app: &AppHandle, state: &State<AppState>) -> CmdR
         .ok_or("No active recording")?;
 
     emit_recording_state(app, RecordingState::Processing, None);
+    window::hide_pill_if_overlay_mode(app);
 
     let wav_path = match capture::stop_capture(recording) {
         Ok(path) => path,
         Err(e) => {
+            state.streaming_session.lock().unwrap().cancel_active();
             emit_recording_state(app, RecordingState::Error, Some(e.to_string()));
             // Auto-reset to Idle so the hotkey works again after the error.
             crate::transcription::orchestrator::schedule_idle_reset(
@@ -121,12 +137,39 @@ pub fn stop_recording_internal(app: &AppHandle, state: &State<AppState>) -> CmdR
 
     log::info!("Recording saved to {wav_path}");
 
+    let streamed = match state
+        .streaming_session
+        .lock()
+        .unwrap()
+        .finalize_active(Duration::from_secs(60))
+    {
+        Some(Ok(result)) if !result.raw_text.trim().is_empty() => {
+            log::info!("Streaming transcription finalized before stop pipeline");
+            Some(result)
+        }
+        Some(Ok(_)) => {
+            log::warn!(
+                "Streaming transcription returned empty text; falling back to WAV transcription"
+            );
+            None
+        }
+        Some(Err(e)) => {
+            log::warn!("Streaming transcription finalization failed: {e}; falling back to WAV transcription");
+            None
+        }
+        None => None,
+    };
+
     // Kick off transcription in a background thread so the command returns immediately.
     let app_for_task = app.clone();
     let wav_for_task = wav_path.clone();
     tauri::async_runtime::spawn(async move {
         tauri::async_runtime::spawn_blocking(move || {
-            crate::transcription::orchestrator::transcribe_and_emit(app_for_task, wav_for_task);
+            crate::transcription::orchestrator::transcribe_and_emit(
+                app_for_task,
+                wav_for_task,
+                streamed,
+            );
         })
         .await
         .unwrap_or_else(|e| log::error!("Transcription task panicked: {e}"));
@@ -140,7 +183,9 @@ pub fn cancel_recording_internal(app: &AppHandle, state: &State<AppState>) {
     if let Some(recording) = state.active_recording.lock().unwrap().take() {
         capture::cancel_capture(recording);
     }
+    state.streaming_session.lock().unwrap().cancel_active();
     *state.recording_started_at.lock().unwrap() = None;
+    window::hide_pill_if_overlay_mode(app);
     emit_recording_state(app, RecordingState::Idle, None);
     log::info!("Recording cancelled");
 }

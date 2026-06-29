@@ -13,11 +13,15 @@ dist-ssr
 *.local
 
 # whisper.cpp binaries and DLLs — too large for git; bundled into the installer
-# at build time. For development, copy the whisper.cpp Windows release zip contents
-# into src-tauri/binaries/ (whisper-cli.exe + ggml.dll + whisper.dll etc. flat).
+# at build time. Bootstrap scripts place whisper-cli and parakeet-cli target
+# triple binaries into src-tauri/binaries/ for local development.
 src-tauri/binaries/whisper-bin-*/
+src-tauri/binaries/whisper-cli-*
+src-tauri/binaries/parakeet-cli-*
 src-tauri/binaries/*.exe
 src-tauri/binaries/*.dll
+src-tauri/parakeet-runtime/*
+!src-tauri/parakeet-runtime/.gitkeep
 
 # Environment variables
 .env
@@ -54,4 +58,7 @@ playwright-report/
 *.njsproj
 *.sln
 *.sw?
-plan/
+plan/*
+!plan/tasks/
+plan/tasks/*
+!plan/tasks/ms21_streaming_transcription.md

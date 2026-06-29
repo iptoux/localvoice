@@ -3,6 +3,7 @@ import type {
   DeviceInfo,
   OutputResult,
   RecordingState,
+  TranscriptionStreamUpdate,
   TranscriptionResult,
 } from "../types";
 
@@ -25,6 +26,11 @@ interface AppStore {
   /** Most recent completed transcription result. */
   lastTranscription: TranscriptionResult | null;
   setLastTranscription: (result: TranscriptionResult | null) => void;
+
+  /** Current live streaming transcription preview while recording. */
+  streamingTranscription: TranscriptionStreamUpdate | null;
+  setStreamingTranscription: (update: TranscriptionStreamUpdate | null) => void;
+  resetStreamingTranscription: () => void;
 
   /** Result of the most recent output step (clipboard / insert). */
   lastOutputResult: OutputResult | null;
@@ -50,6 +56,10 @@ export const useAppStore = create<AppStore>((set) => ({
 
   lastTranscription: null,
   setLastTranscription: (lastTranscription) => set({ lastTranscription }),
+
+  streamingTranscription: null,
+  setStreamingTranscription: (streamingTranscription) => set({ streamingTranscription }),
+  resetStreamingTranscription: () => set({ streamingTranscription: null }),
 
   lastOutputResult: null,
   setLastOutputResult: (lastOutputResult) => set({ lastOutputResult }),

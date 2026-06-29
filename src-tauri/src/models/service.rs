@@ -4,11 +4,12 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_notification::NotificationExt;
 
-use crate::db::repositories::models_repo;
+use crate::db::repositories::{models_repo, settings_repo};
 use crate::errors::AppError;
 use crate::logging::push_log;
 use crate::models::{downloader, registry, verify};
 use crate::state::AppState;
+use crate::transcription::{engine, nemo_worker};
 
 /// Merged view of registry metadata + install state — returned by `list_available_models`.
 #[derive(Debug, Clone, Serialize)]
@@ -17,6 +18,9 @@ pub struct ModelInfo {
     pub key: String,
     pub display_name: String,
     pub language_scope: String,
+    pub engine: String,
+    pub artifact_format: String,
+    pub runtime: String,
     pub file_size_bytes: u64,
     pub installed: bool,
     pub is_default_for_de: bool,
@@ -31,6 +35,12 @@ pub struct ModelInfo {
     pub accuracy: String,
     pub category: String,
     pub recommended_for: String,
+    pub supports_streaming: bool,
+    pub supports_word_timestamps: bool,
+    pub supports_confidence: bool,
+    pub license_id: String,
+    pub license_url: String,
+    pub language_locales: Vec<String>,
 }
 
 /// Returns the models storage directory: `{app_data_dir}/models/`.
@@ -61,6 +71,9 @@ pub fn list_available(app: &AppHandle) -> Result<Vec<ModelInfo>, AppError> {
                 key: def.key.to_string(),
                 display_name: def.display_name.to_string(),
                 language_scope: def.language_scope.to_string(),
+                engine: def.engine.to_string(),
+                artifact_format: def.artifact_format.to_string(),
+                runtime: def.runtime.to_string(),
                 file_size_bytes: def.file_size_bytes,
                 installed: inst.is_some(),
                 is_default_for_de: inst.map(|i| i.is_default_for_de).unwrap_or(false),
@@ -73,6 +86,16 @@ pub fn list_available(app: &AppHandle) -> Result<Vec<ModelInfo>, AppError> {
                 accuracy: def.accuracy.to_string(),
                 category: def.category.to_string(),
                 recommended_for: def.recommended_for.to_string(),
+                supports_streaming: def.supports_streaming,
+                supports_word_timestamps: def.supports_word_timestamps,
+                supports_confidence: def.supports_confidence,
+                license_id: def.license_id.to_string(),
+                license_url: def.license_url.to_string(),
+                language_locales: def
+                    .language_locales
+                    .iter()
+                    .map(|locale| locale.to_string())
+                    .collect(),
             }
         })
         .collect();
@@ -88,7 +111,7 @@ pub async fn download_model(app: AppHandle, key: String) -> Result<(), AppError>
     let def = registry::find(&key).ok_or_else(|| AppError(format!("Unknown model key: {key}")))?;
 
     let dest_dir = models_dir(&app)?;
-    let dest_path = dest_dir.join(format!("{}.bin", key));
+    let dest_path = dest_dir.join(def.file_name);
 
     // Perform the download — retry up to 3 times on failure.
     const MAX_ATTEMPTS: u32 = 3;
@@ -203,6 +226,23 @@ pub fn delete_model(app: &AppHandle, key: &str) -> Result<(), AppError> {
 /// Sets the default model for any language.
 pub fn set_default_model(app: &AppHandle, language: &str, key: &str) -> Result<(), AppError> {
     let state = app.state::<AppState>();
+    if let Some(def) = registry::find(key) {
+        if def.engine == engine::ENGINE_NEMO {
+            let settings = settings_repo::get_all(&state.db).unwrap_or_default();
+            let health = nemo_worker::check_health(
+                app,
+                settings
+                    .get("transcription.nemo.python_path")
+                    .map(String::as_str),
+            );
+            if !health.available {
+                return Err(AppError(format!(
+                    "Cannot set \"{}\" as default because the optional NeMo runtime is not available: {}",
+                    def.display_name, health.message
+                )));
+            }
+        }
+    }
     models_repo::set_default_for_language(&state.db, language, key)?;
     Ok(())
 }

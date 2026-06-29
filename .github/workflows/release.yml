@@ -77,7 +77,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 10.34.4
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -95,6 +95,26 @@ jobs:
       # ── whisper.cpp binaries ──────────────────────────────────────────────
       - name: Setup whisper.cpp sidecar
         uses: ./.github/actions/setup-whisper
+
+      - name: Setup parakeet.cpp sidecar
+        uses: ./.github/actions/setup-parakeet-cpp
+
+      - name: Audit bundled sidecars (Windows)
+        shell: pwsh
+        run: |
+          foreach ($path in @(
+            "src-tauri\binaries\whisper-cli-x86_64-pc-windows-msvc.exe",
+            "src-tauri\binaries\parakeet-cli-x86_64-pc-windows-msvc.exe",
+            "src-tauri\binaries\parakeet-stream-worker-x86_64-pc-windows-msvc.exe",
+            "src-tauri\parakeet-runtime",
+            "src-tauri\resources\nemo_worker\localvoice_nemo_worker.py",
+            "src-tauri\resources\nemo_worker\manifest.json"
+          )) {
+            if (-not (Test-Path $path)) {
+              Write-Error "Missing release resource: $path"
+              exit 1
+            }
+          }
 
       - name: Build Tauri app (Windows)
         shell: bash
@@ -192,7 +212,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 10.34.4
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -210,6 +230,18 @@ jobs:
       # ── whisper.cpp binaries ──────────────────────────────────────────────
       - name: Setup whisper.cpp sidecar
         uses: ./.github/actions/setup-whisper
+
+      - name: Setup parakeet.cpp sidecar
+        uses: ./.github/actions/setup-parakeet-cpp
+
+      - name: Audit bundled sidecars (macOS)
+        run: |
+          test -f src-tauri/resources/nemo_worker/localvoice_nemo_worker.py
+          test -f src-tauri/resources/nemo_worker/manifest.json
+          test -d src-tauri/parakeet-runtime
+          ls src-tauri/binaries/whisper-cli-* >/dev/null
+          ls src-tauri/binaries/parakeet-cli-* >/dev/null
+          ls src-tauri/binaries/parakeet-stream-worker-* >/dev/null
 
       - name: Build Tauri app (macOS arm64)
         run: pnpm tauri build --target aarch64-apple-darwin
@@ -279,7 +311,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 10.34.4
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -295,6 +327,18 @@ jobs:
       # ── whisper.cpp binaries ──────────────────────────────────────────────
       - name: Setup whisper.cpp sidecar
         uses: ./.github/actions/setup-whisper
+
+      - name: Setup parakeet.cpp sidecar
+        uses: ./.github/actions/setup-parakeet-cpp
+
+      - name: Audit bundled sidecars (Linux)
+        run: |
+          test -f src-tauri/resources/nemo_worker/localvoice_nemo_worker.py
+          test -f src-tauri/resources/nemo_worker/manifest.json
+          test -d src-tauri/parakeet-runtime
+          ls src-tauri/binaries/whisper-cli-* >/dev/null
+          ls src-tauri/binaries/parakeet-cli-* >/dev/null
+          ls src-tauri/binaries/parakeet-stream-worker-* >/dev/null
 
       - name: Build Tauri app (Linux)
         run: pnpm tauri build
@@ -373,8 +417,11 @@ jobs:
 
             Windows, macOS, and Linux builds are currently unsigned — see the [security note](https://github.com/${{ github.repository }}#installation) in the README.
 
-            > **Note:** Whisper models are not bundled — download them from the
-            > Models page inside the app after installation.
+            > **Note:** Whisper, Parakeet CLI, and the Parakeet streaming worker
+            > sidecars are bundled. Transcription models are not bundled -
+            > download them from the Models page after installation. `.nemo`
+            > models require an optional local NVIDIA NeMo Python runtime that
+            > is configured after installation.
 
             ### What's new
             See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ needs.build-windows.outputs.tag }}) for details.

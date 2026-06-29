@@ -60,6 +60,9 @@ jobs:
       - name: Setup whisper.cpp sidecar
         uses: ./.github/actions/setup-whisper
 
+      - name: Setup parakeet.cpp sidecar
+        uses: ./.github/actions/setup-parakeet-cpp
+
       - name: Run Rust unit tests
         run: cargo test --all-features
 
@@ -79,7 +82,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: latest
+          version: 10.34.4
           run_install: false
 
       - name: Get pnpm store path

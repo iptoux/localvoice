@@ -1,6 +1,7 @@
 export type Language = "de" | "en";
 export type OutputMode = "insert" | "clipboard" | "preview";
 export type RecordingState = "idle" | "listening" | "processing" | "success" | "error";
+export type PillMode = "overlay" | "classic";
 
 export interface Session {
   id: string;
@@ -9,6 +10,9 @@ export interface Session {
   durationMs: number;
   language: string;
   modelId?: string;
+  engine: string;
+  modelArtifactFormat: string;
+  runtime: string;
   triggerType: string;
   inputDeviceId?: string;
   rawText: string;
@@ -43,6 +47,7 @@ export interface SessionSegment {
 export interface SessionWithSegments {
   session: Session;
   segments: SessionSegment[];
+  words: TranscriptWord[];
 }
 
 export interface SessionFilter {
@@ -51,6 +56,7 @@ export interface SessionFilter {
   dateFrom?: string;
   dateTo?: string;
   modelId?: string;
+  engine?: string;
   hasAudio?: boolean;
   limit?: number;
   offset?: number;
@@ -89,6 +95,9 @@ export interface ModelInfo {
   key: string;
   displayName: string;
   languageScope: "multilingual" | "en-only";
+  engine: "whisper-cpp" | "parakeet-cpp" | "nemo";
+  artifactFormat: "ggml-bin" | "gguf" | "nemo";
+  runtime: "bundled-sidecar" | "optional-nemo" | "external-path";
   fileSizeBytes: number;
   installed: boolean;
   isDefaultForDe: boolean;
@@ -100,8 +109,14 @@ export interface ModelInfo {
   description: string;
   speed: "fastest" | "fast" | "balanced" | "slow" | "slowest";
   accuracy: "low" | "medium" | "good" | "great" | "best";
-  category: "standard" | "quantized" | "turbo" | "large";
+  category: "standard" | "quantized" | "turbo" | "large" | "parakeet" | "nemo";
   recommendedFor: string;
+  supportsStreaming: boolean;
+  supportsWordTimestamps: boolean;
+  supportsConfidence: boolean;
+  licenseId: string;
+  licenseUrl: string;
+  languageLocales: string[];
 }
 
 export interface DownloadProgress {
@@ -114,6 +129,13 @@ export interface DownloadProgress {
 export type Settings = Record<string, string>;
 
 export interface TranscriptSegment {
+  startMs: number;
+  endMs: number;
+  text: string;
+  confidence?: number;
+}
+
+export interface TranscriptWord {
   startMs: number;
   endMs: number;
   text: string;
@@ -133,8 +155,12 @@ export interface TranscriptionResult {
   rawText: string;
   cleanedText: string;
   segments: TranscriptSegment[];
+  words: TranscriptWord[];
   language: string;
   modelId: string;
+  engine: string;
+  artifactFormat: string;
+  runtime: string;
   durationMs: number;
   /** Result of the output step (clipboard write or auto-insert). */
   output?: OutputResult;
@@ -156,6 +182,19 @@ export interface RecordingStatePayload {
 export interface OutputResultPayload {
   mode: string;
   success: boolean;
+  error?: string;
+}
+
+export interface TranscriptionStreamUpdate {
+  sessionId: string;
+  sequence: number;
+  text: string;
+  delta: string;
+  isFinal: boolean;
+  modelId: string;
+  engine: string;
+  outputMode: "preview" | "live_insert" | string;
+  liveInserted: boolean;
   error?: string;
 }
 
@@ -273,4 +312,24 @@ export interface BenchmarkResult {
   textOutput: string;
   success: boolean;
   error?: string;
+}
+
+export interface TranscriptionEngineInfo {
+  key: string;
+  displayName: string;
+  runtime: string;
+  artifactFormats: string[];
+  bundled: boolean;
+  optional: boolean;
+  supportsStreaming: boolean;
+  description: string;
+}
+
+export interface RuntimeHealth {
+  runtime: string;
+  available: boolean;
+  configured: boolean;
+  message: string;
+  pythonPath?: string;
+  detail?: string;
 }

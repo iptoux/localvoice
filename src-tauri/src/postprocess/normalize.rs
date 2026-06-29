@@ -4,6 +4,59 @@ pub fn collapse_whitespace(text: &str) -> String {
     text.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// Removes ASR language markers such as `<de-DE>`, `<DE>`, or `<en-US>`.
+///
+/// Some Parakeet/Nemotron streaming models emit the language prompt token as
+/// plain transcript text. These markers are metadata, not dictated content.
+pub fn remove_language_tags(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut cursor = 0;
+
+    while let Some(relative_start) = text[cursor..].find('<') {
+        let start = cursor + relative_start;
+        out.push_str(&text[cursor..start]);
+
+        if let Some(relative_end) = text[start..].find('>') {
+            let end = start + relative_end;
+            let candidate = text[start + 1..end].trim();
+            if is_language_tag(candidate) {
+                cursor = end + 1;
+                continue;
+            }
+        }
+
+        out.push('<');
+        cursor = start + '<'.len_utf8();
+    }
+
+    out.push_str(&text[cursor..]);
+    out
+}
+
+fn is_language_tag(candidate: &str) -> bool {
+    if candidate.is_empty() {
+        return false;
+    }
+
+    let parts = candidate.split(['-', '_']).collect::<Vec<_>>();
+    if !(1..=2).contains(&parts.len()) {
+        return false;
+    }
+
+    let language = parts[0];
+    if !(2..=3).contains(&language.len()) || !language.chars().all(|c| c.is_ascii_alphabetic()) {
+        return false;
+    }
+
+    if let Some(region) = parts.get(1) {
+        if !(2..=4).contains(&region.len()) || !region.chars().all(|c| c.is_ascii_alphabetic()) {
+            return false;
+        }
+    }
+
+    true
+}
+
 /// Ensures the first alphabetic character of the string is uppercase.
 #[allow(dead_code)]
 pub fn capitalize_first(text: &str) -> String {
@@ -89,6 +142,25 @@ mod tests {
     #[test]
     fn collapse_whitespace_empty_string() {
         assert_eq!(collapse_whitespace(""), "");
+    }
+
+    #[test]
+    fn remove_language_tags_removes_locale_markers() {
+        assert_eq!(
+            remove_language_tags("Das ist ein Test. <de-DE> Hier geht es weiter."),
+            "Das ist ein Test.  Hier geht es weiter."
+        );
+        assert_eq!(remove_language_tags("<DE> Hallo"), " Hallo");
+        assert_eq!(remove_language_tags("Hello <en-US> world"), "Hello  world");
+    }
+
+    #[test]
+    fn remove_language_tags_keeps_non_locale_angle_text() {
+        assert_eq!(
+            remove_language_tags("Use <placeholder> here"),
+            "Use <placeholder> here"
+        );
+        assert_eq!(remove_language_tags("Score <3"), "Score <3");
     }
 
     // ── capitalize_first ─────────────────────────────────────────────────────
@@ -219,7 +291,8 @@ mod tests {
 /// 2. Ensure terminal punctuation (if `auto_punctuation` is enabled)
 /// 3. Capitalise sentences (if `auto_capitalization` is enabled)
 pub fn normalize(text: &str, auto_capitalization: bool, auto_punctuation: bool) -> String {
-    let text = collapse_whitespace(text);
+    let text = remove_language_tags(text);
+    let text = collapse_whitespace(&text);
     let text = if auto_punctuation {
         ensure_terminal_punctuation(&text)
     } else {

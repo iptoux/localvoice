@@ -77,7 +77,7 @@ export const TIPS: Tip[] = [
   },
   {
     icon: LayoutPanelLeft,
-    text: 'Set "Start minimized" to keep only the pill visible on launch.',
+    text: 'Use "Start minimized" to keep LocalVoice in the tray on launch.',
   },
   {
     icon: Pilcrow,

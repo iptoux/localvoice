@@ -2,8 +2,24 @@
 
 ## Unreleased
 
+- Added selectable pill modes: the new default recording overlay stays hidden while idle and shows only a bottom-center waveform during recording, while Classic pill preserves the old persistent compact/expanded UI with previews.
+- Fixed the overlay pill startup default so the main dashboard opens normally while the overlay itself stays hidden until recording.
+- Added persisted diagnostics for main-window open failures and recenters the dashboard window when restored outside all visible monitors.
+- Added a migration and runtime guard for invalid persisted dashboard geometry such as Windows hidden-window sizes (`16x39`) and sentinel positions (`-32000,-32000`).
+- Fixed recording overlay focus handling so live insert can keep writing to the previously focused target app instead of the overlay.
+- Stripped ASR language prompt tags such as `<de-DE>` from Parakeet/Nemotron streaming and final transcript output.
+- Fixed CI and release packaging for Parakeet by pinning pnpm to a Node 20 compatible version and staging Parakeet runtime libraries for sidecar smoke tests.
+- Fixed Windows CI after whisper.cpp `v1.9.1` stopped shipping `ggml-cpu.dll` by making that DLL optional instead of a required Tauri resource.
+- Marked optional NeMo `.nemo` models as non-streaming until the Python worker exposes a compatible live streaming API.
+- Added real streaming transcription plumbing for streaming-capable Parakeet GGUF models, including Classic pill live preview, optional worker-delta live insert, and stop-time fallback to WAV transcription.
+- Added the bundled `parakeet-stream-worker` sidecar built from pinned `mudler/parakeet.cpp` `v0.3.2` source in CI and audited in release jobs.
+- Added streaming settings for enable/disable, chunk size, and preview vs. live insert output mode.
+- Fixed the Models page `Most accurate first` ordering so NeMo and Parakeet models participate with deterministic accuracy tie-breakers.
+- Added a hybrid transcription runtime with Whisper GGML, Parakeet GGUF, and optional NVIDIA NeMo `.nemo` model support.
+- Bundled the Parakeet CPU/portable sidecar in CI and release builds while keeping all model weights and Python/NeMo/CUDA stacks out of base installers.
+- Added model/runtime metadata, word-level timestamp persistence, runtime health checks, and release artifact audits for transcription sidecars.
 - Temporarily disabled the SignPath release job until OSS signing support is available; Windows release artifacts are published unsigned for now.
-- Bumped the app version to 0.2.2.
+- Bumped the app version to 0.2.3.
 - Added a square 256x256 Linux bundle icon and removed non-square PNGs from the Tauri icon list to fix AppImage packaging.
 - Updated frontend dependencies to resolve npm/pnpm security advisories while keeping the Vite toolchain on the latest compatible 7.x line.
 - Added a plain-text `localvoice.log` file in the app data directory so crash reports can include logs even when the in-app viewer is unavailable.

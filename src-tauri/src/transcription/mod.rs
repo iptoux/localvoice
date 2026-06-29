@@ -1,6 +1,13 @@
+pub mod engine;
 pub mod language;
+pub mod nemo_worker;
 pub mod orchestrator;
+pub mod parakeet_parser;
+pub mod parakeet_runtime;
+pub mod parakeet_sidecar;
+pub mod parakeet_stream_worker;
 pub mod parser;
 pub mod pipeline;
+pub mod streaming;
 pub mod types;
 pub mod whisper_sidecar;

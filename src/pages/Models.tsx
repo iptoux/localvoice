@@ -4,6 +4,7 @@ import { useShallow } from "zustand/react/shallow";
 import type { ModelInfo, DownloadProgress } from "../types";
 import { useModelsStore } from "../stores/models-store";
 import { useThrottledEvent } from "../hooks/use-throttled-event";
+import { filterModels, sortModels, type ModelSortKey } from "../lib/model-sort";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -18,6 +19,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   quantized: "Quantized",
   turbo: "Turbo",
   large: "Large",
+  parakeet: "Parakeet",
+  nemo: "NeMo",
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -25,6 +28,14 @@ const CATEGORY_COLORS: Record<string, string> = {
   quantized: "bg-cyan-900/60 text-cyan-300",
   turbo: "bg-orange-900/60 text-orange-300",
   large: "bg-purple-900/60 text-purple-300",
+  parakeet: "bg-emerald-900/60 text-emerald-300",
+  nemo: "bg-lime-900/60 text-lime-300",
+};
+
+const ENGINE_LABELS: Record<string, string> = {
+  "whisper-cpp": "Whisper.cpp",
+  "parakeet-cpp": "Parakeet.cpp",
+  nemo: "NeMo",
 };
 
 const SPEED_DOTS: Record<string, number> = {
@@ -129,6 +140,17 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
                 <CheckCircle size={11} /> Installed
               </span>
             )}
+            <span className="px-1.5 py-0.5 rounded text-xs bg-neutral-800 text-neutral-300 font-medium">
+              {ENGINE_LABELS[model.engine] ?? model.engine}
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-xs bg-neutral-800 text-neutral-300 font-medium uppercase">
+              {model.artifactFormat}
+            </span>
+            {model.supportsStreaming && (
+              <span className="px-1.5 py-0.5 rounded text-xs bg-blue-900/60 text-blue-300 font-medium">
+                Streaming
+              </span>
+            )}
             {(model.defaultForLanguages ?? []).map((lang) => (
               <span key={lang} className="px-1.5 py-0.5 rounded text-xs bg-blue-900/60 text-blue-300 font-medium uppercase">
                 {lang}
@@ -145,6 +167,10 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
             <span className="text-xs text-muted-foreground capitalize">
               {model.languageScope === "multilingual" ? <><Globe size={11} className="inline mr-1" />Multilingual</> : "🇬🇧 EN only"}
             </span>
+            <span className="text-xs text-muted-foreground">
+              {model.runtime === "optional-nemo" ? "Runtime required" : "Bundled runtime"}
+            </span>
+            <span className="text-xs text-muted-foreground uppercase">{model.licenseId}</span>
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>Speed</span>
               <Dots filled={speedDots} color="bg-green-500" />
@@ -210,22 +236,8 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
 
 // ── page ──────────────────────────────────────────────────────────────────────
 
-const CATEGORIES = ["all", "standard", "quantized", "turbo", "large"] as const;
+const CATEGORIES = ["all", "standard", "quantized", "turbo", "large", "parakeet", "nemo"] as const;
 type CategoryFilter = typeof CATEGORIES[number];
-type SortKey = "default" | "speed" | "accuracy" | "size";
-
-const SPEED_ORDER: Record<string, number> = { fastest: 5, fast: 4, balanced: 3, slow: 2, slowest: 1 };
-const ACCURACY_ORDER: Record<string, number> = { best: 5, great: 4, good: 3, medium: 2, low: 1 };
-
-function sortModels(models: ModelInfo[], sort: SortKey): ModelInfo[] {
-  if (sort === "default") return models;
-  return [...models].sort((a, b) => {
-    if (sort === "speed") return (SPEED_ORDER[b.speed] ?? 0) - (SPEED_ORDER[a.speed] ?? 0);
-    if (sort === "accuracy") return (ACCURACY_ORDER[b.accuracy] ?? 0) - (ACCURACY_ORDER[a.accuracy] ?? 0);
-    if (sort === "size") return a.fileSizeBytes - b.fileSizeBytes;
-    return 0;
-  });
-}
 
 export default function Models() {
   const { models, loading, downloading, error, fetch, startDownload, removeModel, setDefault, setDownloadProgress } =
@@ -243,7 +255,7 @@ export default function Models() {
       }))
     );
   const [filter, setFilter] = useState<CategoryFilter>("all");
-  const [sort, setSort] = useState<SortKey>("default");
+  const [sort, setSort] = useState<ModelSortKey>("default");
 
   useEffect(() => { fetch(); }, [fetch]);
 
@@ -281,7 +293,7 @@ export default function Models() {
 
   // < 1ms — filter + sort visible models, memoized to prevent re-computation on every render
   const visible = useMemo(
-    () => sortModels(filter === "all" ? models : models.filter((m) => m.category === filter), sort),
+    () => sortModels(filterModels(models, filter), sort),
     [models, filter, sort]
   );
 
@@ -298,7 +310,7 @@ export default function Models() {
     <div className="p-8">
       <h1 className="text-2xl font-semibold text-foreground mb-1">Models</h1>
       <p className="text-muted-foreground text-sm mb-8">
-        Download and manage local whisper.cpp transcription models.
+        Download and manage local Whisper, Parakeet, and optional NeMo transcription models.
       </p>
 
       {/* Default model selectors */}
@@ -340,7 +352,7 @@ export default function Models() {
             </div>
             <select
               value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
+              onChange={(e) => setSort(e.target.value as ModelSortKey)}
               className="flex items-center gap-1 bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="default">↕ Default order</option>

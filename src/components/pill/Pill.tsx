@@ -4,7 +4,7 @@ import { useAppStore } from "../../stores/app-store";
 import { expandPill, collapsePill, openMainWindow, getSettings } from "../../lib/tauri";
 import { Waveform } from "./Waveform";
 import { ExpandedPill } from "./ExpandedPill";
-import type { RecordingState } from "../../types";
+import type { PillMode, RecordingState } from "../../types";
 
 const STATE_COLOR: Record<RecordingState, string> = {
   idle: "bg-card",
@@ -17,10 +17,38 @@ const STATE_COLOR: Record<RecordingState, string> = {
 /** Duration (ms) before the success state fades back to idle. */
 const SUCCESS_DISPLAY_MS = 3000;
 
-export function Pill() {
+export function Pill({ mode = "classic" }: { mode?: PillMode }) {
+  return mode === "overlay" ? <RecordingOverlayPill /> : <ClassicPill />;
+}
+
+export function RecordingOverlayPill() {
+  const recordingState = useAppStore((s) => s.recordingState);
+
+  if (recordingState !== "listening") {
+    return null;
+  }
+
+  return (
+    <div
+      data-testid="recording-overlay-pill"
+      data-tauri-drag-region
+      className="
+        flex h-full w-full items-center justify-center rounded-full
+        border border-cyan-200/30 bg-neutral-950/92 px-5
+        shadow-[0_18px_45px_rgba(0,0,0,0.35)]
+        select-none overflow-hidden
+      "
+    >
+      <Waveform />
+    </div>
+  );
+}
+
+export function ClassicPill() {
   const recordingState = useAppStore((s) => s.recordingState);
   const setRecordingState = useAppStore((s) => s.setRecordingState);
   const recordingError = useAppStore((s) => s.recordingError);
+  const streamingText = useAppStore((s) => s.streamingTranscription?.text ?? "");
   const isPillExpanded = useAppStore((s) => s.isPillExpanded);
   const setIsPillExpanded = useAppStore((s) => s.setIsPillExpanded);
   const [pushToTalk, setPushToTalk] = useState(false);
@@ -110,7 +138,11 @@ export function Pill() {
               ) : recordingState === "success" ? (
                 <SuccessContent />
               ) : recordingState === "listening" ? (
-                <Waveform />
+                streamingText.trim() ? (
+                  <StreamingContent text={streamingText} />
+                ) : (
+                  <Waveform />
+                )
               ) : (
                 "Transcribing…"
               )}
@@ -230,6 +262,27 @@ function OutputBadge({
 const MemoizedOutputBadge = memo(OutputBadge, (prev, next) =>
   prev.label === next.label && prev.success === next.success
 );
+
+function StreamingContent({ text }: { text: string }) {
+  const preview = useMemo(
+    () => (text.length > 60 ? `${text.slice(0, 58)}...` : text),
+    [text]
+  );
+
+  return (
+    <span data-tauri-drag-region className="flex items-center gap-2 min-w-0 text-white">
+      <span
+        data-tauri-drag-region
+        className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-white/20 font-semibold"
+      >
+        Live
+      </span>
+      <span data-tauri-drag-region className="truncate" title={text}>
+        {preview}
+      </span>
+    </span>
+  );
+}
 
 // ── State icon ───────────────────────────────────────────────────────────────
 

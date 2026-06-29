@@ -184,7 +184,7 @@ Write-Step "Publishing GitHub release $tag"
 $notes = "## LocalVoice $tag`n`n" +
          "### Installation`n" +
          "Download the .msi (Windows Installer) or the -setup.exe (NSIS installer) below.`n`n" +
-         "Whisper models are not bundled - download them from the Models page inside the app.`n`n" +
+         "Whisper and Parakeet sidecars are bundled. Transcription models are not bundled - download them from the Models page inside the app. .nemo models require an optional local NVIDIA NeMo Python runtime.`n`n" +
          "### Changes`n" +
          "https://github.com/iptoux/localvoice/commits/$tag"
 

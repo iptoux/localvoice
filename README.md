@@ -6,7 +6,7 @@
 
 **Offline-first desktop voice dictation — no cloud, no telemetry, just your voice.**
 
-Record with a global shortcut, transcribe locally with [whisper.cpp](https://github.com/ggerganov/whisper.cpp), and send text straight to your clipboard or active app.
+Record with a global shortcut, transcribe locally with [whisper.cpp](https://github.com/ggerganov/whisper.cpp), [parakeet.cpp](https://github.com/mudler/parakeet.cpp), or an optional NVIDIA NeMo runtime, and send text straight to your clipboard or active app.
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tauri v2](https://img.shields.io/badge/Tauri-v2-2B90B8)](https://tauri.app)
@@ -29,8 +29,8 @@ It's built for developers, writers, and anyone who wants fast, private voice inp
 
 - **Global hotkey recording** — start and stop dictation from anywhere on your desktop
 - **Push-to-talk mode** — hold the shortcut to record, release to stop; configurable per session
-- **100% local transcription** — powered by whisper.cpp; your audio never leaves your machine
-- **Multiple Whisper models** — download and switch between models per language
+- **100% local transcription** — powered by bundled Whisper/parakeet.cpp sidecars or an optional local NeMo runtime; your audio never leaves your machine
+- **Multiple model runtimes** — download and switch between Whisper GGML, Parakeet GGUF, and optional `.nemo` models per language
 - **Smart output** — insert directly into the active app, copy to clipboard, or preview first
 - **Custom dictionary** — teach LocalVoice your vocabulary, acronyms, and corrections
 - **Filler word removal** — automatically strips "um", "uh", and other fillers
@@ -57,7 +57,7 @@ It's built for developers, writers, and anyone who wants fast, private voice inp
 | State management | Zustand |
 | Backend | Rust (stable ≥ 1.77) |
 | Database | SQLite (bundled via rusqlite) |
-| Transcription | whisper.cpp (local sidecar binary) |
+| Transcription | whisper.cpp sidecar, parakeet.cpp sidecar, optional NVIDIA NeMo worker |
 | Audio capture | cpal, hound |
 
 ---
@@ -71,8 +71,8 @@ It's built for developers, writers, and anyone who wants fast, private voice inp
       <br/><sub>Dashboard — usage stats, WPM trend &amp; language breakdown</sub>
     </td>
     <td align="center">
-      <img src="docs/screenshots/models-light.png" alt="Model Manager — download and manage whisper.cpp models (light theme)" width="480"/>
-      <br/><sub>Model Manager — download whisper.cpp models (dark theme)</sub>
+      <img src="docs/screenshots/models-light.png" alt="Model Manager — download and manage local transcription models (light theme)" width="480"/>
+      <br/><sub>Model Manager — download local transcription models (dark theme)</sub>
     </td>
   </tr>
   <tr>
@@ -134,7 +134,7 @@ sudo apt-get install -y wtype
 
 ### Quick Setup (recommended)
 
-Clone the repo and run the bootstrap script — it handles dependencies, whisper binaries, and build verification automatically.
+Clone the repo and run the bootstrap script. It handles dependencies, Whisper/parakeet.cpp sidecars, and build verification automatically.
 
 **Windows (PowerShell):**
 ```powershell
@@ -155,8 +155,9 @@ The script will:
 2. Check Linux system packages (Linux only)
 3. Install frontend dependencies
 4. Download or build whisper.cpp binaries for your platform (skip with `--skip-whisper`)
-5. Verify the Tauri CLI is available
-6. Run a Rust compilation check (skip with `--skip-verification`)
+5. Download and verify the pinned parakeet.cpp sidecar (skip with `--skip-parakeet`)
+6. Verify the Tauri CLI is available
+7. Run a Rust compilation check (skip with `--skip-verification`)
 
 ### Manual Setup
 
@@ -171,9 +172,21 @@ pnpm tauri dev
 pnpm tauri build
 ```
 
-### whisper.cpp Binaries (required)
+### Sidecar Binaries (required)
 
-The bootstrap script handles this automatically. For manual setup, you need to place a platform-appropriate binary in `src-tauri/binaries/`:
+The bootstrap script handles this automatically. For manual setup, you need to place platform-appropriate sidecar binaries in `src-tauri/binaries/`:
+
+| Sidecar | Target name example |
+|---|---|
+| whisper.cpp | `whisper-cli-x86_64-pc-windows-msvc.exe` |
+| parakeet.cpp | `parakeet-cli-x86_64-pc-windows-msvc.exe` |
+| parakeet.cpp streaming worker | `parakeet-stream-worker-x86_64-pc-windows-msvc.exe` |
+
+Parakeet sidecars are pinned to `mudler/parakeet.cpp` `v0.3.2` and must be checksum-verified or built from the pinned source before release packaging. Public installers bundle the CPU/portable sidecars only; model weights, `.nemo` checkpoints, CUDA stacks, and Python/NeMo environments are never bundled in the base installer.
+
+The Parakeet streaming worker can also produce small runtime libraries during CI/release builds. Those files are staged under `src-tauri/parakeet-runtime/` and bundled as Tauri resources; the directory is kept in Git, but generated runtime files are ignored.
+
+#### whisper.cpp
 
 **Windows:**
 
@@ -185,9 +198,10 @@ The bootstrap script handles this automatically. For manual setup, you need to p
 | `Release/whisper-cli.exe` | `src-tauri/binaries/whisper-cli-x86_64-pc-windows-msvc.exe` |
 | `Release/ggml.dll` | `src-tauri/ggml.dll` |
 | `Release/ggml-base.dll` | `src-tauri/ggml-base.dll` |
-| `Release/ggml-cpu.dll` | `src-tauri/ggml-cpu.dll` |
 | `Release/whisper.dll` | `src-tauri/whisper.dll` |
 | `Release/SDL2.dll` | `src-tauri/SDL2.dll` |
+
+Some whisper.cpp releases may also include `ggml-cpu.dll`; the setup action copies it when present, but the Tauri bundle does not require it because current Windows assets do not ship it.
 
 **macOS (Apple Silicon):**
 
@@ -209,7 +223,19 @@ cmake --build build --target whisper-cli -j$(nproc)
 cp build/bin/whisper-cli ../src-tauri/binaries/whisper-cli-x86_64-unknown-linux-gnu
 ```
 
-> All binary files are excluded from version control (`.gitignore`). Every contributor must provide them manually or run the bootstrap script.
+#### parakeet.cpp
+
+Use the pinned `v0.3.2` CPU/portable release assets from [mudler/parakeet.cpp](https://github.com/mudler/parakeet.cpp/releases/tag/v0.3.2), then rename the extracted CLI to Tauri's target-triple sidecar format:
+
+| Platform | Destination |
+|---|---|
+| Windows x64 | `src-tauri/binaries/parakeet-cli-x86_64-pc-windows-msvc.exe` |
+| macOS arm64 | `src-tauri/binaries/parakeet-cli-aarch64-apple-darwin` |
+| macOS Intel | `src-tauri/binaries/parakeet-cli-x86_64-apple-darwin` |
+| Linux x64 | `src-tauri/binaries/parakeet-cli-x86_64-unknown-linux-gnu` |
+| Linux arm64 | `src-tauri/binaries/parakeet-cli-aarch64-unknown-linux-gnu` |
+
+> All sidecar binaries are excluded from version control (`.gitignore`). Every contributor must provide them manually or run the bootstrap script.
 
 ### Platform-specific notes
 
@@ -245,7 +271,11 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 | Recording shortcut | Global hotkey to start/stop recording |
 | Output mode | Insert to active app, clipboard, or preview |
 | Default language | Language used for transcription |
-| Active Whisper model | Per-language model selection |
+| Default transcription engine | Preferred engine (`whisper-cpp`, `parakeet-cpp`, or optional `nemo`) |
+| Preferred transcription runtime | Bundled sidecar or optional local NeMo runtime |
+| Active model | Per-language model selection |
+| Streaming transcription | Enables low-latency streaming for capable Parakeet GGUF models; optional live insert writes worker-emitted deltas |
+| Pill mode | Recording overlay (default) or Classic pill |
 | Theme | System, light, or dark |
 | Filler words | Language-specific list of words to strip |
 | Audio retention | Whether to keep raw audio after transcription |
@@ -255,11 +285,13 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 
 ## Usage
 
-1. Launch LocalVoice — a small pill window appears on screen.
+1. Launch LocalVoice. By default the main window opens; the recording overlay stays hidden until you record.
 2. Press your configured shortcut (default: customizable in Settings) to start recording.
-3. Speak. The pill animates to show it's listening.
+3. Speak. The default recording overlay appears bottom-center with a waveform only.
 4. Press the shortcut again (or let silence detection stop it automatically).
 5. LocalVoice transcribes locally and sends the text to your active app or clipboard.
+
+Switch **Settings -> Appearance -> Pill mode** to **Classic pill** if you prefer the older persistent compact/expanded pill with transcript preview.
 
 You can open the full dashboard at any time to browse history, manage models, edit your dictionary, review ambiguous phrases, and view usage stats.
 
@@ -274,7 +306,7 @@ src-tauri/
     commands/         Tauri IPC command handlers
     db/               SQLite layer (migrations, repositories)
     audio/            Recording and device management
-    transcription/    whisper.cpp sidecar protocol
+    transcription/    hybrid engine orchestration, sidecar protocols, NeMo worker bridge
     postprocess/      Text cleaning, filler removal, corrections
     dictionary/       Custom vocabulary and correction rules
     os/               Tray, hotkeys, clipboard, text insertion
@@ -336,5 +368,5 @@ MIT — see [LICENSE](LICENSE) for the full text.
 ---
 
 <div align="center">
-Built with <a href="https://tauri.app">Tauri</a> · Transcription by <a href="https://github.com/ggerganov/whisper.cpp">whisper.cpp</a>
+Built with <a href="https://tauri.app">Tauri</a> · Transcription by <a href="https://github.com/ggerganov/whisper.cpp">whisper.cpp</a>, <a href="https://github.com/mudler/parakeet.cpp">parakeet.cpp</a>, and optional NVIDIA NeMo
 </div>

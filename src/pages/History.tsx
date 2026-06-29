@@ -177,7 +177,7 @@ export default function History() {
       const detail = await getSessionDetail(session.id);
       setDrawerDetail(detail);
     } catch {
-      setDrawerDetail({ session, segments: [] });
+      setDrawerDetail({ session, segments: [], words: [] });
     } finally {
       setDrawerLoading(false);
     }

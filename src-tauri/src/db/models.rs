@@ -10,6 +10,9 @@ pub struct Session {
     pub duration_ms: i64,
     pub language: String,
     pub model_id: Option<String>,
+    pub engine: String,
+    pub model_artifact_format: String,
+    pub runtime: String,
     pub trigger_type: String,
     pub input_device_id: Option<String>,
     pub raw_text: String,
@@ -44,12 +47,27 @@ pub struct SessionSegment {
     pub segment_index: i64,
 }
 
+/// A word-level timestamp row from `session_words`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionWord {
+    pub id: String,
+    pub session_id: String,
+    pub start_ms: i64,
+    pub end_ms: i64,
+    pub text: String,
+    pub confidence: Option<f64>,
+    pub word_index: i64,
+}
+
 /// A session with its associated segments, returned by `get_session`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionWithSegments {
     pub session: Session,
     pub segments: Vec<SessionSegment>,
+    #[serde(default)]
+    pub words: Vec<SessionWord>,
 }
 
 /// Filter / pagination parameters for `list_sessions`.
@@ -66,6 +84,8 @@ pub struct SessionFilter {
     pub date_to: Option<String>,
     /// Filter by model stem (e.g. "ggml-base").
     pub model_id: Option<String>,
+    /// Filter by transcription engine (e.g. "whisper-cpp", "parakeet-cpp", "nemo").
+    pub engine: Option<String>,
     /// When true, only return sessions that have an audio file.
     pub has_audio: Option<bool>,
     pub limit: Option<i64>,

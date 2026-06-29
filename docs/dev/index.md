@@ -23,6 +23,7 @@ Technical reference for contributors and maintainers.
 | MS-15 | [Stronger Dashboard & Confidence Viz](ms15-dashboard-confidence.md) | `done` |
 | [ms17-tests-ci-perf.md](ms17-tests-ci-perf.md) | MS-17 Test Suite, CI/CD & Performance | done |
 | [ms18-cross-platform.md](ms18-cross-platform.md) | MS-18 macOS & Linux Support | done |
+| [ms21-streaming-transcription.md](ms21-streaming-transcription.md) | MS-21 Streaming Transcription | done |
 
 ## Reference
 
@@ -31,7 +32,8 @@ Technical reference for contributors and maintainers.
 - [error-handling.md](error-handling.md) — Rust error conventions and frontend event patterns
 - [i18n.md](i18n.md) — internationalization approach, translation structure, and language settings
 - [tauri-commands.md](tauri-commands.md) — all Tauri command signatures (parameters, return types, error codes, examples)
-- [transcription-pipeline.md](transcription-pipeline.md) — whisper.cpp sidecar, protocol, debugging *(done)*
+- [transcription-pipeline.md](transcription-pipeline.md) — hybrid Whisper/Parakeet/NeMo runtime, sidecar protocols, debugging *(done)*
+- [parakeet-hybrid-runtime.md](parakeet-hybrid-runtime.md) — Parakeet GGUF and optional NeMo deployment design *(done)*
 
 ## See Also
 

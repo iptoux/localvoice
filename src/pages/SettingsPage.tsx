@@ -252,6 +252,15 @@ export default function SettingsPage() {
     }
   };
 
+  const handlePillModeChange = async (mode: string | null) => {
+    if (!mode) return;
+    await update("ui.pill.mode", mode);
+    emitTo("pill", "pill-mode-changed", mode).catch(() => {});
+    if (mode === "overlay" && (settings["ui.default_mode"] || "main") === "pill") {
+      await update("ui.default_mode", "main");
+    }
+  };
+
   const bool = (key: string, fallback = false) =>
     settings[key] === undefined ? fallback : settings[key] === "true";
 
@@ -262,6 +271,18 @@ export default function SettingsPage() {
   const shortcut = settings["recording.shortcut"] || "CommandOrControl+Shift+Space";
   const outputMode = settings["output.mode"] || "clipboard";
   const language = settings["transcription.default_language"] || "auto";
+  const streamingEnabled = bool("transcription.streaming.enabled");
+  const streamingChunkMs = settings["transcription.streaming.chunk_ms"] || "320";
+  const streamingOutputMode = settings["transcription.streaming.output_mode"] || "preview";
+  const pillMode = settings["ui.pill.mode"] === "classic" ? "classic" : "overlay";
+  const defaultView =
+    pillMode === "classic"
+      ? settings["ui.default_mode"] || "pill"
+      : settings["ui.default_mode"] === "main"
+        ? "main"
+        : settings["ui.default_mode"] === "tray"
+          ? "tray"
+          : "main";
   const deviceId = settings["recording.device_id"] || "";
   const silenceMs = parseInt(settings["recording.silence_timeout_ms"] || "1500");
 
@@ -345,7 +366,7 @@ export default function SettingsPage() {
       </div>
       <Separator className="bg-border mb-1" />
 
-      <SettingRow icon={Languages} iconClass="text-cyan-400" label="Language" description="Language passed to the Whisper model.">
+      <SettingRow icon={Languages} iconClass="text-cyan-400" label="Language" description="Language passed to the selected transcription engine.">
         <Select value={language} onValueChange={setVal("transcription.default_language")}>
           <SelectTrigger className="w-44 bg-card border-border text-sm">
             <SelectValue />
@@ -366,6 +387,64 @@ export default function SettingsPage() {
           </SelectContent>
         </Select>
       </SettingRow>
+
+      <SettingRow
+        icon={ScrollText}
+        iconClass="text-blue-400"
+        label="Streaming transcription"
+        description="Use streaming-capable Parakeet GGUF models before stop; live text is shown only in Classic pill mode."
+      >
+        <Switch
+          checked={streamingEnabled}
+          onCheckedChange={(v) => set("transcription.streaming.enabled", String(v))}
+        />
+      </SettingRow>
+
+      {streamingEnabled && (
+        <>
+          <SettingRow
+            icon={Timer}
+            iconClass="text-amber-400"
+            label="Streaming chunk size"
+            description="How often LocalVoice sends captured audio to the streaming worker."
+          >
+            <Select
+              value={streamingChunkMs}
+              onValueChange={setVal("transcription.streaming.chunk_ms")}
+            >
+              <SelectTrigger className="w-32 bg-card border-border text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                <SelectItem value="160">160 ms</SelectItem>
+                <SelectItem value="320">320 ms</SelectItem>
+                <SelectItem value="500">500 ms</SelectItem>
+                <SelectItem value="1000">1 s</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+
+          <SettingRow
+            icon={ClipboardCopy}
+            iconClass="text-emerald-400"
+            label="Streaming output"
+            description="No live insert keeps target apps untouched; live insert writes streaming deltas when the worker emits them."
+          >
+            <Select
+              value={streamingOutputMode}
+              onValueChange={setVal("transcription.streaming.output_mode")}
+            >
+              <SelectTrigger className="w-52 bg-card border-border text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                <SelectItem value="preview">No live insert</SelectItem>
+                <SelectItem value="live_insert">Live insert streaming deltas</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+        </>
+      )}
 
       <SettingRow
         icon={WholeWord}
@@ -572,20 +651,44 @@ export default function SettingsPage() {
 
       <SettingRow
         icon={LayoutPanelLeft}
+        iconClass="text-cyan-400"
+        label="Pill mode"
+        description="Choose the new recording overlay or the classic compact pill."
+      >
+        <Select value={pillMode} onValueChange={handlePillModeChange}>
+          <SelectTrigger className="w-52 bg-card border-border text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-card border-border">
+            <SelectItem value="overlay">Recording overlay</SelectItem>
+            <SelectItem value="classic">Classic pill</SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingRow>
+
+      <SettingRow
+        icon={LayoutPanelLeft}
         iconClass="text-indigo-400"
         label="Default view"
-        description="Which window opens when you launch the app."
+        description={
+          pillMode === "classic"
+            ? "Which window opens when you launch the app."
+            : "Choose whether launch opens the app or stays in the tray."
+        }
       >
         <Select
-          value={settings["ui.default_mode"] || "pill"}
+          value={defaultView}
           onValueChange={setVal("ui.default_mode")}
         >
           <SelectTrigger className="w-44 bg-card border-border text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="bg-card border-border">
-            <SelectItem value="pill">Pill (compact)</SelectItem>
+            <SelectItem value="tray">Tray only</SelectItem>
             <SelectItem value="main">Main window</SelectItem>
+            {pillMode === "classic" && (
+              <SelectItem value="pill">Classic pill</SelectItem>
+            )}
           </SelectContent>
         </Select>
       </SettingRow>
@@ -614,7 +717,11 @@ export default function SettingsPage() {
         icon={EyeOff}
         iconClass="text-slate-400"
         label="Start minimized"
-        description="Hide the main window on startup, only show the pill."
+        description={
+          pillMode === "classic"
+            ? "Hide the main window on startup and use the classic pill."
+            : "Hide the main window on startup and stay in the tray until recording."
+        }
       >
         <Switch
           checked={bool("app.start_hidden")}

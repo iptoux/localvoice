@@ -75,19 +75,6 @@ pub fn run() {
             }
 
             // ── Restore pill position ─────────────────────────────────────────
-            if let Some(pill) = app.get_webview_window("pill") {
-                if let (Some(x), Some(y)) = (
-                    persisted
-                        .get("ui.pill.position_x")
-                        .and_then(|v| v.parse::<i32>().ok()),
-                    persisted
-                        .get("ui.pill.position_y")
-                        .and_then(|v| v.parse::<i32>().ok()),
-                ) {
-                    let _ = pill.set_position(tauri::PhysicalPosition::new(x, y));
-                }
-            }
-
             // ── Restore main window geometry ──────────────────────────────────
             if let Some(main_win) = app.get_webview_window("main") {
                 if let (Some(w), Some(h)) = (
@@ -98,7 +85,13 @@ pub fn run() {
                         .get("ui.main_window.height")
                         .and_then(|v| v.parse::<u32>().ok()),
                 ) {
-                    let _ = main_win.set_size(tauri::PhysicalSize::new(w, h));
+                    if window::is_valid_main_window_size(w, h) {
+                        let _ = main_win.set_size(tauri::PhysicalSize::new(w, h));
+                    } else {
+                        log::warn!(
+                            "Ignoring invalid persisted main window size during startup: {w}x{h}"
+                        );
+                    }
                 }
                 if let (Some(x), Some(y)) = (
                     persisted
@@ -108,7 +101,13 @@ pub fn run() {
                         .get("ui.main_window.y")
                         .and_then(|v| v.parse::<i32>().ok()),
                 ) {
-                    let _ = main_win.set_position(tauri::PhysicalPosition::new(x, y));
+                    if window::is_valid_main_window_position(x, y) {
+                        let _ = main_win.set_position(tauri::PhysicalPosition::new(x, y));
+                    } else {
+                        log::warn!(
+                            "Ignoring invalid persisted main window position during startup: {x},{y}"
+                        );
+                    }
                 }
             }
 
@@ -117,10 +116,11 @@ pub fn run() {
                 .get("app.start_hidden")
                 .map(|v| v == "true")
                 .unwrap_or(false);
+            let pill_mode = window::pill_mode_from_settings(&persisted);
             let default_mode = persisted
                 .get("ui.default_mode")
                 .cloned()
-                .unwrap_or_else(|| "pill".to_string());
+                .unwrap_or_else(|| "main".to_string());
 
             // ── Check if onboarding/main window is needed ────────────────────────
             let state = app.state::<AppState>();
@@ -156,9 +156,8 @@ pub fn run() {
                 log::info!("Starting hidden (tray-only mode)");
             } else if show_main_on_startup {
                 // First run or no default model: show main window for onboarding/settings.
-                if let Some(main_win) = app.get_webview_window("main") {
-                    let _ = main_win.show();
-                    let _ = main_win.set_focus();
+                if let Err(e) = window::show_main_window(app.handle(), "startup onboarding") {
+                    log::error!("Startup main window open failed: {e}");
                 }
                 if let Some(pill) = app.get_webview_window("pill") {
                     let _ = pill.hide();
@@ -166,16 +165,21 @@ pub fn run() {
                 log::info!("Starting in main window mode (onboarding)");
             } else if default_mode == "main" {
                 // Main window mode: show main, hide pill.
-                if let Some(main_win) = app.get_webview_window("main") {
-                    let _ = main_win.show();
+                if let Err(e) = window::show_main_window(app.handle(), "startup default main") {
+                    log::error!("Startup main window open failed: {e}");
                 }
                 if let Some(pill) = app.get_webview_window("pill") {
                     let _ = pill.hide();
                 }
                 log::info!("Starting in main window mode");
+            } else if pill_mode == "classic" && default_mode == "pill" {
+                let _ = window::show_classic_pill(app.handle());
+                log::info!("Starting in classic pill mode");
             } else {
-                // Default pill mode: pill is already visible via tauri.conf.json.
-                log::info!("Starting in pill mode");
+                if let Some(pill) = app.get_webview_window("pill") {
+                    let _ = pill.hide();
+                }
+                log::info!("Starting in tray mode");
             }
 
             Ok(())
@@ -204,6 +208,8 @@ pub fn run() {
             // Transcription
             cmd_transcription::transcribe_last_recording,
             cmd_transcription::get_last_transcription,
+            cmd_transcription::list_transcription_engines,
+            cmd_transcription::check_transcription_runtime,
             // History
             cmd_history::list_sessions,
             cmd_history::get_session,
@@ -261,12 +267,10 @@ pub fn run() {
                 tauri::WindowEvent::CloseRequested { api, .. } => {
                     // Hide instead of closing — tray keeps the app alive.
                     window.hide().unwrap_or_default();
-                    // When the main window is closed, make sure the pill is visible.
-                    if window.label() == "main" {
-                        if let Some(pill) = window.app_handle().get_webview_window("pill") {
-                            pill.show().unwrap_or_default();
-                            let _ = pill.set_focus();
-                        }
+                    if window.label() == "main"
+                        && crate::commands::window::is_classic_pill_mode(window.app_handle())
+                    {
+                        let _ = crate::commands::window::show_classic_pill(window.app_handle());
                     }
                     api.prevent_close();
                 }
@@ -276,13 +280,22 @@ pub fn run() {
                     let x = pos.x.to_string();
                     let y = pos.y.to_string();
                     match window.label() {
-                        "pill" => {
+                        "pill" if crate::commands::window::is_classic_pill_mode(app) => {
                             settings_repo::upsert(&state.db, "ui.pill.position_x", &x).ok();
                             settings_repo::upsert(&state.db, "ui.pill.position_y", &y).ok();
                         }
                         "main" => {
-                            settings_repo::upsert(&state.db, "ui.main_window.x", &x).ok();
-                            settings_repo::upsert(&state.db, "ui.main_window.y", &y).ok();
+                            if crate::commands::window::is_valid_main_window_position(pos.x, pos.y)
+                            {
+                                settings_repo::upsert(&state.db, "ui.main_window.x", &x).ok();
+                                settings_repo::upsert(&state.db, "ui.main_window.y", &y).ok();
+                            } else {
+                                log::warn!(
+                                    "Ignoring invalid main window move event position: {},{}",
+                                    pos.x,
+                                    pos.y
+                                );
+                            }
                         }
                         _ => {}
                     }
@@ -291,18 +304,29 @@ pub fn run() {
                     if window.label() == "main" {
                         let app = window.app_handle();
                         let state = app.state::<AppState>();
-                        settings_repo::upsert(
-                            &state.db,
-                            "ui.main_window.width",
-                            &size.width.to_string(),
-                        )
-                        .ok();
-                        settings_repo::upsert(
-                            &state.db,
-                            "ui.main_window.height",
-                            &size.height.to_string(),
-                        )
-                        .ok();
+                        if crate::commands::window::is_valid_main_window_size(
+                            size.width,
+                            size.height,
+                        ) {
+                            settings_repo::upsert(
+                                &state.db,
+                                "ui.main_window.width",
+                                &size.width.to_string(),
+                            )
+                            .ok();
+                            settings_repo::upsert(
+                                &state.db,
+                                "ui.main_window.height",
+                                &size.height.to_string(),
+                            )
+                            .ok();
+                        } else {
+                            log::warn!(
+                                "Ignoring invalid main window resize event size: {}x{}",
+                                size.width,
+                                size.height
+                            );
+                        }
                     }
                 }
                 _ => {}

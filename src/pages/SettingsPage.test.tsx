@@ -26,7 +26,8 @@ const DEFAULT_SETTINGS = {
   "app.language": "de",
   "app.start_hidden": "false",
   "app.autostart": "false",
-  "ui.default_mode": "pill",
+  "ui.default_mode": "main",
+  "ui.pill.mode": "overlay",
   "ui.pill.always_on_top": "true",
   "recording.shortcut": "CommandOrControl+Shift+Space",
   "recording.push_to_talk": "false",
@@ -37,6 +38,9 @@ const DEFAULT_SETTINGS = {
   "transcription.auto_punctuation": "true",
   "transcription.auto_capitalization": "true",
   "transcription.remove_fillers": "false",
+  "transcription.streaming.enabled": "false",
+  "transcription.streaming.chunk_ms": "320",
+  "transcription.streaming.output_mode": "preview",
   "output.mode": "clipboard",
   "output.auto_paste": "false",
   "output.insert_delay_ms": "100",
@@ -119,6 +123,27 @@ describe("SettingsPage", () => {
   it("renders the Remove filler words row", () => {
     render(<SettingsPage />);
     expect(screen.getByText("Remove filler words")).toBeInTheDocument();
+  });
+
+  it("renders streaming controls when streaming is enabled", () => {
+    seedStore({ "transcription.streaming.enabled": "true" });
+    render(<SettingsPage />);
+    expect(screen.getByText("Streaming transcription")).toBeInTheDocument();
+    expect(screen.getByText("Streaming chunk size")).toBeInTheDocument();
+    expect(screen.getByText("Streaming output")).toBeInTheDocument();
+  });
+
+  it("renders overlay pill mode as the default", () => {
+    render(<SettingsPage />);
+    expect(screen.getByText("Pill mode")).toBeInTheDocument();
+    expect(screen.getByText("Choose the new recording overlay or the classic compact pill.")).toBeInTheDocument();
+    expect(screen.getByText("Choose whether launch opens the app or stays in the tray.")).toBeInTheDocument();
+  });
+
+  it("shows classic default-view wording in classic mode", () => {
+    seedStore({ "ui.pill.mode": "classic", "ui.default_mode": "pill" });
+    render(<SettingsPage />);
+    expect(screen.getByText("Which window opens when you launch the app.")).toBeInTheDocument();
   });
 
   // ── Switch toggling ───────────────────────────────────────────────────────

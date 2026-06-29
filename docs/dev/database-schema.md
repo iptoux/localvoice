@@ -103,6 +103,9 @@ Primary dictation session record.
 | duration_ms | INTEGER | NOT NULL | Duration in ms |
 | language | TEXT | NOT NULL | ISO 639-1 (de, en, …) |
 | model_id | TEXT | NULL | Whisper model key |
+| engine | TEXT | NOT NULL DEFAULT `whisper-cpp` | Added v10 - transcription engine key |
+| model_artifact_format | TEXT | NOT NULL DEFAULT `ggml-bin` | Added v10 - `ggml-bin`, `gguf`, or `nemo` |
+| runtime | TEXT | NOT NULL DEFAULT `bundled-sidecar` | Added v10 - runtime class |
 | trigger_type | TEXT | NOT NULL | shortcut / button / tray |
 | input_device_id | TEXT | NULL | Audio device ID |
 | raw_text | TEXT | NOT NULL | Original transcription |
@@ -122,7 +125,7 @@ Primary dictation session record.
 
 **Indexes:** PRIMARY KEY on `id`; consider indexes on `started_at`, `language`.
 
-**Relationships:** 1 session → N session_segments (ON DELETE CASCADE); N sessions → N filler_removal_log entries.
+**Relationships:** 1 session -> N session_segments (ON DELETE CASCADE); 1 session -> N session_words (ON DELETE CASCADE); N sessions -> N filler_removal_log entries.
 
 ---
 
@@ -141,6 +144,26 @@ Timestamped transcription segments within a session.
 | segment_index | INTEGER | NOT NULL | Order |
 
 **Relationships:** N segments → 1 session.
+
+---
+
+### session_words
+
+Word-level timestamp records emitted by engines that support word timestamps.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PK | UUID |
+| session_id | TEXT | NOT NULL, FK | sessions(id) ON DELETE CASCADE |
+| start_ms | INTEGER | NOT NULL | |
+| end_ms | INTEGER | NOT NULL | |
+| text | TEXT | NOT NULL | |
+| confidence | REAL | NULL | 0-1 |
+| word_index | INTEGER | NOT NULL | Order |
+
+**Added:** v10.
+
+**Relationships:** N words -> 1 session.
 
 ---
 
@@ -212,7 +235,7 @@ Low-confidence transcribed phrases flagged for user review.
 
 ### model_installations
 
-Registry of whisper.cpp models.
+Registry of installed local transcription models.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -266,7 +289,8 @@ Key-value store for all application settings.
 | app.language | de |
 | app.start_hidden | false |
 | app.autostart | false |
-| ui.default_mode | pill |
+| ui.default_mode | main |
+| ui.pill.mode | overlay (v12) |
 | ui.pill.always_on_top | true |
 | recording.shortcut | CommandOrControl+Shift+Space |
 | recording.push_to_talk | false |
@@ -275,6 +299,13 @@ Key-value store for all application settings.
 | recording.audio_retention_days | 7 (v5) |
 | recording.max_audio_storage_mb | 500 (v5) |
 | transcription.default_language | auto |
+| transcription.default_engine | whisper-cpp (v10) |
+| transcription.preferred_runtime | bundled-sidecar (v10) |
+| transcription.streaming.enabled | false (v10) |
+| transcription.streaming.chunk_ms | 320 (v10) |
+| transcription.streaming.output_mode | preview (v11) |
+| transcription.nemo.python_path | empty (v10) |
+| transcription.parakeet.device | empty (v10) |
 | transcription.auto_punctuation | true |
 | transcription.auto_capitalization | true |
 | transcription.remove_fillers | false |

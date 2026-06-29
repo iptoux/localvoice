@@ -14,6 +14,13 @@
 - [ ] TASK-259: Configure Tauri updater — add `tauri-plugin-updater`; configure update endpoint (GitHub releases JSON); implement update check on app startup (setting `app.auto_update`, default: true); show non-blocking notification when update available
 - [ ] TASK-260: React: Update notification banner — shown at top of main window when update is available; "Update Now" button triggers download + install; "Dismiss" hides until next check
 
+### Hybrid Transcription Runtime Packaging
+
+- [x] TASK-306: Add hybrid transcription engine metadata for Whisper GGML, Parakeet GGUF, and optional NeMo `.nemo` models.
+- [x] TASK-307: Add release-safe Parakeet sidecar setup pinned to `mudler/parakeet.cpp` `v0.3.2` with SHA-256 verification.
+- [x] TASK-308: Add optional NeMo worker resource, runtime health checks, and `.nemo` default-selection gating.
+- [x] TASK-309: Update local bootstrap, CI, release audit, README, user docs, developer docs, and changelog for Parakeet/NeMo deployment behavior.
+
 ### Code Signing
 
 - [ ] TASK-261: Windows code signing — integrate `signtool` into CI release pipeline; configure certificate via environment variable `WINDOWS_CERTIFICATE` in CI secrets; sign .exe and .msi

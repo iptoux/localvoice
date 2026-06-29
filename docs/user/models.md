@@ -2,34 +2,49 @@
 
 ## What It Does
 
-The Models page lets you download, install, and manage local whisper.cpp transcription models. All models are stored on your device — no cloud connection is needed for transcription once a model is installed.
+The Models page lets you download, install, and manage local transcription models. LocalVoice supports bundled sidecar engines for Whisper GGML and Parakeet GGUF models, plus optional NVIDIA NeMo support for native `.nemo` checkpoints.
+
+Base installers include the small sidecar executables only. Model weights, `.nemo` checkpoints, CUDA packages, and Python/NeMo environments are downloaded or configured after install.
 
 ## How to Use It
 
 1. Open the main window and navigate to **Models** in the sidebar.
-2. The page lists all available models with their name, size, and language support.
+2. Review each model card for engine, artifact format, runtime, size, language scope, and streaming support.
 3. Click **Download** next to a model to start the download. A progress bar shows bytes transferred and percentage complete.
-4. Once installed, the model shows an **Installed** badge and a **Delete** button.
-5. Use the **Default models** dropdowns at the top to set which installed model is used for German and English transcription.
-6. To remove a model, click **Delete** and confirm — the file is removed from disk and the default is cleared.
+4. Once installed, the model shows an **Installed** badge and can be selected as a language default.
+5. Use the default model controls to choose which installed model is used for each language.
+6. To remove a model, click **Delete** and confirm. The file is removed from disk and any matching default is cleared.
+
+## Runtime Types
+
+| Runtime | Artifact | Behavior |
+|---|---|---|
+| Whisper.cpp | `.bin` GGML | Bundled sidecar, broad language support, stable default path |
+| Parakeet.cpp | `.gguf` | Bundled sidecar, portable Parakeet/Nemotron support, live-streaming capable for streaming GGUF models |
+| NVIDIA NeMo | `.nemo` | Optional Python runtime, highest-fidelity NVIDIA-native file transcription path, requires a passing health check |
+
+`.nemo` models show as available in the registry, but they cannot be selected as defaults until the optional NeMo runtime health check passes. Live streaming is currently limited to streaming-capable Parakeet GGUF models.
 
 ## Models Available
 
-| Model | Size | Best for |
-|-------|------|----------|
-| Tiny  | ~75 MB  | Fast transcription, lower accuracy |
-| Base  | ~142 MB | Good balance of speed and accuracy |
-| Small | ~466 MB | Higher accuracy, moderate speed |
-| Medium | ~1.5 GB | Best accuracy, slower transcription |
+| Family | Formats | Best for |
+|---|---|---|
+| Whisper Tiny/Base/Small/Medium/Large | GGML `.bin` | General dictation and broad CPU compatibility |
+| Nemotron 3.5 ASR Streaming 0.6B | GGUF, `.nemo` | Multilingual streaming workflows with GGUF; native NeMo file transcription with `.nemo` |
+| Parakeet TDT 0.6B v3 | GGUF, `.nemo` | High-quality multilingual Parakeet transcription |
 
-All models support German and English (multilingual).
+GGUF models are offered in Q4, Q5, Q8, and F16 variants where available. Lower quantization uses less storage and memory; F16 keeps the most precision.
 
 ## Storage Location
 
 Models are stored in the app data directory:
+
 - Windows: `%APPDATA%\localvoice\models\`
+- macOS: `~/Library/Application Support/com.localvoice.app/models/`
+- Linux: `~/.local/share/com.localvoice.app/models/`
 
 ## Related
 
 - [Transcription](transcription.md)
-- [Developer: MS-07 Models](../dev/ms07-models.md)
+- [Developer: Models](../dev/ms07-models.md)
+- [Developer: Hybrid Runtime](../dev/parakeet-hybrid-runtime.md)

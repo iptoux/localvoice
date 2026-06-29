@@ -260,14 +260,14 @@ sequenceDiagram
     REC->>EVT: emit("recording-state-changed", Listening)
     REC-->>UI: Ok(())
     
-    Note over UI: Pill shows Listening + waveform
+    Note over UI: Overlay pill shows waveform; Classic pill shows its listening state
     
     UI->>REC: invoke("stop_recording")
     REC->>CAP: stop_capture() → WAV path
     REC->>EVT: emit("recording-state-changed", Processing)
     REC-->>UI: Ok(wav_path)
     
-    Note over UI: Pill shows spinner
+    Note over UI: Overlay pill hides; Classic pill shows processing
     
     rect rgb(200, 230, 200)
         Note over ORCH,CLIP: Background task (spawn_blocking)
@@ -286,7 +286,7 @@ sequenceDiagram
     EVT->>ZUST: setLastTranscription(result)
     EVT->>ZUST: setRecordingState("success")
     EVT->>ZUST: setLastOutputResult(output)
-    ZUST->>UI: re-render SuccessContent
+    ZUST->>UI: re-render Classic success content if Classic pill is active
 ```
 
 ## Data Flow by Domain
@@ -299,6 +299,7 @@ sequenceDiagram
 | `recordingError` | Event payload | Event `recording-state-changed` | `app-store.recordingError` |
 | `audioLevel` | cpal callback | Event `audio-level` | `app-store.audioLevel` |
 | `isPillExpanded` | Window state | invoke `expandPill/collapsePill` | `app-store.isPillExpanded` |
+| `ui.pill.mode` | settings table | `get_settings` / `pill-mode-changed` | `PillApp` local state |
 
 ### Transcription Domain
 

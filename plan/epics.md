@@ -64,6 +64,12 @@
 | [MS-19](tasks/ms19_installer_signing.md) | Installer, Updater, Signing & Data Management | MS-18 | `todo` |
 | [MS-20](tasks/ms20_a11y_multilang_final.md) | Accessibility, Multi-language & Final Polish | MS-19 | `todo` |
 
+### v1.1 - Streaming Transcription
+
+| Epic | Title | Depends on | Status |
+|------|-------|-----------|--------|
+| [MS-21](tasks/ms21_streaming_transcription.md) | Streaming Transcription | MS-19 | `done` |
+
 ---
 
 ## Dependency Graph
@@ -102,8 +108,9 @@ v0.1 (MS-01–10) ── all done
 | v0.2 | MS-11, MS-12, MS-13 | TASK-170 – TASK-200 | 31 |
 | v0.3 | MS-14, MS-15, MS-16 | TASK-201 – TASK-231 | 31 |
 | v0.4 | MS-17, MS-18 | TASK-232 – TASK-257 | 26 |
-| v1.0 | MS-19, MS-20 | TASK-258 – TASK-285 | 28 |
-| **Total** | **21 milestones** | **TASK-001 – TASK-305** | **305 tasks** |
+| v1.0 | MS-19, MS-20 | TASK-258 – TASK-309 | 32 |
+| v1.1 | MS-21 | TASK-310 - TASK-331 | 22 |
+| **Total** | **22 milestones** | **TASK-001 - TASK-331** | **331 tasks** |
 
 ---
 

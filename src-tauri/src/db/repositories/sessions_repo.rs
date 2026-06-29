@@ -1,10 +1,10 @@
 use rusqlite::params;
 use uuid::Uuid;
 
-use crate::db::models::{Session, SessionFilter, SessionSegment, SessionWithSegments};
+use crate::db::models::{Session, SessionFilter, SessionSegment, SessionWithSegments, SessionWord};
 use crate::db::DbConn;
 use crate::errors::{AppError, CmdResult};
-use crate::transcription::types::TranscriptSegment;
+use crate::transcription::types::{TranscriptSegment, TranscriptWord};
 
 const DEFAULT_PAGE_SIZE: i64 = 50;
 
@@ -16,13 +16,14 @@ pub fn insert_session(db: &DbConn, session: &Session) -> CmdResult<()> {
     conn.execute(
         "INSERT INTO sessions (
             id, started_at, ended_at, duration_ms, language, model_id,
+            engine, model_artifact_format, runtime,
             trigger_type, input_device_id, raw_text, cleaned_text,
             word_count, char_count, avg_confidence, estimated_wpm,
             output_mode, output_target_app, inserted_successfully,
             error_message, created_at, audio_path, original_raw_text,
             reprocessed_count, original_model_id, original_language, original_avg_confidence
          ) VALUES (
-            ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25
+            ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?23,?24,?25,?26,?27,?28
          )",
         params![
             session.id,
@@ -31,6 +32,9 @@ pub fn insert_session(db: &DbConn, session: &Session) -> CmdResult<()> {
             session.duration_ms,
             session.language,
             session.model_id,
+            session.engine,
+            session.model_artifact_format,
+            session.runtime,
             session.trigger_type,
             session.input_device_id,
             session.raw_text,
@@ -53,6 +57,32 @@ pub fn insert_session(db: &DbConn, session: &Session) -> CmdResult<()> {
         ],
     )
     .map_err(AppError::from)?;
+    Ok(())
+}
+
+/// Inserts all word-level timestamps for `session_id`.
+pub fn insert_words(db: &DbConn, session_id: &str, words: &[TranscriptWord]) -> CmdResult<()> {
+    if words.is_empty() {
+        return Ok(());
+    }
+    let conn = db.lock().unwrap();
+    for (idx, word) in words.iter().enumerate() {
+        conn.execute(
+            "INSERT INTO session_words
+                (id, session_id, start_ms, end_ms, text, confidence, word_index)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                Uuid::new_v4().to_string(),
+                session_id,
+                word.start_ms,
+                word.end_ms,
+                word.text,
+                word.confidence.map(|c| c as f64),
+                idx as i64,
+            ],
+        )
+        .map_err(AppError::from)?;
+    }
     Ok(())
 }
 
@@ -118,6 +148,12 @@ pub fn list_sessions(db: &DbConn, filter: &SessionFilter) -> CmdResult<Vec<Sessi
             param_values.push(Box::new(model.clone()));
         }
     }
+    if let Some(engine) = &filter.engine {
+        if !engine.is_empty() {
+            conditions.push("engine = ?");
+            param_values.push(Box::new(engine.clone()));
+        }
+    }
     if let Some(q) = &filter.query {
         if !q.is_empty() {
             // Escape LIKE special characters, then wrap in %.
@@ -142,7 +178,8 @@ pub fn list_sessions(db: &DbConn, filter: &SessionFilter) -> CmdResult<Vec<Sessi
     };
 
     let sql = format!(
-        "SELECT id, started_at, ended_at, duration_ms, language, model_id, trigger_type,
+        "SELECT id, started_at, ended_at, duration_ms, language, model_id,
+                engine, model_artifact_format, runtime, trigger_type,
                 input_device_id, raw_text, cleaned_text, word_count, char_count,
                 avg_confidence, estimated_wpm, output_mode, output_target_app,
                 inserted_successfully, error_message, created_at,
@@ -175,7 +212,8 @@ pub fn get_session(db: &DbConn, id: &str) -> CmdResult<SessionWithSegments> {
 
     let session = conn
         .query_row(
-            "SELECT id, started_at, ended_at, duration_ms, language, model_id, trigger_type,
+            "SELECT id, started_at, ended_at, duration_ms, language, model_id,
+                    engine, model_artifact_format, runtime, trigger_type,
                     input_device_id, raw_text, cleaned_text, word_count, char_count,
                     avg_confidence, estimated_wpm, output_mode, output_target_app,
                     inserted_successfully, error_message, created_at,
@@ -212,7 +250,36 @@ pub fn get_session(db: &DbConn, id: &str) -> CmdResult<SessionWithSegments> {
         .collect::<rusqlite::Result<Vec<SessionSegment>>>()
         .map_err(AppError::from)?;
 
-    Ok(SessionWithSegments { session, segments })
+    let mut words_stmt = conn
+        .prepare(
+            "SELECT id, session_id, start_ms, end_ms, text, confidence, word_index
+             FROM session_words
+             WHERE session_id = ?1
+             ORDER BY word_index",
+        )
+        .map_err(AppError::from)?;
+
+    let words = words_stmt
+        .query_map(params![id], |row| {
+            Ok(SessionWord {
+                id: row.get(0)?,
+                session_id: row.get(1)?,
+                start_ms: row.get(2)?,
+                end_ms: row.get(3)?,
+                text: row.get(4)?,
+                confidence: row.get(5)?,
+                word_index: row.get(6)?,
+            })
+        })
+        .map_err(AppError::from)?
+        .collect::<rusqlite::Result<Vec<SessionWord>>>()
+        .map_err(AppError::from)?;
+
+    Ok(SessionWithSegments {
+        session,
+        segments,
+        words,
+    })
 }
 
 /// Deletes a session by id. Associated segments are removed via ON DELETE CASCADE.
@@ -256,7 +323,8 @@ pub fn get_sessions_by_ids(db: &DbConn, ids: &[String]) -> CmdResult<Vec<Session
         .collect::<Vec<_>>()
         .join(",");
     let sql = format!(
-        "SELECT id, started_at, ended_at, duration_ms, language, model_id, trigger_type,
+        "SELECT id, started_at, ended_at, duration_ms, language, model_id,
+                engine, model_artifact_format, runtime, trigger_type,
                 input_device_id, raw_text, cleaned_text, word_count, char_count,
                 avg_confidence, estimated_wpm, output_mode, output_target_app,
                 inserted_successfully, error_message, created_at,
@@ -288,25 +356,28 @@ fn row_to_session(row: &rusqlite::Row<'_>) -> rusqlite::Result<Session> {
         duration_ms: row.get(3)?,
         language: row.get(4)?,
         model_id: row.get(5)?,
-        trigger_type: row.get(6)?,
-        input_device_id: row.get(7)?,
-        raw_text: row.get(8)?,
-        cleaned_text: row.get(9)?,
-        word_count: row.get(10)?,
-        char_count: row.get(11)?,
-        avg_confidence: row.get(12)?,
-        estimated_wpm: row.get(13)?,
-        output_mode: row.get(14)?,
-        output_target_app: row.get(15)?,
-        inserted_successfully: row.get::<_, i64>(16)? != 0,
-        error_message: row.get(17)?,
-        created_at: row.get(18)?,
-        audio_path: row.get(19)?,
-        original_raw_text: row.get(20)?,
-        reprocessed_count: row.get(21)?,
-        original_model_id: row.get(22)?,
-        original_language: row.get(23)?,
-        original_avg_confidence: row.get(24)?,
+        engine: row.get(6)?,
+        model_artifact_format: row.get(7)?,
+        runtime: row.get(8)?,
+        trigger_type: row.get(9)?,
+        input_device_id: row.get(10)?,
+        raw_text: row.get(11)?,
+        cleaned_text: row.get(12)?,
+        word_count: row.get(13)?,
+        char_count: row.get(14)?,
+        avg_confidence: row.get(15)?,
+        estimated_wpm: row.get(16)?,
+        output_mode: row.get(17)?,
+        output_target_app: row.get(18)?,
+        inserted_successfully: row.get::<_, i64>(19)? != 0,
+        error_message: row.get(20)?,
+        created_at: row.get(21)?,
+        audio_path: row.get(22)?,
+        original_raw_text: row.get(23)?,
+        reprocessed_count: row.get(24)?,
+        original_model_id: row.get(25)?,
+        original_language: row.get(26)?,
+        original_avg_confidence: row.get(27)?,
     })
 }
 
@@ -318,6 +389,9 @@ pub fn update_session_reprocess(
     cleaned_text: &str,
     language: &str,
     model_id: &str,
+    engine: &str,
+    artifact_format: &str,
+    runtime: &str,
 ) -> CmdResult<()> {
     let conn = db.lock().unwrap();
     let word_count = cleaned_text.split_whitespace().count() as i64;
@@ -326,9 +400,10 @@ pub fn update_session_reprocess(
         .execute(
             "UPDATE sessions SET
                 raw_text = ?1, cleaned_text = ?2, word_count = ?3, char_count = ?4,
-                language = ?5, model_id = ?6,
+                language = ?5, model_id = ?6, engine = ?7,
+                model_artifact_format = ?8, runtime = ?9,
                 reprocessed_count = reprocessed_count + 1
-             WHERE id = ?7",
+             WHERE id = ?10",
             params![
                 raw_text,
                 cleaned_text,
@@ -336,6 +411,9 @@ pub fn update_session_reprocess(
                 char_count,
                 language,
                 model_id,
+                engine,
+                artifact_format,
+                runtime,
                 session_id
             ],
         )
