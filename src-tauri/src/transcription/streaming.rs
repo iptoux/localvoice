@@ -265,9 +265,11 @@ impl WorkerLaunch {
         settings: &HashMap<String, String>,
     ) -> CmdResult<Self> {
         match runtime.engine.as_str() {
-            ENGINE_PARAKEET_CPP => Ok(Self::Parakeet {
-                binary: crate::transcription::parakeet_stream_worker::resolve_binary(app)?,
-            }),
+            ENGINE_PARAKEET_CPP => {
+                let binary = crate::transcription::parakeet_stream_worker::resolve_binary(app)?;
+                crate::transcription::parakeet_runtime::verify_worker_health(&binary)?;
+                Ok(Self::Parakeet { binary })
+            }
             ENGINE_NEMO => Ok(Self::Nemo {
                 python: nemo_worker::resolve_python(
                     settings

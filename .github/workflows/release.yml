@@ -115,6 +115,18 @@ jobs:
               exit 1
             }
           }
+          $oldPath = $env:PATH
+          try {
+            $env:PATH = "$(Resolve-Path src-tauri\parakeet-runtime);$(Resolve-Path src-tauri\binaries);$env:PATH"
+            $workerOut = & "src-tauri\binaries\parakeet-stream-worker-x86_64-pc-windows-msvc.exe" --health 2>&1
+            if ($LASTEXITCODE -ne 0 -or (($workerOut | Out-String) -notmatch "parakeet.cpp streaming worker")) {
+              Write-Host ($workerOut | Out-String)
+              Write-Error "parakeet-stream-worker health check failed in release audit"
+              exit 1
+            }
+          } finally {
+            $env:PATH = $oldPath
+          }
 
       - name: Build Tauri app (Windows)
         shell: bash

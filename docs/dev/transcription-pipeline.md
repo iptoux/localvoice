@@ -57,7 +57,7 @@ Tauri validates target-triple files during local checks and builds. Bootstrap sc
 - `src-tauri/binaries/parakeet-cli-aarch64-apple-darwin`
 - `src-tauri/binaries/parakeet-cli-x86_64-unknown-linux-gnu`
 
-Parakeet streaming worker builds may also stage small native runtime libraries under `src-tauri/parakeet-runtime/`. The Rust launch path prepends this directory to the platform loader path when spawning Parakeet sidecars, and Tauri bundles it as a resource for release builds.
+Parakeet streaming worker builds may also stage small native runtime libraries under `src-tauri/parakeet-runtime/`. The Rust launch path prepends this directory to the platform loader path when spawning Parakeet sidecars, and Tauri bundles it as a resource for release builds. Windows installers can place resources under `resources/parakeet-runtime`, so the launch path must include both the sidecar directory and the installed resources directory before starting `parakeet-stream-worker.exe`.
 
 Runtime resolution order:
 
@@ -167,6 +167,8 @@ Segment storage is unchanged. Word-level timestamps are stored in `session_words
 
 CI runs `.github/actions/setup-whisper` and `.github/actions/setup-parakeet-cpp` before Rust tests and release builds. The Parakeet action pins `mudler/parakeet.cpp` to `v0.3.2`, downloads CPU/portable CLI assets, verifies SHA-256 checksums, builds `parakeet-stream-worker` from the pinned source, writes target-triple sidecar binaries, and stages required runtime libraries in `src-tauri/parakeet-runtime/`.
 
+Local Windows builds run the same Parakeet preparation through `scripts/setup-parakeet-cpp.ps1`. `pnpm tauri build` calls `pnpm run tauri:prepare`, and `scripts/create-release.ps1 -LocalBuild` calls the setup script before invoking Tauri, so local installers do not depend on stale sidecars from earlier CI runs.
+
 Release jobs use `pnpm install --frozen-lockfile` so packaging sees the same frontend dependency graph as CI. When Tauri is updated, keep the Rust `tauri` crate and frontend `@tauri-apps/api` package on the same major/minor version; `tauri build` fails early when they drift.
 
 Release jobs audit that the bundled sidecars and NeMo worker resource are present before building installers. Public installers bundle:
@@ -202,6 +204,7 @@ Public installers do not bundle:
 | `whisper-cli binary not found` | Missing Whisper sidecar | Run bootstrap or set `WHISPER_BIN_PATH` |
 | `parakeet-cli binary not found` | Missing Parakeet sidecar | Run bootstrap or set `PARAKEET_BIN_PATH` |
 | `parakeet-stream-worker binary not found` | Missing Parakeet streaming sidecar | Run bootstrap/CI setup or set `PARAKEET_STREAM_WORKER_PATH`; file transcription still works |
+| `Parakeet streaming worker health check failed` | Worker cannot start, usually because runtime DLLs are not bundled or not in the loader path | Verify `parakeet-runtime/` is included in release resources; streaming falls back to stop-to-transcribe |
 | `parakeet-stream-worker smoke test failed` | Worker cannot start or cannot find runtime libraries | Re-run setup-parakeet-cpp and verify `src-tauri/parakeet-runtime/` is packaged |
 | `Model path does not exist` | Model deleted or download failed | Re-download from Models |
 | `.nemo runtime is not available` | Python/NeMo health check failed | Configure Python and install NeMo |

@@ -161,7 +161,7 @@ The script will:
 2. Check Linux system packages (Linux only)
 3. Install frontend dependencies
 4. Download or build whisper.cpp binaries for your platform (skip with `--skip-whisper`)
-5. Download and verify the pinned parakeet.cpp sidecar (skip with `--skip-parakeet`)
+5. Download and verify the pinned parakeet.cpp CLI, build the streaming worker, and stage Parakeet runtime DLLs (skip with `--skip-parakeet`)
 6. Verify the Tauri CLI is available
 7. Run a Rust compilation check (skip with `--skip-verification`)
 
@@ -174,9 +174,19 @@ pnpm install
 # Start the dev server (hot-reload frontend + Rust watch)
 pnpm tauri dev
 
-# Production build
+# Release build with updater artifacts
 pnpm tauri build
 ```
+
+On Windows, `pnpm tauri build` runs `pnpm run tauri:prepare` before Tauri bundles the app. That preparation builds the frontend, downloads the pinned Parakeet CLI when missing, builds `parakeet-stream-worker.exe`, and stages required DLLs under `src-tauri/parakeet-runtime/`.
+
+`pnpm tauri build` requires `TAURI_SIGNING_PRIVATE_KEY` because updater artifacts are enabled. For a Windows installer build without publishing a GitHub release or creating updater artifacts, use the release helper's local mode:
+
+```powershell
+.\scripts\create-release.ps1 -LocalBuild
+```
+
+Use `.\scripts\create-release.ps1 -LocalBuild -UpdaterArtifacts` only when you intentionally want signed updater artifacts locally. In that mode the script reads the updater key from `%USERPROFILE%\.tauri\localvoice-updater.key` if `TAURI_SIGNING_PRIVATE_KEY` is not already set.
 
 CI and release jobs install dependencies with `pnpm install --frozen-lockfile`.
 When updating Tauri, keep the Rust `tauri` crate and frontend
@@ -185,7 +195,7 @@ release build.
 
 ### Sidecar Binaries (required)
 
-The bootstrap script handles this automatically. For manual setup, you need to place platform-appropriate sidecar binaries in `src-tauri/binaries/`:
+The bootstrap script and Windows Tauri build preparation handle this automatically. For manual setup, you need to place platform-appropriate sidecar binaries in `src-tauri/binaries/`:
 
 | Sidecar | Target name example |
 |---|---|
@@ -195,7 +205,7 @@ The bootstrap script handles this automatically. For manual setup, you need to p
 
 Parakeet sidecars are pinned to `mudler/parakeet.cpp` `v0.3.2` and must be checksum-verified or built from the pinned source before release packaging. Public installers bundle the CPU/portable sidecars only; model weights, `.nemo` checkpoints, CUDA stacks, and Python/NeMo environments are never bundled in the base installer.
 
-The Parakeet streaming worker can also produce small runtime libraries during CI/release builds. Those files are staged under `src-tauri/parakeet-runtime/` and bundled as Tauri resources; the directory is kept in Git, but generated runtime files are ignored.
+The Parakeet streaming worker can also produce small runtime libraries during CI/release builds. Those files are staged under `src-tauri/parakeet-runtime/` and bundled as Tauri resources; installed Windows builds load them from the bundled `resources/parakeet-runtime/` directory. The source directory is kept in Git, but generated runtime files are ignored.
 
 #### whisper.cpp
 
@@ -279,7 +289,7 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 
 | Setting | Description |
 |---|---|
-| Recording shortcut | Global hotkey to start/stop recording |
+| Recording shortcut | Single key or key combination to start/stop recording |
 | Output mode | Insert to active app, clipboard, or preview |
 | Default language | Language used for transcription |
 | Default transcription engine | Preferred engine (`whisper-cpp`, `parakeet-cpp`, or optional `nemo`) |

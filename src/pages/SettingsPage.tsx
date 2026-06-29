@@ -128,7 +128,7 @@ function ShortcutRecorder({
       e.stopPropagation();
 
       // Ignore lone modifier presses.
-      if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
+      if (["Control", "Shift", "Alt", "Meta", "AltGraph"].includes(e.key)) return;
 
       const parts: string[] = [];
       if (e.ctrlKey || e.metaKey) parts.push("CommandOrControl");
@@ -151,7 +151,7 @@ function ShortcutRecorder({
     return (
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground animate-pulse">
-          Press a key combination…
+          Press a key or shortcut…
         </span>
         <Button
           variant="outline"
@@ -340,7 +340,7 @@ export default function SettingsPage() {
         icon={Keyboard}
         iconClass="text-violet-400"
         label="Global Shortcut"
-        description="Press anywhere to start or stop recording."
+        description="Use a key or key combination to start or stop recording."
       >
         <ShortcutRecorder
           shortcut={shortcut}
