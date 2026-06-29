@@ -113,7 +113,7 @@ It's built for developers, writers, and anyone who wants fast, private voice inp
 | Tool | Version |
 |---|---|
 | Node.js | ≥ 20 |
-| pnpm | ≥ 9 |
+| pnpm | 10.34.4 |
 | Rust | stable ≥ 1.77 |
 
 **macOS additional requirements:**

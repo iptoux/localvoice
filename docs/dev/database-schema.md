@@ -475,7 +475,7 @@ After writing a migration, test it:
 
 ```bash
 # Run the app fresh — migrations run automatically on startup
-npm run tauri dev
+pnpm tauri dev
 
 # Or verify via the Rust test suite
 cargo test --package localvoice -- migrations
