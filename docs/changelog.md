@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Added Tauri updater support backed by GitHub Releases, with signed update artifacts, native/in-app update notifications, manual install confirmation, and restart-to-install flow.
+- Added a local build mode to the PowerShell release helper so Windows installers can be built without GitHub publishing or updater signing environment setup.
 - Fixed release builds by aligning Tauri Rust and frontend package versions and using the pnpm frozen lockfile in all release jobs.
 - Removed the unused npm lockfile, pinned pnpm as the project package manager, and moved security overrides into `pnpm-workspace.yaml` so Dependabot scans one frontend lockfile.
 - Added selectable pill modes: the new default recording overlay stays hidden while idle and shows only a bottom-center waveform during recording, while Classic pill preserves the old persistent compact/expanded UI with previews.

@@ -24,6 +24,24 @@ Required release secrets:
 
 If the private key is lost, existing installations cannot verify future update bundles signed with a different key.
 
+## Local Builds
+
+Use the PowerShell release helper for local Windows installer builds without publishing a GitHub release:
+
+```powershell
+.\scripts\create-release.ps1 -LocalBuild
+```
+
+`-LocalBuild` skips GitHub authentication, clean working tree checks, tag creation, and release publishing. It also disables `bundle.createUpdaterArtifacts` for that build, so no updater signing environment variable is required.
+
+To test signed updater artifacts locally, run:
+
+```powershell
+.\scripts\create-release.ps1 -LocalBuild -UpdaterArtifacts
+```
+
+When updater artifacts are requested, the script uses `TAURI_SIGNING_PRIVATE_KEY` if it is already set. Otherwise it loads the private key from `%USERPROFILE%\.tauri\localvoice-updater.key` and clears the process environment variable before exiting.
+
 ## GitHub Release Manifest
 
 The release workflow uploads normal installers, generated `.sig` files, and `latest.json`. The manifest contains signature file contents, not URLs to `.sig` files.

@@ -15,6 +15,17 @@
 .PARAMETER Prerelease
     Mark the release as a pre-release.
 
+.PARAMETER LocalBuild
+    Build installers locally without creating a tag or publishing a GitHub release.
+    Updater artifacts are disabled by default in this mode, so no signing key is required.
+
+.PARAMETER UpdaterArtifacts
+    Create signed updater artifacts during a local build. If TAURI_SIGNING_PRIVATE_KEY
+    is not set, the script loads the key from SigningKeyPath.
+
+.PARAMETER SigningKeyPath
+    Local updater signing key file used when signed updater artifacts are requested.
+
 .PARAMETER DryRun
     Print what would happen without making any changes.
 
@@ -25,6 +36,14 @@
 .EXAMPLE
     .\scripts\create-release.ps1 -Version 1.0.0 -Draft
     Release v1.0.0 as a draft without bumping.
+
+.EXAMPLE
+    .\scripts\create-release.ps1 -LocalBuild
+    Build local installers without GitHub release publishing or updater signing.
+
+.EXAMPLE
+    .\scripts\create-release.ps1 -LocalBuild -UpdaterArtifacts
+    Build local installers and signed updater artifacts using the local updater key file.
 #>
 
 param(
@@ -33,16 +52,40 @@ param(
     [string]$Version    = '',
     [switch]$Draft,
     [switch]$Prerelease,
+    [switch]$LocalBuild,
+    [switch]$UpdaterArtifacts,
+    [string]$SigningKeyPath = (Join-Path $env:USERPROFILE '.tauri\localvoice-updater.key'),
     [switch]$DryRun
 )
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir   = Join-Path $ScriptDir '..'
+$script:SigningKeyLoadedFromFile = $false
+$script:TempTauriConfigPath = $null
+
+function Clear-LoadedUpdaterSigningKey {
+    if ($script:SigningKeyLoadedFromFile) {
+        Remove-Item Env:\TAURI_SIGNING_PRIVATE_KEY -ErrorAction SilentlyContinue
+        $script:SigningKeyLoadedFromFile = $false
+    }
+}
+
+function Clear-TemporaryTauriConfig {
+    if ($script:TempTauriConfigPath -and (Test-Path $script:TempTauriConfigPath)) {
+        Remove-Item $script:TempTauriConfigPath -Force -ErrorAction SilentlyContinue
+        $script:TempTauriConfigPath = $null
+    }
+}
+
+function Clear-TransientState {
+    Clear-LoadedUpdaterSigningKey
+    Clear-TemporaryTauriConfig
+}
 
 function Write-Step { param([string]$m) Write-Host "" ; Write-Host "==> $m" -ForegroundColor Cyan }
 function Write-Ok   { param([string]$m) Write-Host "  [OK] $m" -ForegroundColor Green }
-function Write-Fail { param([string]$m) Write-Host "  [FAIL] $m" -ForegroundColor Red; exit 1 }
+function Write-Fail { param([string]$m) Clear-TransientState; Write-Host "  [FAIL] $m" -ForegroundColor Red; exit 1 }
 function Write-Info { param([string]$m) Write-Host "  $m" -ForegroundColor Gray }
 function Write-Dry  { param([string]$m) Write-Host "  [DRY-RUN] $m" -ForegroundColor Yellow }
 
@@ -68,7 +111,10 @@ function Get-BumpedVersion {
 function Set-VersionInFile {
     param([string]$File, [string]$Old, [string]$New)
     if (-not (Test-Path $File)) { return }
-    $c = (Get-Content $File -Raw) -replace ([regex]::Escape("`"version`": `"$Old`"")), "`"version`": `"$New`""
+    $escapedOld = [regex]::Escape($Old)
+    $c = Get-Content $File -Raw
+    $c = $c -replace "(`"version`"\s*:\s*)`"$escapedOld`"", "`$1`"$New`""
+    $c = $c -replace "(?m)^(version\s*=\s*)`"$escapedOld`"", "`$1`"$New`""
     if (-not $DryRun) {
         # Use UTF8NoBOM to avoid BOM that breaks JSON parsers
         $enc = New-Object System.Text.UTF8Encoding $false
@@ -77,24 +123,71 @@ function Set-VersionInFile {
     Write-Info "Updated $(Split-Path $File -Leaf): $Old -> $New"
 }
 
+function Ensure-UpdaterSigningKey {
+    if (Test-Path Env:\TAURI_SIGNING_PRIVATE_KEY) {
+        Write-Ok "Updater signing key available from environment"
+        return
+    }
+
+    if ($DryRun) {
+        Write-Dry "Would load updater signing key from $SigningKeyPath"
+        return
+    }
+
+    if (-not (Test-Path $SigningKeyPath)) {
+        Write-Fail "Updater artifacts require TAURI_SIGNING_PRIVATE_KEY or a key file at $SigningKeyPath. Use -LocalBuild without -UpdaterArtifacts to skip updater signing."
+    }
+
+    $env:TAURI_SIGNING_PRIVATE_KEY = Get-Content $SigningKeyPath -Raw
+    $script:SigningKeyLoadedFromFile = $true
+    Write-Ok "Updater signing key loaded from local key file"
+}
+
+function Get-TauriBuildArgs {
+    param([bool]$CreateUpdaterArtifacts)
+
+    $args = [System.Collections.Generic.List[string]]::new()
+    $args.Add('tauri')
+    $args.Add('build')
+
+    if (-not $CreateUpdaterArtifacts) {
+        $configPath = Join-Path ([System.IO.Path]::GetTempPath()) "localvoice-tauri-local-build-$PID.json"
+        if (-not $DryRun) {
+            $enc = New-Object System.Text.UTF8Encoding $false
+            [System.IO.File]::WriteAllText($configPath, '{"bundle":{"createUpdaterArtifacts":false}}', $enc)
+            $script:TempTauriConfigPath = $configPath
+        }
+        $args.Add('--config')
+        $args.Add($configPath)
+    }
+
+    return $args.ToArray()
+}
+
 # --- Pre-flight checks --------------------------------------------------------
 
 Write-Step "Checking prerequisites"
 
-foreach ($tool in @('git', 'pnpm', 'gh')) {
+$requiredTools = if ($LocalBuild) { @('pnpm') } else { @('git', 'pnpm', 'gh') }
+
+foreach ($tool in $requiredTools) {
     if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {
         Write-Fail "$tool not found in PATH."
     }
     Write-Ok "$tool found"
 }
 
-$authCheck = gh auth status 2>&1
-if ($LASTEXITCODE -ne 0) { Write-Fail "gh CLI not authenticated. Run: gh auth login" }
-Write-Ok "gh authenticated"
+if ($LocalBuild) {
+    Write-Info "Local build mode: skipping GitHub auth, clean working tree check, tag creation, and release publishing."
+} else {
+    $authCheck = gh auth status 2>&1
+    if ($LASTEXITCODE -ne 0) { Write-Fail "gh CLI not authenticated. Run: gh auth login" }
+    Write-Ok "gh authenticated"
 
-$dirty = git status --porcelain
-if ($dirty) { Write-Fail "Working tree has uncommitted changes. Commit or stash first." }
-Write-Ok "Working tree clean"
+    $dirty = git status --porcelain
+    if ($dirty) { Write-Fail "Working tree has uncommitted changes. Commit or stash first." }
+    Write-Ok "Working tree clean"
+}
 
 # --- Resolve version ----------------------------------------------------------
 
@@ -116,14 +209,20 @@ if ($Version -ne '') {
 
 $tag = "v$releaseVersion"
 
-$existingTag = git ls-remote --tags origin "refs/tags/$tag" 2>&1
-if ($existingTag -match [regex]::Escape($tag)) {
-    Write-Fail "Tag $tag already exists on remote. Use a different version."
+if ($LocalBuild -and $releaseVersion -ne $currentVersion) {
+    Write-Fail "Local builds use the checked-out version ($currentVersion). Run the version bump separately or use release mode for $releaseVersion."
+}
+
+if (-not $LocalBuild) {
+    $existingTag = git ls-remote --tags origin "refs/tags/$tag" 2>&1
+    if ($existingTag -match [regex]::Escape($tag)) {
+        Write-Fail "Tag $tag already exists on remote. Use a different version."
+    }
 }
 
 # --- Bump version files -------------------------------------------------------
 
-if ($releaseVersion -ne $currentVersion) {
+if ((-not $LocalBuild) -and $releaseVersion -ne $currentVersion) {
     Write-Step "Updating version files to $releaseVersion"
 
     Set-VersionInFile -File $pkgJson -Old $currentVersion -New $releaseVersion
@@ -146,16 +245,26 @@ if ($releaseVersion -ne $currentVersion) {
 
 # --- Create and push tag ------------------------------------------------------
 
-Write-Step "Creating tag $tag"
-Invoke-Cmd git @('tag', '-a', $tag, '-m', "Release $tag")
-Invoke-Cmd git @('push', 'origin', $tag)
-Write-Ok "Tag $tag pushed"
+if (-not $LocalBuild) {
+    Write-Step "Creating tag $tag"
+    Invoke-Cmd git @('tag', '-a', $tag, '-m', "Release $tag")
+    Invoke-Cmd git @('push', 'origin', $tag)
+    Write-Ok "Tag $tag pushed"
+}
 
 # --- Build --------------------------------------------------------------------
 
 Write-Step "Building Tauri app (this takes a few minutes)"
+$createUpdaterArtifacts = (-not $LocalBuild) -or $UpdaterArtifacts
+if ($createUpdaterArtifacts) {
+    Ensure-UpdaterSigningKey
+} else {
+    Write-Info "Updater artifacts disabled for local build; no updater signing key is required."
+}
+
+$buildArgs = Get-TauriBuildArgs -CreateUpdaterArtifacts $createUpdaterArtifacts
 Push-Location $RootDir
-Invoke-Cmd pnpm @('tauri', 'build')
+Invoke-Cmd pnpm $buildArgs
 Pop-Location
 Write-Ok "Build complete"
 
@@ -170,7 +279,11 @@ $artifacts = @(
 )
 
 if ($artifacts.Count -eq 0) {
-    Write-Fail "No artifacts found for version $releaseVersion in $bundleDir"
+    if ($DryRun) {
+        Write-Dry "Would collect artifacts for version $releaseVersion in $bundleDir"
+    } else {
+        Write-Fail "No artifacts found for version $releaseVersion in $bundleDir"
+    }
 }
 
 foreach ($f in $artifacts) {
@@ -179,26 +292,30 @@ foreach ($f in $artifacts) {
 
 # --- Publish GitHub release ---------------------------------------------------
 
-Write-Step "Publishing GitHub release $tag"
+if (-not $LocalBuild) {
+    Write-Step "Publishing GitHub release $tag"
 
-$notes = "## LocalVoice $tag`n`n" +
-         "### Installation`n" +
-         "Download the .msi (Windows Installer) or the -setup.exe (NSIS installer) below.`n`n" +
-         "Whisper and Parakeet sidecars are bundled. Transcription models are not bundled - download them from the Models page inside the app. .nemo models require an optional local NVIDIA NeMo Python runtime.`n`n" +
-         "### Changes`n" +
-         "https://github.com/iptoux/localvoice/commits/$tag"
+    $notes = "## LocalVoice $tag`n`n" +
+             "### Installation`n" +
+             "Download the .msi (Windows Installer) or the -setup.exe (NSIS installer) below.`n`n" +
+             "Whisper and Parakeet sidecars are bundled. Transcription models are not bundled - download them from the Models page inside the app. .nemo models require an optional local NVIDIA NeMo Python runtime.`n`n" +
+             "### Changes`n" +
+             "https://github.com/iptoux/localvoice/commits/$tag"
 
-$ghArgs = [System.Collections.Generic.List[string]]@(
-    'release', 'create', $tag,
-    '--title', "LocalVoice $tag",
-    '--notes', $notes
-)
+    $ghArgs = [System.Collections.Generic.List[string]]@(
+        'release', 'create', $tag,
+        '--title', "LocalVoice $tag",
+        '--notes', $notes
+    )
 
-if ($Draft)      { $ghArgs.Add('--draft') }
-if ($Prerelease) { $ghArgs.Add('--prerelease') }
-foreach ($f in $artifacts) { $ghArgs.Add($f.FullName) }
+    if ($Draft)      { $ghArgs.Add('--draft') }
+    if ($Prerelease) { $ghArgs.Add('--prerelease') }
+    foreach ($f in $artifacts) { $ghArgs.Add($f.FullName) }
 
-Invoke-Cmd gh $ghArgs.ToArray()
+    Invoke-Cmd gh $ghArgs.ToArray()
+}
+
+Clear-TransientState
 
 # --- Done ---------------------------------------------------------------------
 
@@ -206,6 +323,9 @@ Write-Host ""
 Write-Host "======================================" -ForegroundColor Magenta
 if ($DryRun) {
     Write-Host "  DRY-RUN complete - no changes made." -ForegroundColor Yellow
+} elseif ($LocalBuild) {
+    Write-Host "  Local build complete for $tag." -ForegroundColor Green
+    Write-Host "  Artifacts: $bundleDir" -ForegroundColor Cyan
 } else {
     Write-Host "  Release $tag published!" -ForegroundColor Green
     Write-Host "  https://github.com/iptoux/localvoice/releases/tag/$tag" -ForegroundColor Cyan

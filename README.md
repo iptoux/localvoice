@@ -174,9 +174,17 @@ pnpm install
 # Start the dev server (hot-reload frontend + Rust watch)
 pnpm tauri dev
 
-# Production build
+# Release build with updater artifacts
 pnpm tauri build
 ```
+
+`pnpm tauri build` requires `TAURI_SIGNING_PRIVATE_KEY` because updater artifacts are enabled. For a Windows installer build without publishing a GitHub release or creating updater artifacts, use the release helper's local mode:
+
+```powershell
+.\scripts\create-release.ps1 -LocalBuild
+```
+
+Use `.\scripts\create-release.ps1 -LocalBuild -UpdaterArtifacts` only when you intentionally want signed updater artifacts locally. In that mode the script reads the updater key from `%USERPROFILE%\.tauri\localvoice-updater.key` if `TAURI_SIGNING_PRIVATE_KEY` is not already set.
 
 CI and release jobs install dependencies with `pnpm install --frozen-lockfile`.
 When updating Tauri, keep the Rust `tauri` crate and frontend
@@ -279,7 +287,7 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 
 | Setting | Description |
 |---|---|
-| Recording shortcut | Single key or key combination to start/stop recording |
+| Recording shortcut | Windows modifier-only key, single key, or key combination to start/stop recording |
 | Output mode | Insert to active app, clipboard, or preview |
 | Default language | Language used for transcription |
 | Default transcription engine | Preferred engine (`whisper-cpp`, `parakeet-cpp`, or optional `nemo`) |
