@@ -90,7 +90,7 @@ jobs:
           workspaces: src-tauri
 
       - name: Install frontend dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       # ── whisper.cpp binaries ──────────────────────────────────────────────
       - name: Setup whisper.cpp sidecar
@@ -225,7 +225,7 @@ jobs:
           workspaces: src-tauri
 
       - name: Install frontend dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       # ── whisper.cpp binaries ──────────────────────────────────────────────
       - name: Setup whisper.cpp sidecar
@@ -322,7 +322,7 @@ jobs:
           workspaces: src-tauri
 
       - name: Install frontend dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       # ── whisper.cpp binaries ──────────────────────────────────────────────
       - name: Setup whisper.cpp sidecar

@@ -167,6 +167,8 @@ Segment storage is unchanged. Word-level timestamps are stored in `session_words
 
 CI runs `.github/actions/setup-whisper` and `.github/actions/setup-parakeet-cpp` before Rust tests and release builds. The Parakeet action pins `mudler/parakeet.cpp` to `v0.3.2`, downloads CPU/portable CLI assets, verifies SHA-256 checksums, builds `parakeet-stream-worker` from the pinned source, writes target-triple sidecar binaries, and stages required runtime libraries in `src-tauri/parakeet-runtime/`.
 
+Release jobs use `pnpm install --frozen-lockfile` so packaging sees the same frontend dependency graph as CI. When Tauri is updated, keep the Rust `tauri` crate and frontend `@tauri-apps/api` package on the same major/minor version; `tauri build` fails early when they drift.
+
 Release jobs audit that the bundled sidecars and NeMo worker resource are present before building installers. Public installers bundle:
 
 - `whisper-cli`

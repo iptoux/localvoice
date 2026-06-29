@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed release builds by aligning Tauri Rust and frontend package versions and using the pnpm frozen lockfile in all release jobs.
 - Removed the unused npm lockfile, pinned pnpm as the project package manager, and moved security overrides into `pnpm-workspace.yaml` so Dependabot scans one frontend lockfile.
 - Added selectable pill modes: the new default recording overlay stays hidden while idle and shows only a bottom-center waveform during recording, while Classic pill preserves the old persistent compact/expanded UI with previews.
 - Fixed the overlay pill startup default so the main dashboard opens normally while the overlay itself stays hidden until recording.
