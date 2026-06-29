@@ -8,6 +8,7 @@ LocalVoice adapts its OS integration to each platform:
 
 - **Autostart**: registers itself with the OS login mechanism on each platform (registry on Windows, launchd on macOS, XDG autostart on Linux)
 - **Auto-insert**: pastes transcribed text into the focused application using the platform's native paste mechanism
+- **Auto-update**: checks the public GitHub release channel and installs updates after explicit user confirmation
 - **Tray icon**: uses the system tray on all platforms (requires `libappindicator` on Linux)
 - **Global shortcut**: registers a system-wide hotkey for recording
 

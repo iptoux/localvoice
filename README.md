@@ -108,6 +108,12 @@ It's built for developers, writers, and anyone who wants fast, private voice inp
 > - **macOS:** The app is not notarized. Right-click the `.app` → Open → Open to bypass Gatekeeper. Auto-insert (paste) requires granting Accessibility permission in System Settings → Privacy & Security → Accessibility.
 > - **Linux:** No code signing. Mark the binary executable and run directly. Tray icon requires `libayatana-appindicator3` or `libappindicator3`.
 
+### Auto Updates
+
+Release builds check `https://github.com/iptoux/localvoice/releases/latest/download/latest.json` for the latest stable GitHub release. LocalVoice shows a native notification and an in-app banner when an update is available, but it only downloads and installs after the user clicks **Update Now**. The automatic startup check can be disabled in **Settings -> System -> Automatic updates**.
+
+Updater-capable public releases must be built by the GitHub release workflow so the signed update bundles, `.sig` files, and `latest.json` manifest are uploaded together. Local release scripts are useful for manual installer builds, but they do not publish a complete updater channel by themselves.
+
 ### Prerequisites
 
 | Tool | Version |

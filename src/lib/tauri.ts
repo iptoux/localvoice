@@ -23,6 +23,8 @@ import type {
   RuntimeHealth,
   TranscriptionEngineInfo,
   TranscriptionResult,
+  UpdateInfo,
+  UpdateStatus,
   WpmPoint,
 } from "../types";
 
@@ -267,6 +269,15 @@ export const setAutostart = (enabled: boolean): Promise<void> =>
 
 export const getAutostart = (): Promise<boolean> =>
   invoke<boolean>("get_autostart");
+
+export const checkForUpdate = (manual = false): Promise<UpdateInfo | null> =>
+  invoke<UpdateInfo | null>("check_for_update", { manual });
+
+export const getUpdateStatus = (): Promise<UpdateStatus> =>
+  invoke<UpdateStatus>("get_update_status");
+
+export const installPendingUpdate = (): Promise<void> =>
+  invoke<void>("install_pending_update");
 
 // ── Logs ───────────────────────────────────────────────────────────────────────
 

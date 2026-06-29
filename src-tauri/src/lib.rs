@@ -16,7 +16,8 @@ mod transcription;
 use commands::{
     benchmark as cmd_benchmark, dictionary as cmd_dictionary, filler_words as cmd_filler_words,
     history as cmd_history, logs as cmd_logs, models as cmd_models, recording, settings,
-    stats as cmd_stats, system as cmd_system, transcription as cmd_transcription, window,
+    stats as cmd_stats, system as cmd_system, transcription as cmd_transcription,
+    updater as cmd_updater, window,
 };
 use db::repositories::settings_repo;
 use state::AppState;
@@ -27,6 +28,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, shortcut, event| {
@@ -54,6 +56,7 @@ pub fn run() {
 
             // Register shared state.
             app.manage(AppState::new(db));
+            app.manage(cmd_updater::PendingUpdate::default());
 
             // Build system tray (critical — needed before window shows).
             os::tray::setup(app.handle())
@@ -182,6 +185,8 @@ pub fn run() {
                 log::info!("Starting in tray mode");
             }
 
+            cmd_updater::spawn_startup_check(app.handle().clone());
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -210,6 +215,10 @@ pub fn run() {
             cmd_transcription::get_last_transcription,
             cmd_transcription::list_transcription_engines,
             cmd_transcription::check_transcription_runtime,
+            // Updater
+            cmd_updater::check_for_update,
+            cmd_updater::get_update_status,
+            cmd_updater::install_pending_update,
             // History
             cmd_history::list_sessions,
             cmd_history::get_session,

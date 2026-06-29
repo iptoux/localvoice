@@ -5,6 +5,7 @@ import { useAppStore } from "../stores/app-store";
 import { useSettingsStore } from "../stores/settings-store";
 import {
   getAutostart,
+  checkForUpdate,
   listInputDevices,
   setAutostart,
   updateShortcut,
@@ -44,10 +45,13 @@ import {
   Calendar,
   Database,
   BookOpen,
+  Download,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { applyTheme, type Theme } from "../lib/theme";
+import { useUpdaterStore } from "../stores/updater-store";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -219,6 +223,9 @@ export default function SettingsPage() {
   );
   const [autostart, setAutostartState] = useState(false);
   const [clearingLogs, setClearingLogs] = useState(false);
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const [updateCheckMessage, setUpdateCheckMessage] = useState<string | null>(null);
+  const loadUpdateStatus = useUpdaterStore((s) => s.load);
 
   useEffect(() => { load(); }, [load]);
 
@@ -252,6 +259,24 @@ export default function SettingsPage() {
     }
   };
 
+  const handleManualUpdateCheck = async () => {
+    setCheckingUpdates(true);
+    setUpdateCheckMessage(null);
+    try {
+      const updateInfo = await checkForUpdate(true);
+      await loadUpdateStatus();
+      setUpdateCheckMessage(
+        updateInfo
+          ? `LocalVoice ${updateInfo.version} is available.`
+          : "LocalVoice is up to date."
+      );
+    } catch (e) {
+      setUpdateCheckMessage(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCheckingUpdates(false);
+    }
+  };
+
   const handlePillModeChange = async (mode: string | null) => {
     if (!mode) return;
     await update("ui.pill.mode", mode);
@@ -271,6 +296,7 @@ export default function SettingsPage() {
   const shortcut = settings["recording.shortcut"] || "CommandOrControl+Shift+Space";
   const outputMode = settings["output.mode"] || "clipboard";
   const language = settings["transcription.default_language"] || "auto";
+  const autoUpdate = bool("app.auto_update", true);
   const streamingEnabled = bool("transcription.streaming.enabled");
   const streamingChunkMs = settings["transcription.streaming.chunk_ms"] || "320";
   const streamingOutputMode = settings["transcription.streaming.output_mode"] || "preview";
@@ -727,6 +753,32 @@ export default function SettingsPage() {
           checked={bool("app.start_hidden")}
           onCheckedChange={(v) => set("app.start_hidden", String(v))}
         />
+      </SettingRow>
+
+      <SettingRow icon={Download} iconClass="text-cyan-400" label="Automatic updates" description="Check GitHub releases for new LocalVoice versions on startup.">
+        <Switch
+          checked={autoUpdate}
+          onCheckedChange={(v) => set("app.auto_update", String(v))}
+        />
+      </SettingRow>
+
+      <SettingRow icon={RefreshCw} iconClass="text-indigo-400" label="Check for updates" description="Look for the latest public release now.">
+        <div className="flex items-center gap-3">
+          {updateCheckMessage && (
+            <span className="max-w-56 truncate text-xs text-muted-foreground">
+              {updateCheckMessage}
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={checkingUpdates}
+            onClick={handleManualUpdateCheck}
+            className="border-border bg-muted text-foreground/70 hover:bg-accent hover:text-foreground text-xs"
+          >
+            {checkingUpdates ? "Checking..." : "Check now"}
+          </Button>
+        </div>
       </SettingRow>
 
       {/* ── Notifications ── */}

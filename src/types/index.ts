@@ -126,6 +126,24 @@ export interface DownloadProgress {
   totalBytes: number;
 }
 
+export interface UpdateInfo {
+  version: string;
+  currentVersion: string;
+}
+
+export interface UpdateDownloadProgress {
+  downloadedBytes: number;
+  totalBytes?: number;
+  percent?: number;
+}
+
+export interface UpdateStatus {
+  phase: "idle" | "checking" | "available" | "downloading" | "installing" | "upToDate" | "error" | string;
+  available?: UpdateInfo | null;
+  progress?: UpdateDownloadProgress | null;
+  lastError?: string | null;
+}
+
 export type Settings = Record<string, string>;
 
 export interface TranscriptSegment {

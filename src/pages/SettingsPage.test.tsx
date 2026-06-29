@@ -8,6 +8,7 @@ import { useAppStore } from "../stores/app-store";
 vi.mock("../lib/tauri", () => ({
   getSettings: vi.fn().mockResolvedValue({}),
   updateSetting: vi.fn().mockResolvedValue(undefined),
+  checkForUpdate: vi.fn().mockResolvedValue(null),
   listInputDevices: vi.fn().mockResolvedValue([]),
   getAutostart: vi.fn().mockResolvedValue(false),
   setAutostart: vi.fn().mockResolvedValue(undefined),
@@ -26,6 +27,8 @@ const DEFAULT_SETTINGS = {
   "app.language": "de",
   "app.start_hidden": "false",
   "app.autostart": "false",
+  "app.auto_update": "true",
+  "app.last_update_check": "",
   "ui.default_mode": "main",
   "ui.pill.mode": "overlay",
   "ui.pill.always_on_top": "true",
@@ -138,6 +141,13 @@ describe("SettingsPage", () => {
     expect(screen.getByText("Pill mode")).toBeInTheDocument();
     expect(screen.getByText("Choose the new recording overlay or the classic compact pill.")).toBeInTheDocument();
     expect(screen.getByText("Choose whether launch opens the app or stays in the tray.")).toBeInTheDocument();
+  });
+
+  it("renders automatic update controls", () => {
+    render(<SettingsPage />);
+    expect(screen.getByText("Automatic updates")).toBeInTheDocument();
+    expect(screen.getByText("Check for updates")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Check now" })).toBeInTheDocument();
   });
 
   it("shows classic default-view wording in classic mode", () => {

@@ -120,7 +120,8 @@ jobs:
         shell: bash
         run: pnpm tauri build
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ""
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Collect unsigned installers
         shell: pwsh
@@ -131,12 +132,18 @@ jobs:
           foreach ($f in $msi) {
             Copy-Item $f.FullName "dist\unsigned\$($f.Name)"
             Write-Host "Collected MSI: $($f.Name)"
+            if (Test-Path "$($f.FullName).sig") {
+              Copy-Item "$($f.FullName).sig" "dist\unsigned\$($f.Name).sig"
+            }
           }
 
           $nsis = Get-ChildItem "src-tauri\target\release\bundle\nsis\*-setup.exe" -ErrorAction SilentlyContinue
           foreach ($f in $nsis) {
             Copy-Item $f.FullName "dist\unsigned\$($f.Name)"
             Write-Host "Collected NSIS: $($f.Name)"
+            if (Test-Path "$($f.FullName).sig") {
+              Copy-Item "$($f.FullName).sig" "dist\unsigned\$($f.Name).sig"
+            }
           }
 
           if (-not (Get-ChildItem "dist\unsigned")) {
@@ -246,13 +253,14 @@ jobs:
       - name: Build Tauri app (macOS arm64)
         run: pnpm tauri build --target aarch64-apple-darwin
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ""
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Collect macOS artifacts
         run: |
           mkdir -p dist/macos
           find src-tauri/target/aarch64-apple-darwin/release/bundle \
-            \( -name "*.dmg" -o -name "*.app.tar.gz" \) \
+            \( -name "*.dmg" -o -name "*.app.tar.gz" -o -name "*.app.tar.gz.sig" \) \
             -exec cp {} dist/macos/ \;
 
           if [ -z "$(ls -A dist/macos)" ]; then
@@ -343,13 +351,14 @@ jobs:
       - name: Build Tauri app (Linux)
         run: pnpm tauri build
         env:
-          TAURI_SIGNING_PRIVATE_KEY: ""
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Collect Linux artifacts
         run: |
           mkdir -p dist/linux
           find src-tauri/target/release/bundle \
-            \( -name "*.deb" -o -name "*.AppImage" -o -name "*.rpm" \) \
+            \( -name "*.deb" -o -name "*.AppImage" -o -name "*.AppImage.sig" -o -name "*.rpm" \) \
             -exec cp {} dist/linux/ \;
 
           if [ -z "$(ls -A dist/linux)" ]; then
@@ -391,6 +400,49 @@ jobs:
           name: linux-artifacts
           path: dist/linux
 
+      - name: Generate updater manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${{ needs.build-windows.outputs.tag }}"
+          version="${tag#v}"
+          release_url="https://github.com/${{ github.repository }}/releases/download/${tag}"
+
+          windows_asset="$(find dist/windows -maxdepth 1 -type f -name '*-setup.exe' | head -n 1)"
+          linux_asset="$(find dist/linux -maxdepth 1 -type f -name '*.AppImage' ! -name '*.sig' | head -n 1)"
+          macos_asset="$(find dist/macos -maxdepth 1 -type f -name '*.app.tar.gz' ! -name '*.sig' | head -n 1)"
+
+          test -n "$windows_asset"
+          test -n "$linux_asset"
+          test -n "$macos_asset"
+          test -f "${windows_asset}.sig"
+          test -f "${linux_asset}.sig"
+          test -f "${macos_asset}.sig"
+
+          jq -n \
+            --arg version "$version" \
+            --arg notes "https://github.com/${{ github.repository }}/releases/tag/${tag}" \
+            --arg pub_date "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            --arg windows_url "${release_url}/$(basename "$windows_asset")" \
+            --arg windows_sig "$(cat "${windows_asset}.sig")" \
+            --arg linux_url "${release_url}/$(basename "$linux_asset")" \
+            --arg linux_sig "$(cat "${linux_asset}.sig")" \
+            --arg macos_url "${release_url}/$(basename "$macos_asset")" \
+            --arg macos_sig "$(cat "${macos_asset}.sig")" \
+            '{
+              version: $version,
+              notes: $notes,
+              pub_date: $pub_date,
+              platforms: {
+                "windows-x86_64": { signature: $windows_sig, url: $windows_url },
+                "linux-x86_64": { signature: $linux_sig, url: $linux_url },
+                "darwin-aarch64": { signature: $macos_sig, url: $macos_url }
+              }
+            }' > dist/latest.json
+
+          jq empty dist/latest.json
+
       - name: Create GitHub Release (draft)
         uses: softprops/action-gh-release@v2
         with:
@@ -402,6 +454,7 @@ jobs:
             dist/windows/**
             dist/macos/**
             dist/linux/**
+            dist/latest.json
           body: |
             ## LocalVoice ${{ needs.build-windows.outputs.tag }}
 

@@ -44,6 +44,8 @@ export const mockSettings: Settings = {
   "recording.noise_reduction": "true",
   "ui.default_mode": "main",
   "ui.pill.mode": "overlay",
+  "app.auto_update": "true",
+  "app.last_update_check": "",
   "ui.pill_opacity": "100",
 };
 
@@ -576,6 +578,17 @@ export const mockInvoke = async (cmd: string, args?: Record<string, unknown>): P
       return undefined;
     case "get_autostart":
       return false;
+    case "check_for_update":
+      return null;
+    case "get_update_status":
+      return {
+        phase: "idle",
+        available: null,
+        progress: null,
+        lastError: null,
+      };
+    case "install_pending_update":
+      return undefined;
     case "list_logs":
       return mockLogs;
     case "export_logs":

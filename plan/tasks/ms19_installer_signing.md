@@ -11,8 +11,8 @@
 ### Installer & Updater
 
 - [ ] TASK-258: Configure Tauri NSIS installer — update `tauri.conf.json` bundle targets; configure installer pages (license, install dir, start menu shortcut, desktop shortcut); set `publisher` and `shortDescription`
-- [ ] TASK-259: Configure Tauri updater — add `tauri-plugin-updater`; configure update endpoint (GitHub releases JSON); implement update check on app startup (setting `app.auto_update`, default: true); show non-blocking notification when update available
-- [ ] TASK-260: React: Update notification banner — shown at top of main window when update is available; "Update Now" button triggers download + install; "Dismiss" hides until next check
+- [x] TASK-259: Configure Tauri updater — add `tauri-plugin-updater`; configure update endpoint (GitHub releases JSON); implement update check on app startup (setting `app.auto_update`, default: true); show non-blocking notification when update available
+- [x] TASK-260: React: Update notification banner — shown at top of main window when update is available; "Update Now" button triggers download + install; "Dismiss" hides until next check
 
 ### Hybrid Transcription Runtime Packaging
 
@@ -33,7 +33,7 @@
 - [ ] TASK-265: Rust: `commands/dictionary.rs::export_dictionary(format)` — exports dictionary entries and correction rules as JSON; `import_dictionary(path)` imports from JSON, skipping duplicates
 - [ ] TASK-266: React: Settings page — "Data Management" section with "Export Backup", "Import Backup", "Export Dictionary", "Import Dictionary" buttons; confirmation dialogs for destructive operations
 - [ ] TASK-267: React: Settings page — "About" section showing app version, build date, license info, link to repository
-- [ ] TASK-268: DB migration 6 — add settings: `app.auto_update` (true), `app.last_update_check` (empty)
+- [x] TASK-268: DB migration 6 — add settings: `app.auto_update` (true), `app.last_update_check` (empty)
 
 ## QA / Acceptance
 

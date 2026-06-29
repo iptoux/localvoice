@@ -866,6 +866,58 @@ invoke('get_autostart'): Promise<boolean>
 
 ---
 
+## Updater
+
+### `check_for_update`
+
+Checks the configured GitHub Releases updater endpoint.
+
+```typescript
+invoke('check_for_update', { manual: boolean }): Promise<UpdateInfo | null>
+
+interface UpdateInfo {
+  version: string;
+  currentVersion: string;
+}
+```
+
+Automatic checks respect `app.auto_update` and are skipped in debug builds. Manual checks run on demand.
+
+---
+
+### `get_update_status`
+
+Returns the current updater state held by the backend.
+
+```typescript
+invoke('get_update_status'): Promise<UpdateStatus>
+
+interface UpdateStatus {
+  phase: "idle" | "checking" | "available" | "downloading" | "installing" | "upToDate" | "error" | string;
+  available?: UpdateInfo | null;
+  progress?: UpdateDownloadProgress | null;
+  lastError?: string | null;
+}
+```
+
+---
+
+### `install_pending_update`
+
+Downloads and installs the pending update found by `check_for_update`, then restarts the app.
+
+```typescript
+invoke('install_pending_update'): Promise<void>
+```
+
+**Error codes:**
+| Error | Cause |
+|-------|-------|
+| `"No pending update to install."` | No update has been found in the current app session |
+| updater errors | Manifest download, signature verification, bundle download, or installer failure |
+
+---
+
 ## Stats
 
 ### `get_dashboard_stats`
@@ -1070,6 +1122,9 @@ The frontend subscribes to these Tauri events (via `listen()`) to update UI stat
 | `transcription-error` | `{ error: string }` | Transcription orchestrator on failure |
 | `session-reprocessed` | `sessionId: string` | `reprocess_session` command |
 | `model-download-progress` | `{ key: string, progress: number }` | Model download in progress |
+| `update-available` | `UpdateInfo` | GitHub release update detected |
+| `update-download-progress` | `UpdateDownloadProgress` | Updater bundle download/install progress |
+| `update-error` | `string` | Updater check or install failure |
 | `silence-detected` | none | Silence timeout reached during recording |
 
 ---

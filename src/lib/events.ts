@@ -4,6 +4,8 @@ import type {
   RecordingStatePayload,
   TranscriptionStreamUpdate,
   TranscriptionResult,
+  UpdateDownloadProgress,
+  UpdateInfo,
 } from "../types";
 
 /**
@@ -46,6 +48,9 @@ export const EventChannels = {
 
   /** Frontend-to-frontend navigation event (pill → main window). */
   NAVIGATE_TO: "navigate-to",
+  UPDATE_AVAILABLE: "update-available",
+  UPDATE_DOWNLOAD_PROGRESS: "update-download-progress",
+  UPDATE_ERROR: "update-error",
 } as const;
 
 export type EventChannel = (typeof EventChannels)[keyof typeof EventChannels];
@@ -64,6 +69,9 @@ export interface EventPayloads {
   [EventChannels.SESSION_REPROCESSED]: string;
   [EventChannels.MODEL_DOWNLOAD_PROGRESS]: TDownloadProgress;
   [EventChannels.NAVIGATE_TO]: string;
+  [EventChannels.UPDATE_AVAILABLE]: UpdateInfo;
+  [EventChannels.UPDATE_DOWNLOAD_PROGRESS]: UpdateDownloadProgress;
+  [EventChannels.UPDATE_ERROR]: string;
 }
 
 /**

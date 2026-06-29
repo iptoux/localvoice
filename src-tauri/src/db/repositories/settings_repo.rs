@@ -22,6 +22,8 @@ pub fn reset_to_defaults(db: &DbConn) -> Result<()> {
             ('app.language',                 'de',        datetime('now')),
             ('app.start_hidden',             'false',     datetime('now')),
             ('app.autostart',                'false',     datetime('now')),
+            ('app.auto_update',              'true',      datetime('now')),
+            ('app.last_update_check',         '',          datetime('now')),
             ('ui.default_mode',              'main',      datetime('now')),
             ('ui.pill.mode',                 'overlay',   datetime('now')),
             ('ui.pill.always_on_top',        'true',      datetime('now')),

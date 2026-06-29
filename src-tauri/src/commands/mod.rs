@@ -9,4 +9,5 @@ pub mod settings;
 pub mod stats;
 pub mod system;
 pub mod transcription;
+pub mod updater;
 pub mod window;

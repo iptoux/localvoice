@@ -474,6 +474,14 @@ static MIGRATIONS: &[(i64, &str)] = &[(
         OR COALESCE((SELECT CAST(value AS INTEGER) FROM settings WHERE key = 'ui.main_window.y'), -32000) <= -30000
       );
     ",
+),
+(
+    15,
+    "
+    INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES
+        ('app.auto_update',      'true', datetime('now')),
+        ('app.last_update_check','',     datetime('now'));
+    ",
 )];
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -551,6 +559,30 @@ mod tests {
             .query_row("SELECT COUNT(*) FROM settings", [], |r| r.get(0))
             .unwrap();
         assert!(count > 0, "default settings should be seeded");
+    }
+
+    #[test]
+    fn updater_settings_are_seeded() {
+        let conn = open_in_memory();
+        run(&conn).unwrap();
+
+        let auto_update: String = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = 'app.auto_update'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        let last_check: String = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = 'app.last_update_check'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+
+        assert_eq!(auto_update, "true");
+        assert_eq!(last_check, "");
     }
 
     #[test]

@@ -289,6 +289,8 @@ Key-value store for all application settings.
 | app.language | de |
 | app.start_hidden | false |
 | app.autostart | false |
+| app.auto_update | true (v15) |
+| app.last_update_check | empty (v15) |
 | ui.default_mode | main |
 | ui.pill.mode | overlay (v12) |
 | ui.pill.always_on_top | true |
