@@ -202,29 +202,6 @@ describe("SettingsPage", () => {
     });
   });
 
-  it.each([
-    ["Control", "ControlLeft", "Ctrl"],
-    ["Alt", "AltLeft", "Alt"],
-    ["AltGraph", "AltRight", "AltGr"],
-  ])("records and saves the modifier-only shortcut %s", async (key, code, expected) => {
-    const updateMock = vi.fn().mockResolvedValue(undefined);
-    useSettingsStore.setState((s) => ({ ...s, update: updateMock }));
-    render(<SettingsPage />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Change" }));
-    fireEvent.keyDown(window, { key, code });
-    fireEvent.keyUp(window, { key, code });
-
-    expect(screen.getByText(expected)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-
-    await waitFor(() => {
-      expect(updateShortcut).toHaveBeenCalledWith(expected);
-      expect(updateMock).toHaveBeenCalledWith("recording.shortcut", expected);
-    });
-  });
-
   // ── Audio devices ─────────────────────────────────────────────────────────
 
   it("shows System default placeholder when no audio devices are present", () => {

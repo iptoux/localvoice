@@ -110,13 +110,6 @@ function ShortcutBadge({ shortcut }: { shortcut: string }) {
   );
 }
 
-function modifierOnlyShortcut(e: KeyboardEvent) {
-  if (e.key === "AltGraph" || e.code === "AltRight") return "AltGr";
-  if (e.key === "Control") return "Ctrl";
-  if (e.key === "Alt") return "Alt";
-  return null;
-}
-
 function ShortcutRecorder({
   shortcut,
   onSave,
@@ -130,28 +123,12 @@ function ShortcutRecorder({
   useEffect(() => {
     if (!recording) return;
 
-    let modifierCandidate: string | null = null;
-
-    const commit = (shortcut: string) => {
-      modifierCandidate = null;
-      setPending(shortcut);
-      setRecording(false);
-    };
-
-    const keydownHandler = (e: KeyboardEvent) => {
+    const handler = (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
 
-      const modifierOnly = modifierOnlyShortcut(e);
-      if (modifierOnly) {
-        modifierCandidate = modifierOnly;
-        return;
-      }
-
-      // Keep waiting for a non-reserved key when only these modifiers are pressed.
-      if (["Shift", "Meta"].includes(e.key)) return;
-
-      modifierCandidate = null;
+      // Ignore lone modifier presses.
+      if (["Control", "Shift", "Alt", "Meta", "AltGraph"].includes(e.key)) return;
 
       const parts: string[] = [];
       if (e.ctrlKey || e.metaKey) parts.push("CommandOrControl");
@@ -166,21 +143,8 @@ function ShortcutRecorder({
       setRecording(false);
     };
 
-    const keyupHandler = (e: KeyboardEvent) => {
-      const modifierOnly = modifierOnlyShortcut(e);
-      if (modifierCandidate && modifierOnly === modifierCandidate) {
-        e.preventDefault();
-        e.stopPropagation();
-        commit(modifierCandidate);
-      }
-    };
-
-    window.addEventListener("keydown", keydownHandler, true);
-    window.addEventListener("keyup", keyupHandler, true);
-    return () => {
-      window.removeEventListener("keydown", keydownHandler, true);
-      window.removeEventListener("keyup", keyupHandler, true);
-    };
+    window.addEventListener("keydown", handler, true);
+    return () => window.removeEventListener("keydown", handler, true);
   }, [recording]);
 
   if (recording) {
@@ -376,7 +340,7 @@ export default function SettingsPage() {
         icon={Keyboard}
         iconClass="text-violet-400"
         label="Global Shortcut"
-        description="Use Ctrl, Alt, AltGr, a key, or a key combination to start or stop recording."
+        description="Use a key or key combination to start or stop recording."
       >
         <ShortcutRecorder
           shortcut={shortcut}

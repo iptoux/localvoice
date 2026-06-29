@@ -203,7 +203,7 @@ The bootstrap script handles this automatically. For manual setup, you need to p
 
 Parakeet sidecars are pinned to `mudler/parakeet.cpp` `v0.3.2` and must be checksum-verified or built from the pinned source before release packaging. Public installers bundle the CPU/portable sidecars only; model weights, `.nemo` checkpoints, CUDA stacks, and Python/NeMo environments are never bundled in the base installer.
 
-The Parakeet streaming worker can also produce small runtime libraries during CI/release builds. Those files are staged under `src-tauri/parakeet-runtime/` and bundled as Tauri resources; the directory is kept in Git, but generated runtime files are ignored.
+The Parakeet streaming worker can also produce small runtime libraries during CI/release builds. Those files are staged under `src-tauri/parakeet-runtime/` and bundled as Tauri resources; installed Windows builds load them from the bundled `resources/parakeet-runtime/` directory. The source directory is kept in Git, but generated runtime files are ignored.
 
 #### whisper.cpp
 
@@ -287,7 +287,7 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 
 | Setting | Description |
 |---|---|
-| Recording shortcut | Windows modifier-only key, single key, or key combination to start/stop recording |
+| Recording shortcut | Single key or key combination to start/stop recording |
 | Output mode | Insert to active app, clipboard, or preview |
 | Default language | Language used for transcription |
 | Default transcription engine | Preferred engine (`whisper-cpp`, `parakeet-cpp`, or optional `nemo`) |

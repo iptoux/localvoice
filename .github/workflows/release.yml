@@ -107,6 +107,7 @@ jobs:
             "src-tauri\binaries\parakeet-cli-x86_64-pc-windows-msvc.exe",
             "src-tauri\binaries\parakeet-stream-worker-x86_64-pc-windows-msvc.exe",
             "src-tauri\parakeet-runtime",
+            "src-tauri\parakeet-runtime\ggml-cpu.dll",
             "src-tauri\resources\nemo_worker\localvoice_nemo_worker.py",
             "src-tauri\resources\nemo_worker\manifest.json"
           )) {

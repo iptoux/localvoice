@@ -14,10 +14,6 @@ use crate::state::AppState;
 /// - **Toggle** (default): Press to start, press again to stop.
 /// - **Push-to-Talk**: Press-and-hold to record, release to stop.
 pub fn handle(app: &AppHandle, _shortcut: &Shortcut, event: ShortcutEvent) {
-    handle_shortcut_state(app, event.state());
-}
-
-pub fn handle_shortcut_state(app: &AppHandle, shortcut_state: ShortcutState) {
     let state = app.state::<AppState>();
 
     // Read push-to-talk setting.
@@ -32,7 +28,7 @@ pub fn handle_shortcut_state(app: &AppHandle, shortcut_state: ShortcutState) {
 
     let current = state.recording_state.lock().unwrap().clone();
 
-    match shortcut_state {
+    match event.state() {
         ShortcutState::Pressed => {
             match current {
                 RecordingState::Idle => {
@@ -74,29 +70,18 @@ pub fn handle_shortcut_state(app: &AppHandle, shortcut_state: ShortcutState) {
 /// Must be called after `AppState` has been managed (i.e. inside `setup`).
 /// Default: `Ctrl+Shift+Space` (translates `CommandOrControl` → `Ctrl` on Windows).
 pub fn setup(app: &AppHandle) -> Result<(), String> {
-    let raw_shortcut = {
+    let shortcut_str = {
         let state = app.state::<AppState>();
         let settings =
             crate::db::repositories::settings_repo::get_all(&state.db).unwrap_or_default();
-        settings
+        let raw = settings
             .get("recording.shortcut")
             .cloned()
-            .unwrap_or_else(|| "CommandOrControl+Shift+Space".to_string())
+            .unwrap_or_else(|| "CommandOrControl+Shift+Space".to_string());
+        // Translate Electron-style modifiers to keyboard-types format.
+        raw.replace("CommandOrControl", "Ctrl")
+            .replace("CmdOrCtrl", "Ctrl")
     };
-
-    if let Some(modifier_shortcut) = super::modifier_shortcuts::parse(&raw_shortcut) {
-        super::modifier_shortcuts::validate_supported(modifier_shortcut)?;
-        super::modifier_shortcuts::configure(app, Some(modifier_shortcut))?;
-        log::info!("Modifier-only global shortcut registered: {raw_shortcut}");
-        return Ok(());
-    }
-
-    super::modifier_shortcuts::configure(app, None)?;
-
-    // Translate Electron-style modifiers to keyboard-types format.
-    let shortcut_str = raw_shortcut
-        .replace("CommandOrControl", "Ctrl")
-        .replace("CmdOrCtrl", "Ctrl");
 
     app.global_shortcut()
         .register(shortcut_str.as_str())

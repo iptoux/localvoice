@@ -57,7 +57,7 @@ Tauri validates target-triple files during local checks and builds. Bootstrap sc
 - `src-tauri/binaries/parakeet-cli-aarch64-apple-darwin`
 - `src-tauri/binaries/parakeet-cli-x86_64-unknown-linux-gnu`
 
-Parakeet streaming worker builds may also stage small native runtime libraries under `src-tauri/parakeet-runtime/`. The Rust launch path prepends this directory to the platform loader path when spawning Parakeet sidecars, and Tauri bundles it as a resource for release builds.
+Parakeet streaming worker builds may also stage small native runtime libraries under `src-tauri/parakeet-runtime/`. The Rust launch path prepends this directory to the platform loader path when spawning Parakeet sidecars, and Tauri bundles it as a resource for release builds. Windows installers can place resources under `resources/parakeet-runtime`, so the launch path must include both the sidecar directory and the installed resources directory before starting `parakeet-stream-worker.exe`.
 
 Runtime resolution order:
 
@@ -202,6 +202,7 @@ Public installers do not bundle:
 | `whisper-cli binary not found` | Missing Whisper sidecar | Run bootstrap or set `WHISPER_BIN_PATH` |
 | `parakeet-cli binary not found` | Missing Parakeet sidecar | Run bootstrap or set `PARAKEET_BIN_PATH` |
 | `parakeet-stream-worker binary not found` | Missing Parakeet streaming sidecar | Run bootstrap/CI setup or set `PARAKEET_STREAM_WORKER_PATH`; file transcription still works |
+| `Parakeet runtime DLLs are missing` | Windows worker runtime DLLs such as `ggml-cpu.dll` are not bundled or not in the loader path | Verify `parakeet-runtime/` is included in release resources; streaming falls back to stop-to-transcribe |
 | `parakeet-stream-worker smoke test failed` | Worker cannot start or cannot find runtime libraries | Re-run setup-parakeet-cpp and verify `src-tauri/parakeet-runtime/` is packaged |
 | `Model path does not exist` | Model deleted or download failed | Re-download from Models |
 | `.nemo runtime is not available` | Python/NeMo health check failed | Configure Python and install NeMo |

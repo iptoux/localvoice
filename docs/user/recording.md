@@ -27,9 +27,9 @@ All audio stays on your device — nothing is sent to the internet.
 ## Changing the Shortcut
 
 Open **Settings -> Recording -> Global Shortcut**, select **Change**, then press the
-new shortcut. On Windows, you can use a modifier-only shortcut such as `Ctrl`,
-`Alt`, or `AltGr`, a single non-modifier key such as `F8`, or a key combination
-such as `Ctrl+Shift+Space`.
+new shortcut. You can use either a single non-modifier key such as `F8` or a key
+combination such as `Ctrl+Shift+Space`. Modifier-only keys such as `Ctrl`, `Alt`,
+or `AltGr` are not accepted because they conflict with normal desktop shortcuts.
 
 The shortcut is stored in the settings database under the key `recording.shortcut`.
 
