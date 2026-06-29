@@ -172,6 +172,11 @@ pnpm tauri dev
 pnpm tauri build
 ```
 
+CI and release jobs install dependencies with `pnpm install --frozen-lockfile`.
+When updating Tauri, keep the Rust `tauri` crate and frontend
+`@tauri-apps/api` package on the same major/minor version before running a
+release build.
+
 ### Sidecar Binaries (required)
 
 The bootstrap script handles this automatically. For manual setup, you need to place platform-appropriate sidecar binaries in `src-tauri/binaries/`:
