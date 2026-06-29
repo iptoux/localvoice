@@ -1,5 +1,6 @@
 use serde::Deserialize;
 
+use crate::postprocess::normalize;
 use crate::transcription::types::{TranscriptSegment, TranscriptWord};
 
 #[derive(Debug, Clone)]
@@ -61,41 +62,44 @@ impl ParakeetJson {
             .unwrap_or_default()
             .into_iter()
             .filter_map(|word| {
-                let text = word.text?;
+                let text = normalize::remove_language_tags(&word.text?);
                 if text.trim().is_empty() {
                     return None;
                 }
                 Some(TranscriptWord {
                     start_ms: seconds_to_ms(word.start.unwrap_or(0.0)),
                     end_ms: seconds_to_ms(word.end.unwrap_or(0.0)),
-                    text,
+                    text: text.trim().to_string(),
                     confidence: word.confidence.or(word.prob),
                 })
             })
             .collect();
 
-        let text = self.text.unwrap_or_else(|| {
-            words
-                .iter()
-                .map(|w| w.text.trim())
-                .filter(|w| !w.is_empty())
-                .collect::<Vec<_>>()
-                .join(" ")
-        });
+        let text = self
+            .text
+            .map(|text| normalize::remove_language_tags(&text))
+            .unwrap_or_else(|| {
+                words
+                    .iter()
+                    .map(|w| w.text.trim())
+                    .filter(|w| !w.is_empty())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            });
 
         let mut segments: Vec<TranscriptSegment> = self
             .segments
             .unwrap_or_default()
             .into_iter()
             .filter_map(|seg| {
-                let text = seg.text?;
+                let text = normalize::remove_language_tags(&seg.text?);
                 if text.trim().is_empty() {
                     return None;
                 }
                 Some(TranscriptSegment {
                     start_ms: seconds_to_ms(seg.start.unwrap_or(0.0)),
                     end_ms: seconds_to_ms(seg.end.unwrap_or(0.0)),
-                    text,
+                    text: text.trim().to_string(),
                     confidence: seg.confidence,
                 })
             })
@@ -160,5 +164,26 @@ mod tests {
         let raw = "loading model\n{\"text\":\"ok\",\"words\":[]}\n";
         let parsed = parse_stdout(raw).expect("json line should parse");
         assert_eq!(parsed.text, "ok");
+    }
+
+    #[test]
+    fn removes_language_tags_from_parakeet_text() {
+        let raw = r#"{
+            "text": "Das ist ein Test. <de-DE> Hier geht es weiter.",
+            "words": [
+                {"word": "Das", "start": 0.0, "end": 0.1},
+                {"word": "<de-DE>", "start": 0.1, "end": 0.2},
+                {"word": "Hier", "start": 0.2, "end": 0.3}
+            ],
+            "segments": [
+                {"text": "<de-DE> Hier geht es weiter.", "start": 0.2, "end": 1.0}
+            ]
+        }"#;
+
+        let parsed = parse_stdout(raw).expect("json should parse");
+
+        assert_eq!(parsed.text, "Das ist ein Test.  Hier geht es weiter.");
+        assert_eq!(parsed.words.len(), 2);
+        assert_eq!(parsed.segments[0].text, "Hier geht es weiter.");
     }
 }

@@ -35,7 +35,7 @@ pub fn run(
     let cleaned_segments: Vec<TranscriptSegment> = segments
         .into_iter()
         .map(|mut seg| {
-            seg.text = normalize::collapse_whitespace(&seg.text);
+            seg.text = normalize::collapse_whitespace(&normalize::remove_language_tags(&seg.text));
             seg
         })
         .collect();
@@ -109,6 +109,22 @@ mod tests {
             &[],
         );
         assert_eq!(cleaned, "Hello world.");
+    }
+
+    #[test]
+    fn pipeline_removes_asr_language_tags() {
+        let settings = default_settings();
+        let (cleaned, segments, _, _) = run(
+            "Das ist ein Test. <de-DE> Hier geht es weiter",
+            vec![seg("<de-DE> Hier geht es weiter")],
+            &settings,
+            &[],
+            "de",
+            &[],
+        );
+
+        assert_eq!(cleaned, "Das ist ein Test. Hier geht es weiter.");
+        assert_eq!(segments[0].text, "Hier geht es weiter");
     }
 
     #[test]
@@ -201,6 +217,45 @@ mod tests {
             "rule should replace 'k8s' with 'Kubernetes'"
         );
         assert_eq!(fired_ids.len(), 1, "one rule should fire");
+    }
+
+    #[test]
+    fn pipeline_removes_language_tags_before_dictionary_rules() {
+        let db = test_db();
+        let rule =
+            dictionary_repo::create_rule(&db, "local voice", "LocalVoice", None, "manual", true)
+                .unwrap();
+        let active_rules = vec![rule];
+        let settings = default_settings();
+        let (cleaned, _, fired_ids, _) = run(
+            "das ist local <de-DE> voice",
+            vec![seg("das ist local <de-DE> voice")],
+            &settings,
+            &active_rules,
+            "de",
+            &[],
+        );
+
+        assert_eq!(cleaned, "Das ist LocalVoice.");
+        assert_eq!(fired_ids.len(), 1);
+    }
+
+    #[test]
+    fn pipeline_removes_language_tags_before_filler_words() {
+        let mut settings = default_settings();
+        settings.insert("transcription.remove_fillers".into(), "true".into());
+        let filler_words = vec!["äh".to_string()];
+        let (cleaned, _, _, removed) = run(
+            "Das ist äh <de-DE> ein Test",
+            vec![seg("Das ist äh <de-DE> ein Test")],
+            &settings,
+            &[],
+            "de",
+            &filler_words,
+        );
+
+        assert_eq!(cleaned, "Das ist ein Test.");
+        assert_eq!(removed, vec!["äh".to_string()]);
     }
 
     #[test]

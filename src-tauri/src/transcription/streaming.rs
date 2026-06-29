@@ -16,6 +16,7 @@ use tauri::{AppHandle, Emitter};
 
 use crate::errors::{AppError, CmdResult};
 use crate::os::{clipboard, text_insertion};
+use crate::postprocess::normalize;
 use crate::transcription::engine::{ModelRuntime, ENGINE_NEMO, ENGINE_PARAKEET_CPP};
 use crate::transcription::types::{TranscriptSegment, TranscriptWord};
 use crate::transcription::{language, nemo_worker, orchestrator, parakeet_parser};
@@ -629,35 +630,55 @@ fn apply_worker_response(
     }
 
     let response_words = resp.words.unwrap_or_default();
-    state.words.extend(response_words.into_iter().map(|word| {
-        let start_ms = word.start_ms.unwrap_or(0);
-        let end_ms = word.end_ms.unwrap_or(start_ms);
-        TranscriptWord {
-            start_ms,
-            end_ms,
-            text: word.text,
-            confidence: word.confidence.or(word.prob),
-        }
-    }));
+    state
+        .words
+        .extend(response_words.into_iter().filter_map(|word| {
+            let text = normalize::remove_language_tags(&word.text)
+                .trim()
+                .to_string();
+            if text.is_empty() {
+                return None;
+            }
+            let start_ms = word.start_ms.unwrap_or(0);
+            let end_ms = word.end_ms.unwrap_or(start_ms);
+            Some(TranscriptWord {
+                start_ms,
+                end_ms,
+                text,
+                confidence: word.confidence.or(word.prob),
+            })
+        }));
 
     let response_segments = resp.segments.unwrap_or_default();
     if !response_segments.is_empty() {
         state.segments = response_segments
             .into_iter()
-            .map(|segment| TranscriptSegment {
-                start_ms: segment.start_ms,
-                end_ms: segment.end_ms,
-                text: segment.text,
-                confidence: segment.confidence,
+            .filter_map(|segment| {
+                let text = normalize::remove_language_tags(&segment.text)
+                    .trim()
+                    .to_string();
+                if text.is_empty() {
+                    return None;
+                }
+                Some(TranscriptSegment {
+                    start_ms: segment.start_ms,
+                    end_ms: segment.end_ms,
+                    text,
+                    confidence: segment.confidence,
+                })
             })
             .collect();
     }
 
     let previous = state.stable_text.clone();
-    let full_text = resp.text.or_else(|| engine_json.map(|parsed| parsed.text));
+    let full_text = resp
+        .text
+        .or_else(|| engine_json.map(|parsed| parsed.text))
+        .map(|text| normalize::remove_language_tags(&text));
     let delta = resp
         .delta
         .or(resp.finalized_text)
+        .map(|text| normalize::remove_language_tags(&text))
         .unwrap_or_else(|| derive_delta(&previous, full_text.as_deref().unwrap_or("")));
 
     if let Some(full_text) = full_text {

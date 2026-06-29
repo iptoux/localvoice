@@ -7,6 +7,7 @@
 - Added persisted diagnostics for main-window open failures and recenters the dashboard window when restored outside all visible monitors.
 - Added a migration and runtime guard for invalid persisted dashboard geometry such as Windows hidden-window sizes (`16x39`) and sentinel positions (`-32000,-32000`).
 - Fixed recording overlay focus handling so live insert can keep writing to the previously focused target app instead of the overlay.
+- Stripped ASR language prompt tags such as `<de-DE>` from Parakeet/Nemotron streaming and final transcript output.
 - Marked optional NeMo `.nemo` models as non-streaming until the Python worker exposes a compatible live streaming API.
 - Added real streaming transcription plumbing for streaming-capable Parakeet GGUF models, including Classic pill live preview, optional worker-delta live insert, and stop-time fallback to WAV transcription.
 - Added the bundled `parakeet-stream-worker` sidecar built from pinned `mudler/parakeet.cpp` `v0.3.2` source in CI and audited in release jobs.
