@@ -147,7 +147,7 @@ Migration 10 seeds:
 | `transcription.preferred_runtime` | `bundled-sidecar` | Runtime preference |
 | `transcription.streaming.enabled` | `false` | Enables partial streaming UI updates |
 | `transcription.streaming.chunk_ms` | `320` | Target chunk size for streaming engines |
-| `transcription.streaming.output_mode` | `preview` | `preview` or `live_insert` finalized deltas |
+| `transcription.streaming.output_mode` | `preview` | `preview` or `live_insert` worker-emitted deltas |
 | `transcription.nemo.python_path` | empty | Optional Python interpreter path |
 | `transcription.parakeet.device` | empty | Reserved Parakeet device selection |
 

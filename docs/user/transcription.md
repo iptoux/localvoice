@@ -8,14 +8,16 @@ After you stop a recording, LocalVoice transcribes the audio offline. The select
 - **Parakeet.cpp** for GGUF `.gguf` models.
 - **NVIDIA NeMo** for optional `.nemo` models.
 
-No audio is sent to a cloud service. When streaming is enabled and the selected model/runtime supports it, partial text appears in the pill before you stop recording. The final transcript still goes through the same cleanup, dictionary rules, history persistence, and clipboard or auto-insert output flow.
+No audio is sent to a cloud service. When streaming is enabled and the selected model/runtime supports it, LocalVoice can receive partial text before you stop recording. The final transcript still goes through the same cleanup, dictionary rules, history persistence, and clipboard or auto-insert output flow.
 
-The pill transitions through:
+In the default **Recording overlay** pill mode, the pill shows only the waveform while recording and hides after stop. In **Classic pill** mode, streaming-capable models can also show live transcript preview text in the pill.
+
+The transcription flow transitions through:
 
 - **Transcribing...** - the selected local engine is running.
-- **Live** - a streaming-capable model is returning finalized text while you are still recording.
-- **Done** / transcript preview - transcription succeeded.
-- **Error** - something went wrong; the pill shows the user-facing error.
+- **Live insert** - an optional streaming mode writes worker-emitted deltas while you are still recording.
+- **Done** - transcription succeeded and output ran.
+- **Error** - something went wrong; the app shows a user-facing error notification or state.
 
 ## First-Time Setup
 
@@ -32,11 +34,11 @@ For development builds, run the bootstrap script so Tauri can find the target-tr
 
 Streaming is controlled in **Settings -> Transcription**:
 
-1. Enable **Streaming preview**.
+1. Enable **Streaming transcription**.
 2. Choose a chunk size. `320 ms` is the default balance between latency and overhead.
-3. Keep **Streaming output** on **Preview only** unless you explicitly want LocalVoice to write finalized deltas into the focused application while you speak.
+3. Keep **Streaming output** on **No live insert** unless you explicitly want LocalVoice to write streaming deltas into the focused application while you speak.
 
-Preview-only streaming never writes partial text into another app. Live insert writes only finalized deltas returned by the streaming worker. If the selected model is Whisper or another non-streaming model, LocalVoice keeps using the normal stop-to-transcribe flow.
+No-live-insert streaming never writes partial text into another app. Live insert writes only deltas returned by the streaming worker; if the worker emits no text before finalization, LocalVoice keeps the normal final output on stop. If the selected model is Whisper, `.nemo`, or another non-streaming model, LocalVoice uses the normal stop-to-transcribe flow.
 
 Parakeet GGUF streaming uses the bundled `parakeet-stream-worker` sidecar. If the worker is missing or the model cannot start a streaming session, LocalVoice falls back to the normal WAV transcription path after recording stops.
 

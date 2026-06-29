@@ -20,17 +20,17 @@ Base installers include the small sidecar executables only. Model weights, `.nem
 | Runtime | Artifact | Behavior |
 |---|---|---|
 | Whisper.cpp | `.bin` GGML | Bundled sidecar, broad language support, stable default path |
-| Parakeet.cpp | `.gguf` | Bundled sidecar, portable Parakeet/Nemotron support, streaming-capable metadata |
-| NVIDIA NeMo | `.nemo` | Optional Python runtime, highest-fidelity NVIDIA-native path, requires a passing health check |
+| Parakeet.cpp | `.gguf` | Bundled sidecar, portable Parakeet/Nemotron support, live-streaming capable for streaming GGUF models |
+| NVIDIA NeMo | `.nemo` | Optional Python runtime, highest-fidelity NVIDIA-native file transcription path, requires a passing health check |
 
-`.nemo` models show as available in the registry, but they cannot be selected as defaults until the optional NeMo runtime health check passes.
+`.nemo` models show as available in the registry, but they cannot be selected as defaults until the optional NeMo runtime health check passes. Live streaming is currently limited to streaming-capable Parakeet GGUF models.
 
 ## Models Available
 
 | Family | Formats | Best for |
 |---|---|---|
 | Whisper Tiny/Base/Small/Medium/Large | GGML `.bin` | General dictation and broad CPU compatibility |
-| Nemotron 3.5 ASR Streaming 0.6B | GGUF, `.nemo` | Multilingual streaming workflows |
+| Nemotron 3.5 ASR Streaming 0.6B | GGUF, `.nemo` | Multilingual streaming workflows with GGUF; native NeMo file transcription with `.nemo` |
 | Parakeet TDT 0.6B v3 | GGUF, `.nemo` | High-quality multilingual Parakeet transcription |
 
 GGUF models are offered in Q4, Q5, Q8, and F16 variants where available. Lower quantization uses less storage and memory; F16 keeps the most precision.

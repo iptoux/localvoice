@@ -58,13 +58,13 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
                 }
             }
             "dashboard" => {
-                let _ = window::open_main_window(app.clone());
+                open_main_from_tray(app, "tray dashboard");
             }
             "history" => {
-                let _ = window::open_main_window(app.clone());
+                open_main_from_tray(app, "tray history");
             }
             "settings" => {
-                let _ = window::open_main_window(app.clone());
+                open_main_from_tray(app, "tray settings");
             }
             "quit" => {
                 app.exit(0);
@@ -79,11 +79,13 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
             } = event
             {
                 let app = tray.app_handle();
-                if let Some(pill) = app.get_webview_window("pill") {
+                if !window::is_classic_pill_mode(app) {
+                    open_main_from_tray(app, "tray left click");
+                } else if let Some(pill) = app.get_webview_window("pill") {
                     if pill.is_visible().unwrap_or(false) {
                         let _ = pill.hide();
                     } else {
-                        let _ = pill.show();
+                        let _ = window::show_classic_pill(app);
                         let _ = pill.set_focus();
                     }
                 }
@@ -92,4 +94,10 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
         .build(app)?;
 
     Ok(())
+}
+
+fn open_main_from_tray(app: &AppHandle, source: &str) {
+    if let Err(e) = window::show_main_window(app, source) {
+        log::error!("Tray: open main window failed from {source}: {e}");
+    }
 }

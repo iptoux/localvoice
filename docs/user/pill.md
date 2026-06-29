@@ -1,49 +1,41 @@
-# Pill — Compact & Expanded View
+# Pill Modes
 
 ## What It Does
 
-The pill is the small floating overlay that stays visible on your screen. It shows your current recording state and, when expanded, gives quick access to transcript, controls, and actions — all without opening the full app window.
+LocalVoice has two pill modes:
 
-## How to Use It
+- **Recording overlay** is the default. The pill is hidden while idle, appears at the bottom center of the screen while recording, and shows only the live waveform.
+- **Classic pill** keeps the older always-available compact pill with idle, processing, success, error, transcript preview, and expanded quick actions.
 
-### Compact View (default)
+Both modes use the same recording, transcription, history, dictionary, clipboard, and auto-insert pipeline. The mode only changes how the pill window is presented.
 
-The compact pill shows the current state:
+## Recording Overlay
 
-- **Ready** — idle, waiting for a recording
-- **Waveform** — animated audio bars while recording (responds to your voice level)
-- **Transcribing…** — processing your recording
-- **Copied / Inserted** — success, with a preview of the transcribed text
-- **Error message** — if something went wrong
+1. Open **Settings -> Appearance**.
+2. Set **Pill mode** to **Recording overlay**.
+3. Press the global shortcut or hold it when Push-to-Talk is enabled.
+4. The waveform pill appears bottom-center while LocalVoice records.
+5. Stop or release the shortcut. The overlay hides while transcription and output continue in the background.
 
-### Expanding the Pill
+The overlay is fixed in place and is not draggable. It never shows transcript text; streaming text is available only through live insert or the final output flow.
 
-**Single-click** the pill to expand it. The expanded view shows:
+## Classic Pill
 
-- **Transcript preview** — your last transcription text (scrollable, up to 4 lines)
-- **Language badge** — current transcription language (DE/EN)
-- **Model badge** — which whisper model was used
-- **Word count** — number of words in the last transcript
-- **Language switcher** — tap DE or EN to change the transcription language instantly
-- **Start/Stop button** — begin or end a recording directly from the pill
-- **Quick actions** — Copy (re-copy last transcript), History, Settings
+1. Open **Settings -> Appearance**.
+2. Set **Pill mode** to **Classic pill**.
+3. Optionally set **Default view** to **Classic pill** if you want it visible on launch.
 
-### Collapsing the Pill
+The classic pill supports:
 
-The expanded pill collapses automatically when you:
-
-- **Click the pill bar** again
-- **Click anywhere else** on your screen (blur)
-
-### Opening the Full Window
-
-**Double-click** the pill to open the main LocalVoice window (Dashboard, History, Settings, etc.).
-
-### Dragging
-
-You can drag the pill by its top bar to reposition it anywhere on screen. The position is remembered across restarts.
+- Idle state with LocalVoice status.
+- Waveform while recording.
+- Processing, success, and error states.
+- Streaming transcript preview while recording, when the selected model supports streaming.
+- Expanded view with transcript preview, language/model metadata, start/stop, copy, History, and Settings actions.
+- Dragging and persisted position.
 
 ## Related
 
 - [Recording](recording.md)
 - [Getting Started](getting-started.md)
+- [Transcription](transcription.md)

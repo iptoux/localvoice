@@ -158,6 +158,14 @@ impl StreamingSessionManager {
                 .unwrap_or(100),
         };
 
+        log::info!(
+            "Streaming transcription starting for model '{}' with output_mode={}, chunk_ms={}, sample_rate={}",
+            model_runtime.model_key,
+            worker_settings.output_mode.as_str(),
+            worker_settings.chunk_ms,
+            worker_settings.sample_rate
+        );
+
         let thread_control = control.clone();
         let app_for_thread = app.clone();
         let model_for_thread = model_runtime.clone();
@@ -472,6 +480,12 @@ fn run_streaming_worker(
             )?;
             let _ = child.kill();
 
+            if settings.output_mode == StreamingOutputMode::LiveInsert && !state.live_inserted {
+                log::warn!(
+                    "Streaming live insert produced no inserted deltas before finalize; final output will be handled after stop"
+                );
+            }
+
             if state.segments.is_empty() && !state.stable_text.trim().is_empty() {
                 state.segments.push(TranscriptSegment {
                     start_ms: state.words.first().map(|w| w.start_ms).unwrap_or(0),
@@ -661,6 +675,11 @@ fn apply_worker_response(
         && !delta.trim().is_empty()
         && !is_final
     {
+        log::info!(
+            "Live streaming insert delta received: sequence={}, chars={}",
+            resp.sequence.unwrap_or(state.sequence + 1),
+            delta.chars().count()
+        );
         insert_live_delta(&delta, settings.insert_delay_ms);
         state.live_inserted = true;
         true

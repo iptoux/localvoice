@@ -42,6 +42,8 @@ export const mockSettings: Settings = {
   "recording.hotkey": "CommandOrControl+Shift+D",
   "recording.auto_gain": "true",
   "recording.noise_reduction": "true",
+  "ui.default_mode": "main",
+  "ui.pill.mode": "overlay",
   "ui.pill_opacity": "100",
 };
 
@@ -106,7 +108,7 @@ export const mockTranscriptionEngines: TranscriptionEngineInfo[] = [
     artifactFormats: ["nemo"],
     bundled: false,
     optional: true,
-    supportsStreaming: true,
+    supportsStreaming: false,
     description: "Optional Python NeMo runtime for .nemo models.",
   },
 ];

@@ -140,7 +140,8 @@ static MIGRATIONS: &[(i64, &str)] = &[(
         ('app.language',                 'de',        datetime('now')),
         ('app.start_hidden',             'false',     datetime('now')),
         ('app.autostart',                'false',     datetime('now')),
-        ('ui.default_mode',              'pill',      datetime('now')),
+        ('ui.default_mode',              'main',      datetime('now')),
+        ('ui.pill.mode',                 'overlay',   datetime('now')),
         ('ui.pill.always_on_top',        'true',      datetime('now')),
         ('recording.shortcut',           'CommandOrControl+Shift+Space', datetime('now')),
         ('recording.push_to_talk',       'false',     datetime('now')),
@@ -421,6 +422,58 @@ static MIGRATIONS: &[(i64, &str)] = &[(
     INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES
         ('transcription.streaming.output_mode', 'preview', datetime('now'));
     ",
+),
+(
+    12,
+    "
+    INSERT OR IGNORE INTO settings (key, value, updated_at)
+    SELECT
+        'ui.pill.mode',
+        CASE
+            WHEN COALESCE((SELECT value FROM settings WHERE key = 'ui.default_mode'), 'main') = 'pill'
+            THEN 'classic'
+            ELSE 'overlay'
+        END,
+        datetime('now');
+
+    INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES
+        ('ui.default_mode', 'main', datetime('now'));
+    ",
+),
+(
+    13,
+    "
+    -- Migration 12 briefly seeded overlay mode with a tray-only startup
+    -- default. Keep the new overlay pill hidden while idle, but restore the
+    -- main window as the default launch view so the dashboard opens normally.
+    UPDATE settings
+    SET value = 'main', updated_at = datetime('now')
+    WHERE key = 'ui.default_mode'
+      AND value = 'tray'
+      AND COALESCE((SELECT value FROM settings WHERE key = 'ui.pill.mode'), 'overlay') = 'overlay';
+    ",
+),
+(
+    14,
+    "
+    -- Hidden/minimized Windows webviews can emit tiny geometry such as 16x39
+    -- or sentinel positions such as -32000,-32000. Remove those persisted
+    -- values so affected installations fall back to the configured main
+    -- window defaults instead of opening an invisible dashboard.
+    DELETE FROM settings
+    WHERE key IN ('ui.main_window.width', 'ui.main_window.height')
+      AND (
+        COALESCE((SELECT CAST(value AS INTEGER) FROM settings WHERE key = 'ui.main_window.width'), 0) < 800
+        OR COALESCE((SELECT CAST(value AS INTEGER) FROM settings WHERE key = 'ui.main_window.height'), 0) < 500
+      );
+
+    DELETE FROM settings
+    WHERE key IN ('ui.main_window.x', 'ui.main_window.y')
+      AND (
+        COALESCE((SELECT CAST(value AS INTEGER) FROM settings WHERE key = 'ui.main_window.x'), -32000) <= -30000
+        OR COALESCE((SELECT CAST(value AS INTEGER) FROM settings WHERE key = 'ui.main_window.y'), -32000) <= -30000
+      );
+    ",
 )];
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -498,6 +551,102 @@ mod tests {
             .query_row("SELECT COUNT(*) FROM settings", [], |r| r.get(0))
             .unwrap();
         assert!(count > 0, "default settings should be seeded");
+    }
+
+    #[test]
+    fn fresh_install_defaults_to_overlay_pill_mode() {
+        let conn = open_in_memory();
+        run(&conn).unwrap();
+
+        let pill_mode: String = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = 'ui.pill.mode'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        let default_mode: String = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = 'ui.default_mode'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+
+        assert_eq!(pill_mode, "overlay");
+        assert_eq!(default_mode, "main");
+    }
+
+    #[test]
+    fn migration_13_promotes_overlay_tray_default_to_main() {
+        let conn = open_in_memory();
+        conn.execute_batch(
+            "
+            CREATE TABLE settings (
+                key         TEXT PRIMARY KEY,
+                value       TEXT NOT NULL,
+                updated_at  TEXT NOT NULL
+            );
+            CREATE TABLE schema_migrations (
+                version  INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL
+            );
+            INSERT INTO schema_migrations (version, applied_at) VALUES (12, datetime('now'));
+            INSERT INTO settings (key, value, updated_at) VALUES
+                ('ui.pill.mode', 'overlay', datetime('now')),
+                ('ui.default_mode', 'tray', datetime('now'));
+            ",
+        )
+        .unwrap();
+
+        run(&conn).unwrap();
+
+        let default_mode: String = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = 'ui.default_mode'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+
+        assert_eq!(default_mode, "main");
+    }
+
+    #[test]
+    fn migration_14_removes_invalid_main_window_geometry() {
+        let conn = open_in_memory();
+        conn.execute_batch(
+            "
+            CREATE TABLE settings (
+                key         TEXT PRIMARY KEY,
+                value       TEXT NOT NULL,
+                updated_at  TEXT NOT NULL
+            );
+            CREATE TABLE schema_migrations (
+                version  INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL
+            );
+            INSERT INTO schema_migrations (version, applied_at) VALUES (13, datetime('now'));
+            INSERT INTO settings (key, value, updated_at) VALUES
+                ('ui.main_window.width', '16', datetime('now')),
+                ('ui.main_window.height', '39', datetime('now')),
+                ('ui.main_window.x', '-32000', datetime('now')),
+                ('ui.main_window.y', '-32000', datetime('now'));
+            ",
+        )
+        .unwrap();
+
+        run(&conn).unwrap();
+
+        let count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM settings WHERE key LIKE 'ui.main_window.%'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+
+        assert_eq!(count, 0);
     }
 
     #[test]

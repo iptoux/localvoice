@@ -698,9 +698,16 @@ Hybrid transcription settings include:
 | `transcription.preferred_runtime` | Bundled sidecar or optional runtime preference |
 | `transcription.streaming.enabled` | Enables partial streaming UI updates where supported |
 | `transcription.streaming.chunk_ms` | Target streaming chunk size |
-| `transcription.streaming.output_mode` | `preview` or `live_insert` finalized streaming deltas |
+| `transcription.streaming.output_mode` | `preview` or `live_insert` worker-emitted streaming deltas |
 | `transcription.nemo.python_path` | Optional Python interpreter path |
 | `transcription.parakeet.device` | Reserved Parakeet device selector |
+
+UI settings include:
+
+| Key | Meaning |
+|---|---|
+| `ui.pill.mode` | `overlay` for the default recording overlay, or `classic` for the persistent compact/expanded pill |
+| `ui.default_mode` | `main` by default; also supports `tray`, or `pill` when `ui.pill.mode=classic` |
 
 ---
 

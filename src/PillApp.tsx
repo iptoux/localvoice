@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import "./index.css";
 import { Pill } from "./components/pill/Pill";
@@ -9,11 +9,17 @@ import { useThrottledEvent, useTauriEvent } from "./hooks/use-throttled-event";
 import type {
   OutputResultPayload,
   RecordingStatePayload,
+  PillMode,
   TranscriptionStreamUpdate,
   TranscriptionResult,
 } from "./types";
 
+function normalizePillMode(value: string | undefined): PillMode {
+  return value === "classic" ? "classic" : "overlay";
+}
+
 export function PillApp() {
+  const [pillMode, setPillMode] = useState<PillMode>("overlay");
   const setRecordingState = useAppStore((s) => s.setRecordingState);
   const setAudioLevel = useAppStore((s) => s.setAudioLevel);
   const setRecordingError = useAppStore((s) => s.setRecordingError);
@@ -28,6 +34,7 @@ export function PillApp() {
     getSettings()
       .then((s) => {
         currentTheme = (s["app.theme"] as Theme) || "dark";
+        setPillMode(normalizePillMode(s["ui.pill.mode"]));
         applyTheme(currentTheme);
       })
       .catch(() => applyTheme("dark"));
@@ -36,11 +43,15 @@ export function PillApp() {
       currentTheme = event.payload as Theme;
       applyTheme(currentTheme);
     });
+    const unlistenPillMode = listen<string>("pill-mode-changed", (event) => {
+      setPillMode(normalizePillMode(event.payload));
+    });
 
     const unlistenSystem = watchSystemTheme(() => currentTheme);
 
     return () => {
       unlistenTheme.then((fn) => fn());
+      unlistenPillMode.then((fn) => fn());
       unlistenSystem();
     };
   }, []);
@@ -71,8 +82,8 @@ export function PillApp() {
   });
 
   return (
-    <div className="w-full h-full p-1">
-      <Pill />
+    <div className={pillMode === "overlay" ? "w-full h-full" : "w-full h-full p-1"}>
+      <Pill mode={pillMode} />
     </div>
   );
 }

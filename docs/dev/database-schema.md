@@ -289,7 +289,8 @@ Key-value store for all application settings.
 | app.language | de |
 | app.start_hidden | false |
 | app.autostart | false |
-| ui.default_mode | pill |
+| ui.default_mode | main |
+| ui.pill.mode | overlay (v12) |
 | ui.pill.always_on_top | true |
 | recording.shortcut | CommandOrControl+Shift+Space |
 | recording.push_to_talk | false |

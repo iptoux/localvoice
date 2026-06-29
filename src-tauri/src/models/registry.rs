@@ -524,7 +524,7 @@ const fn nemo_model(
         engine: ENGINE_NEMO,
         artifact_format: FORMAT_NEMO,
         runtime: RUNTIME_OPTIONAL_NEMO,
-        supports_streaming: true,
+        supports_streaming: false,
         supports_word_timestamps: true,
         supports_confidence: true,
         license_id,

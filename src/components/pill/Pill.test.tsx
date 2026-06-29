@@ -103,6 +103,44 @@ describe("Pill", () => {
     expect(screen.queryByTestId("waveform")).not.toBeInTheDocument();
   });
 
+  it("renders no overlay content while idle in overlay mode", () => {
+    setStoreState({ recordingState: "idle" });
+    render(<Pill mode="overlay" />);
+    expect(screen.queryByTestId("recording-overlay-pill")).not.toBeInTheDocument();
+    expect(screen.queryByText("LocalVoice")).not.toBeInTheDocument();
+  });
+
+  it("renders only the waveform while listening in overlay mode", () => {
+    setStoreState({
+      recordingState: "listening",
+      streamingTranscription: {
+        sessionId: "stream-1",
+        sequence: 1,
+        text: "Live dictated text",
+        delta: "Live dictated text",
+        isFinal: false,
+        modelId: "parakeet-q5",
+        engine: "parakeet-cpp",
+        outputMode: "preview",
+        liveInserted: false,
+      },
+    });
+    render(<Pill mode="overlay" />);
+    expect(screen.getByTestId("recording-overlay-pill")).toBeInTheDocument();
+    expect(screen.getByTestId("waveform")).toBeInTheDocument();
+    expect(screen.queryByText("Live")).not.toBeInTheDocument();
+    expect(screen.queryByText("Live dictated text")).not.toBeInTheDocument();
+  });
+
+  it("renders no overlay content for processing, success, or error states", () => {
+    for (const state of ["processing", "success", "error"] as RecordingState[]) {
+      setStoreState({ recordingState: state });
+      const { unmount } = render(<Pill mode="overlay" />);
+      expect(screen.queryByTestId("recording-overlay-pill")).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
   // ── Processing state ──────────────────────────────────────────────────────
 
   it("shows transcribing text when processing", () => {

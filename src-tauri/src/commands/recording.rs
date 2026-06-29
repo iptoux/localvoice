@@ -5,6 +5,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::audio::capture::{self, SilenceConfig};
 use crate::audio::devices;
+use crate::commands::window;
 use crate::errors::CmdResult;
 use crate::state::app_state::emit_recording_state;
 use crate::state::recording_state::RecordingState;
@@ -57,6 +58,7 @@ pub fn start_recording_internal(app: &AppHandle, state: &State<AppState>) -> Cmd
 
     *state.active_recording.lock().unwrap() = Some(recording);
     *state.recording_started_at.lock().unwrap() = Some(chrono::Utc::now());
+    window::show_recording_pill_for_mode(app);
     match state.streaming_session.lock().unwrap().start_if_eligible(
         app,
         samples,
@@ -114,6 +116,7 @@ pub fn stop_recording_internal(app: &AppHandle, state: &State<AppState>) -> CmdR
         .ok_or("No active recording")?;
 
     emit_recording_state(app, RecordingState::Processing, None);
+    window::hide_pill_if_overlay_mode(app);
 
     let wav_path = match capture::stop_capture(recording) {
         Ok(path) => path,
@@ -182,6 +185,7 @@ pub fn cancel_recording_internal(app: &AppHandle, state: &State<AppState>) {
     }
     state.streaming_session.lock().unwrap().cancel_active();
     *state.recording_started_at.lock().unwrap() = None;
+    window::hide_pill_if_overlay_mode(app);
     emit_recording_state(app, RecordingState::Idle, None);
     log::info!("Recording cancelled");
 }

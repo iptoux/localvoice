@@ -1,6 +1,7 @@
 export type Language = "de" | "en";
 export type OutputMode = "insert" | "clipboard" | "preview";
 export type RecordingState = "idle" | "listening" | "processing" | "success" | "error";
+export type PillMode = "overlay" | "classic";
 
 export interface Session {
   id: string;

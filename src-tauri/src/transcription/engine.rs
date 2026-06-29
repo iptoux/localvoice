@@ -105,7 +105,7 @@ pub fn list_engines() -> Vec<TranscriptionEngineInfo> {
             artifact_formats: vec![FORMAT_NEMO.to_string()],
             bundled: false,
             optional: true,
-            supports_streaming: true,
+            supports_streaming: false,
             description: "Optional Python/NeMo runtime for native .nemo checkpoints.".to_string(),
         },
     ]

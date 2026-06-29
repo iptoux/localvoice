@@ -271,7 +271,8 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 | Default transcription engine | Preferred engine (`whisper-cpp`, `parakeet-cpp`, or optional `nemo`) |
 | Preferred transcription runtime | Bundled sidecar or optional local NeMo runtime |
 | Active model | Per-language model selection |
-| Streaming transcription | Enables pill live preview for streaming-capable models; optional live insert writes finalized deltas only |
+| Streaming transcription | Enables low-latency streaming for capable Parakeet GGUF models; optional live insert writes worker-emitted deltas |
+| Pill mode | Recording overlay (default) or Classic pill |
 | Theme | System, light, or dark |
 | Filler words | Language-specific list of words to strip |
 | Audio retention | Whether to keep raw audio after transcription |
@@ -281,11 +282,13 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 
 ## Usage
 
-1. Launch LocalVoice — a small pill window appears on screen.
+1. Launch LocalVoice. By default the main window opens; the recording overlay stays hidden until you record.
 2. Press your configured shortcut (default: customizable in Settings) to start recording.
-3. Speak. The pill animates to show it's listening; streaming-capable Parakeet models can show live text before you stop.
+3. Speak. The default recording overlay appears bottom-center with a waveform only.
 4. Press the shortcut again (or let silence detection stop it automatically).
 5. LocalVoice transcribes locally and sends the text to your active app or clipboard.
+
+Switch **Settings -> Appearance -> Pill mode** to **Classic pill** if you prefer the older persistent compact/expanded pill with transcript preview.
 
 You can open the full dashboard at any time to browse history, manage models, edit your dictionary, review ambiguous phrases, and view usage stats.
 

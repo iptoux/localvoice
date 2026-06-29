@@ -4,7 +4,7 @@ import { useAppStore } from "../../stores/app-store";
 import { expandPill, collapsePill, openMainWindow, getSettings } from "../../lib/tauri";
 import { Waveform } from "./Waveform";
 import { ExpandedPill } from "./ExpandedPill";
-import type { RecordingState } from "../../types";
+import type { PillMode, RecordingState } from "../../types";
 
 const STATE_COLOR: Record<RecordingState, string> = {
   idle: "bg-card",
@@ -17,7 +17,34 @@ const STATE_COLOR: Record<RecordingState, string> = {
 /** Duration (ms) before the success state fades back to idle. */
 const SUCCESS_DISPLAY_MS = 3000;
 
-export function Pill() {
+export function Pill({ mode = "classic" }: { mode?: PillMode }) {
+  return mode === "overlay" ? <RecordingOverlayPill /> : <ClassicPill />;
+}
+
+export function RecordingOverlayPill() {
+  const recordingState = useAppStore((s) => s.recordingState);
+
+  if (recordingState !== "listening") {
+    return null;
+  }
+
+  return (
+    <div
+      data-testid="recording-overlay-pill"
+      data-tauri-drag-region
+      className="
+        flex h-full w-full items-center justify-center rounded-full
+        border border-cyan-200/30 bg-neutral-950/92 px-5
+        shadow-[0_18px_45px_rgba(0,0,0,0.35)]
+        select-none overflow-hidden
+      "
+    >
+      <Waveform />
+    </div>
+  );
+}
+
+export function ClassicPill() {
   const recordingState = useAppStore((s) => s.recordingState);
   const setRecordingState = useAppStore((s) => s.setRecordingState);
   const recordingError = useAppStore((s) => s.recordingError);

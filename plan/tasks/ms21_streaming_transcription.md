@@ -18,6 +18,7 @@
 
 - [x] TASK-313: Add `transcription-stream-update` event types and frontend store state for live streaming text.
 - [x] TASK-314: Show live streaming text in the pill and expanded pill while recording.
+  - Superseded by TASK-332 for the default overlay mode; live text remains Classic-pill-only.
 - [x] TASK-315: Reset streaming UI state on new recording, cancel, error, and final `transcription-completed`.
 
 ### Backend Streaming Pipeline
@@ -50,12 +51,13 @@
 - [x] TASK-329: Add frontend tests for streaming settings, stream update events, pill preview state, and model accuracy sorting.
 - [x] TASK-330: Add worker/protocol tests with mock Parakeet and NeMo workers.
 - [x] TASK-331: Update README, user docs, dev docs, changelog, and release notes for streaming behavior and limitations.
+- [x] TASK-332: Add selectable Pill modes: default recording overlay with waveform-only UI, plus Classic pill preserving persistent/expanded preview behavior.
 
 ---
 
 ## Acceptance Criteria
 
-- Selecting a streaming-capable Parakeet model and enabling streaming shows transcript text before recording stops.
+- Selecting a streaming-capable Parakeet model and enabling streaming shows transcript text before recording stops in Classic pill mode, or emits streaming data without overlay text in Recording overlay mode.
 - Preview-only mode never writes partial text into the target application.
 - Live insert mode writes only finalized deltas into the focused text field.
 - Stopping the recording finalizes the stream, persists history, runs post-processing, applies dictionary rules, and preserves existing output semantics.
