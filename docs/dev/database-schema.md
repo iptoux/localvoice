@@ -302,6 +302,7 @@ Key-value store for all application settings.
 | transcription.preferred_runtime | bundled-sidecar (v10) |
 | transcription.streaming.enabled | false (v10) |
 | transcription.streaming.chunk_ms | 320 (v10) |
+| transcription.streaming.output_mode | preview (v11) |
 | transcription.nemo.python_path | empty (v10) |
 | transcription.parakeet.device | empty (v10) |
 | transcription.auto_punctuation | true |

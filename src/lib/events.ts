@@ -2,6 +2,7 @@ import type {
   DownloadProgress as TDownloadProgress,
   OutputResult,
   RecordingStatePayload,
+  TranscriptionStreamUpdate,
   TranscriptionResult,
 } from "../types";
 
@@ -31,6 +32,9 @@ export const EventChannels = {
   /** Fired when a full transcription pipeline completes successfully or with error. */
   TRANSCRIPTION_COMPLETED: "transcription-completed",
 
+  /** Low-latency partial/final updates from streaming transcription workers. */
+  TRANSCRIPTION_STREAM_UPDATE: "transcription-stream-update",
+
   /** Fired when silence timeout is detected during recording. */
   SILENCE_DETECTED: "silence-detected",
 
@@ -55,6 +59,7 @@ export interface EventPayloads {
   [EventChannels.AUDIO_LEVEL]: number;
   [EventChannels.OUTPUT_RESULT]: OutputResult;
   [EventChannels.TRANSCRIPTION_COMPLETED]: TranscriptionResult;
+  [EventChannels.TRANSCRIPTION_STREAM_UPDATE]: TranscriptionStreamUpdate;
   [EventChannels.SILENCE_DETECTED]: void;
   [EventChannels.SESSION_REPROCESSED]: string;
   [EventChannels.MODEL_DOWNLOAD_PROGRESS]: TDownloadProgress;

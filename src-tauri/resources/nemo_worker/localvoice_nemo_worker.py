@@ -17,6 +17,7 @@ from typing import Any
 
 MODEL: Any | None = None
 MODEL_PATH: str | None = None
+STREAMING_BUFFER: bytearray = bytearray()
 
 
 def emit(payload: dict[str, Any]) -> None:
@@ -127,6 +128,44 @@ def transcribe_file(audio_path: str, language: str) -> None:
     )
 
 
+def handle_stream_audio(request: dict[str, Any]) -> None:
+    # NeMo exposes several model-specific streaming APIs. LocalVoice only enables
+    # this path once the installed runtime provides a compatible warm stream
+    # method; until then the Rust side falls back to WAV transcription on stop.
+    if not hasattr(MODEL, "streaming_transcribe"):
+        emit(
+            {
+                "type": "error",
+                "ok": False,
+                "message": "The installed NeMo model/runtime does not expose LocalVoice-compatible streaming.",
+            }
+        )
+        return
+
+    emit(
+        {
+            "type": "error",
+            "ok": False,
+            "message": "LocalVoice-compatible NeMo streaming is not enabled for this runtime yet.",
+        }
+    )
+
+
+def finalize_stream() -> None:
+    emit(
+        {
+            "type": "error",
+            "ok": False,
+            "message": "NeMo streaming finalization is not enabled for this runtime yet.",
+        }
+    )
+
+
+def cancel_stream() -> None:
+    STREAMING_BUFFER.clear()
+    emit({"type": "cancelled", "ok": True})
+
+
 def seconds_to_ms(value: Any) -> int:
     try:
         return int(round(float(value) * 1000.0))
@@ -142,14 +181,12 @@ def handle_request(request: dict[str, Any]) -> None:
         load_model(str(request["modelPath"]))
     elif kind == "transcribe_file":
         transcribe_file(str(request["audioPath"]), str(request.get("language", "auto")))
-    elif kind in {"stream_chunk", "finalize", "cancel"}:
-        emit(
-            {
-                "type": "error",
-                "ok": False,
-                "message": f"NeMo streaming request '{kind}' is not enabled in this worker yet.",
-            }
-        )
+    elif kind in {"audio", "stream_chunk"}:
+        handle_stream_audio(request)
+    elif kind == "finalize":
+        finalize_stream()
+    elif kind == "cancel":
+        cancel_stream()
     else:
         emit({"type": "error", "ok": False, "message": f"Unknown request type: {kind}"})
 
@@ -183,4 +220,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

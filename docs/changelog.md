@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added real streaming transcription plumbing for streaming-capable Parakeet GGUF models, including pill live preview, optional finalized-delta live insert, and stop-time fallback to WAV transcription.
+- Added the bundled `parakeet-stream-worker` sidecar built from pinned `mudler/parakeet.cpp` `v0.3.2` source in CI and audited in release jobs.
+- Added streaming settings for enable/disable, chunk size, and preview vs. live insert output mode.
+- Fixed the Models page `Most accurate first` ordering so NeMo and Parakeet models participate with deterministic accuracy tie-breakers.
 - Added a hybrid transcription runtime with Whisper GGML, Parakeet GGUF, and optional NVIDIA NeMo `.nemo` model support.
 - Bundled the Parakeet CPU/portable sidecar in CI and release builds while keeping all model weights and Python/NeMo/CUDA stacks out of base installers.
 - Added model/runtime metadata, word-level timestamp persistence, runtime health checks, and release artifact audits for transcription sidecars.

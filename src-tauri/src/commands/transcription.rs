@@ -4,7 +4,9 @@ use crate::db::repositories::settings_repo;
 use crate::errors::CmdResult;
 use crate::state::AppState;
 use crate::transcription::types::TranscriptionResult;
-use crate::transcription::{engine, nemo_worker, orchestrator, parakeet_sidecar, whisper_sidecar};
+use crate::transcription::{
+    engine, nemo_worker, orchestrator, parakeet_sidecar, parakeet_stream_worker, whisper_sidecar,
+};
 
 /// Re-transcribes the most recently recorded WAV file.
 ///
@@ -62,25 +64,38 @@ pub fn check_transcription_runtime(
             })
         }
         engine::ENGINE_PARAKEET_CPP => {
-            let result = parakeet_sidecar::smoke_test(&app);
+            let cli_result = parakeet_sidecar::smoke_test(&app);
+            let worker_result = parakeet_stream_worker::resolve_binary(&app);
+            let available = cli_result.is_ok() && worker_result.is_ok();
+            let detail = [cli_result.err(), worker_result.err()]
+                .into_iter()
+                .flatten()
+                .map(|e| e.to_string())
+                .collect::<Vec<_>>()
+                .join("\n");
             Ok(nemo_worker::RuntimeHealth {
                 runtime: engine::ENGINE_PARAKEET_CPP.to_string(),
-                available: result.is_ok(),
+                available,
                 configured: true,
-                message: if result.is_ok() {
-                    "Parakeet.cpp sidecar is available.".to_string()
+                message: if available {
+                    "Parakeet.cpp sidecar and streaming worker are available.".to_string()
                 } else {
-                    "Parakeet.cpp sidecar is not available.".to_string()
+                    "Parakeet.cpp sidecar or streaming worker is not available.".to_string()
                 },
                 python_path: None,
-                detail: result.err().map(|e| e.to_string()),
+                detail: if detail.is_empty() {
+                    None
+                } else {
+                    Some(detail)
+                },
             })
         }
         engine::RUNTIME_BUNDLED_SIDECAR => {
             let whisper = whisper_sidecar::resolve_binary(&app);
             let parakeet = parakeet_sidecar::smoke_test(&app);
-            let available = whisper.is_ok() && parakeet.is_ok();
-            let detail = [whisper.err(), parakeet.err()]
+            let parakeet_worker = parakeet_stream_worker::resolve_binary(&app);
+            let available = whisper.is_ok() && parakeet.is_ok() && parakeet_worker.is_ok();
+            let detail = [whisper.err(), parakeet.err(), parakeet_worker.err()]
                 .into_iter()
                 .flatten()
                 .map(|e| e.to_string())
@@ -91,7 +106,7 @@ pub fn check_transcription_runtime(
                 available,
                 configured: true,
                 message: if available {
-                    "Bundled Whisper.cpp and Parakeet.cpp sidecars are available.".to_string()
+                    "Bundled Whisper.cpp, Parakeet.cpp, and Parakeet streaming sidecars are available.".to_string()
                 } else {
                     "One or more bundled transcription sidecars are not available.".to_string()
                 },

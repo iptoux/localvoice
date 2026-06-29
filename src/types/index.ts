@@ -184,6 +184,19 @@ export interface OutputResultPayload {
   error?: string;
 }
 
+export interface TranscriptionStreamUpdate {
+  sessionId: string;
+  sequence: number;
+  text: string;
+  delta: string;
+  isFinal: boolean;
+  modelId: string;
+  engine: string;
+  outputMode: "preview" | "live_insert" | string;
+  liveInserted: boolean;
+  error?: string;
+}
+
 // ── Dashboard / Stats ─────────────────────────────────────────────────────────
 
 export interface LanguageCount {

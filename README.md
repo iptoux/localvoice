@@ -180,8 +180,9 @@ The bootstrap script handles this automatically. For manual setup, you need to p
 |---|---|
 | whisper.cpp | `whisper-cli-x86_64-pc-windows-msvc.exe` |
 | parakeet.cpp | `parakeet-cli-x86_64-pc-windows-msvc.exe` |
+| parakeet.cpp streaming worker | `parakeet-stream-worker-x86_64-pc-windows-msvc.exe` |
 
-Parakeet sidecars are pinned to `mudler/parakeet.cpp` `v0.3.2` and must be checksum-verified before release packaging. Public installers bundle the CPU/portable sidecars only; model weights, `.nemo` checkpoints, CUDA stacks, and Python/NeMo environments are never bundled in the base installer.
+Parakeet sidecars are pinned to `mudler/parakeet.cpp` `v0.3.2` and must be checksum-verified or built from the pinned source before release packaging. Public installers bundle the CPU/portable sidecars only; model weights, `.nemo` checkpoints, CUDA stacks, and Python/NeMo environments are never bundled in the base installer.
 
 #### whisper.cpp
 
@@ -270,7 +271,7 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 | Default transcription engine | Preferred engine (`whisper-cpp`, `parakeet-cpp`, or optional `nemo`) |
 | Preferred transcription runtime | Bundled sidecar or optional local NeMo runtime |
 | Active model | Per-language model selection |
-| Streaming transcription | Enables partial UI updates where the selected engine supports streaming |
+| Streaming transcription | Enables pill live preview for streaming-capable models; optional live insert writes finalized deltas only |
 | Theme | System, light, or dark |
 | Filler words | Language-specific list of words to strip |
 | Audio retention | Whether to keep raw audio after transcription |
@@ -282,7 +283,7 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 
 1. Launch LocalVoice — a small pill window appears on screen.
 2. Press your configured shortcut (default: customizable in Settings) to start recording.
-3. Speak. The pill animates to show it's listening.
+3. Speak. The pill animates to show it's listening; streaming-capable Parakeet models can show live text before you stop.
 4. Press the shortcut again (or let silence detection stop it automatically).
 5. LocalVoice transcribes locally and sends the text to your active app or clipboard.
 

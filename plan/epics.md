@@ -68,7 +68,7 @@
 
 | Epic | Title | Depends on | Status |
 |------|-------|-----------|--------|
-| [MS-21](tasks/ms21_streaming_transcription.md) | Streaming Transcription | MS-19 | `todo` |
+| [MS-21](tasks/ms21_streaming_transcription.md) | Streaming Transcription | MS-19 | `done` |
 
 ---
 

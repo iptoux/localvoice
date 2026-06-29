@@ -26,10 +26,11 @@ struct ParakeetSegment {
 
 #[derive(Debug, Deserialize)]
 struct ParakeetWord {
-    #[serde(alias = "word")]
+    #[serde(alias = "word", alias = "w")]
     text: Option<String>,
     start: Option<f64>,
     end: Option<f64>,
+    #[serde(alias = "conf")]
     confidence: Option<f32>,
     #[serde(alias = "probability")]
     prob: Option<f32>,

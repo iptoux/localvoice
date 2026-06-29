@@ -35,6 +35,7 @@ export const mockSettings: Settings = {
   "transcription.preferred_runtime": "bundled-sidecar",
   "transcription.streaming.enabled": "false",
   "transcription.streaming.chunk_ms": "500",
+  "transcription.streaming.output_mode": "preview",
   "transcription.nemo.python_path": "",
   "transcription.parakeet.device": "cpu",
   "output.mode": "clipboard",

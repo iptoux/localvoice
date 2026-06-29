@@ -37,6 +37,9 @@ const DEFAULT_SETTINGS = {
   "transcription.auto_punctuation": "true",
   "transcription.auto_capitalization": "true",
   "transcription.remove_fillers": "false",
+  "transcription.streaming.enabled": "false",
+  "transcription.streaming.chunk_ms": "320",
+  "transcription.streaming.output_mode": "preview",
   "output.mode": "clipboard",
   "output.auto_paste": "false",
   "output.insert_delay_ms": "100",
@@ -119,6 +122,14 @@ describe("SettingsPage", () => {
   it("renders the Remove filler words row", () => {
     render(<SettingsPage />);
     expect(screen.getByText("Remove filler words")).toBeInTheDocument();
+  });
+
+  it("renders streaming controls when streaming is enabled", () => {
+    seedStore({ "transcription.streaming.enabled": "true" });
+    render(<SettingsPage />);
+    expect(screen.getByText("Streaming preview")).toBeInTheDocument();
+    expect(screen.getByText("Streaming chunk size")).toBeInTheDocument();
+    expect(screen.getByText("Streaming output")).toBeInTheDocument();
   });
 
   // ── Switch toggling ───────────────────────────────────────────────────────

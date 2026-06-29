@@ -46,6 +46,7 @@ describe("Pill", () => {
       isPillExpanded: false,
       lastTranscription: null,
       lastOutputResult: null,
+      streamingTranscription: null,
     });
     vi.clearAllMocks();
   });
@@ -79,6 +80,27 @@ describe("Pill", () => {
     setStoreState({ recordingState: "listening" });
     render(<Pill />);
     expect(screen.getByTestId("waveform")).toBeInTheDocument();
+  });
+
+  it("shows streaming text while listening when available", () => {
+    setStoreState({
+      recordingState: "listening",
+      streamingTranscription: {
+        sessionId: "stream-1",
+        sequence: 1,
+        text: "Live dictated text",
+        delta: "Live dictated text",
+        isFinal: false,
+        modelId: "parakeet-q5",
+        engine: "parakeet-cpp",
+        outputMode: "preview",
+        liveInserted: false,
+      },
+    });
+    render(<Pill />);
+    expect(screen.getByText("Live")).toBeInTheDocument();
+    expect(screen.getByText("Live dictated text")).toBeInTheDocument();
+    expect(screen.queryByTestId("waveform")).not.toBeInTheDocument();
   });
 
   // ── Processing state ──────────────────────────────────────────────────────

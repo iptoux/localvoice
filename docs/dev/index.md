@@ -23,6 +23,7 @@ Technical reference for contributors and maintainers.
 | MS-15 | [Stronger Dashboard & Confidence Viz](ms15-dashboard-confidence.md) | `done` |
 | [ms17-tests-ci-perf.md](ms17-tests-ci-perf.md) | MS-17 Test Suite, CI/CD & Performance | done |
 | [ms18-cross-platform.md](ms18-cross-platform.md) | MS-18 macOS & Linux Support | done |
+| [ms21-streaming-transcription.md](ms21-streaming-transcription.md) | MS-21 Streaming Transcription | done |
 
 ## Reference
 

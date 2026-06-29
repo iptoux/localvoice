@@ -18,7 +18,7 @@ After an engine returns raw text, segments, and optional words, the existing pos
 4. Dictionary and correction rules.
 5. History persistence, output, and UI events.
 
-Partial streaming updates are allowed where supported, but final output semantics stay unchanged.
+Partial streaming updates are emitted before stop where supported. The final text still goes through the shared post-processing, persistence, and output path.
 
 ## Engine Selection
 
@@ -43,7 +43,8 @@ Whisper and Parakeet use Tauri `externalBin` entries and are named without targe
 {
   "externalBin": [
     "binaries/whisper-cli",
-    "binaries/parakeet-cli"
+    "binaries/parakeet-cli",
+    "binaries/parakeet-stream-worker"
   ]
 }
 ```
@@ -52,6 +53,7 @@ Tauri validates target-triple files during local checks and builds. Bootstrap sc
 
 - `src-tauri/binaries/whisper-cli-x86_64-pc-windows-msvc.exe`
 - `src-tauri/binaries/parakeet-cli-x86_64-pc-windows-msvc.exe`
+- `src-tauri/binaries/parakeet-stream-worker-x86_64-pc-windows-msvc.exe`
 - `src-tauri/binaries/parakeet-cli-aarch64-apple-darwin`
 - `src-tauri/binaries/parakeet-cli-x86_64-unknown-linux-gnu`
 
@@ -95,6 +97,23 @@ parakeet-cli transcribe \
 
 `src-tauri/src/transcription/parakeet_parser.rs` accepts fixture-driven JSON shapes and normalizes them to transcript text, segments, and words. `src-tauri/src/transcription/parakeet_sidecar.rs` owns sidecar resolution, process spawning, timeout handling, and smoke tests.
 
+## Parakeet Streaming Worker Protocol
+
+Parakeet live streaming uses `parakeet-stream-worker`, a LocalVoice sidecar built against the pinned `mudler/parakeet.cpp` C streaming API. Rust keeps the worker warm during a recording and sends newline-delimited JSON:
+
+| Type | Direction | Purpose |
+|---|---|---|
+| `health` | CLI mode | Worker smoke test without loading a model |
+| `load` | Rust -> worker | Load the GGUF model once and begin a streaming session |
+| `audio` | Rust -> worker | Send base64 PCM16LE chunks from `ActiveRecording.samples` |
+| `partial` | worker -> Rust | Return newly finalized text and current stable text |
+| `finalize` | Rust -> worker | Flush the streaming tail after recording stops |
+| `final` | worker -> Rust | Return the final stable streamed transcript |
+| `cancel` | Rust -> worker | Stop the active stream without producing output |
+| `error` | worker -> Rust | Signal load, protocol, model, or runtime failure |
+
+`StreamingSessionManager` emits `transcription-stream-update` to the frontend for each partial/final response. If finalization fails or the final text is empty, the normal WAV transcription path runs.
+
 ## NeMo Worker Protocol
 
 NeMo is optional and app-managed. The Python worker is bundled as a resource at:
@@ -112,11 +131,11 @@ The worker script is packaged with `manifest.json`, which declares the protocol 
 | `health` | CLI mode | Check Python, NeMo import, and runtime readiness |
 | `load` | Rust -> worker | Load a `.nemo` checkpoint for the worker process |
 | `transcribe_file` | Rust -> worker | Transcribe a WAV file |
-| `stream_chunk` | Rust -> worker | Reserved for streaming chunks |
-| `finalize` | Rust -> worker | Reserved for ending a stream |
+| `audio` / `stream_chunk` | Rust -> worker | Streaming chunk request where supported |
+| `finalize` | Rust -> worker | End a stream where supported |
 | `cancel` | Rust -> worker | Reserved for cancellation |
 
-The initial worker supports health checks and file transcription. Streaming message types are part of the protocol contract and return a clear unsupported response until the warm streaming loop is enabled.
+The worker supports health checks and file transcription. Streaming message types are part of the protocol contract and return a clear unsupported response until a compatible warm NeMo streaming runtime is enabled.
 
 ## Runtime Settings
 
@@ -128,6 +147,7 @@ Migration 10 seeds:
 | `transcription.preferred_runtime` | `bundled-sidecar` | Runtime preference |
 | `transcription.streaming.enabled` | `false` | Enables partial streaming UI updates |
 | `transcription.streaming.chunk_ms` | `320` | Target chunk size for streaming engines |
+| `transcription.streaming.output_mode` | `preview` | `preview` or `live_insert` finalized deltas |
 | `transcription.nemo.python_path` | empty | Optional Python interpreter path |
 | `transcription.parakeet.device` | empty | Reserved Parakeet device selection |
 
@@ -143,12 +163,13 @@ Segment storage is unchanged. Word-level timestamps are stored in `session_words
 
 ## Build And Release Packaging
 
-CI runs `.github/actions/setup-whisper` and `.github/actions/setup-parakeet-cpp` before Rust tests and release builds. The Parakeet action pins `mudler/parakeet.cpp` to `v0.3.2`, downloads CPU/portable assets, verifies SHA-256 checksums, and writes target-triple sidecar binaries.
+CI runs `.github/actions/setup-whisper` and `.github/actions/setup-parakeet-cpp` before Rust tests and release builds. The Parakeet action pins `mudler/parakeet.cpp` to `v0.3.2`, downloads CPU/portable CLI assets, verifies SHA-256 checksums, builds `parakeet-stream-worker` from the pinned source, and writes target-triple sidecar binaries.
 
 Release jobs audit that the bundled sidecars and NeMo worker resource are present before building installers. Public installers bundle:
 
 - `whisper-cli`
 - `parakeet-cli`
+- `parakeet-stream-worker`
 - NeMo worker script and manifest resources
 
 Public installers do not bundle:
@@ -166,6 +187,7 @@ Public installers do not bundle:
 | `WHISPER_BIN_PATH` | Override `whisper-cli` location |
 | `WHISPER_MODEL_PATH` | Legacy Whisper model override |
 | `PARAKEET_BIN_PATH` | Override `parakeet-cli` location |
+| `PARAKEET_STREAM_WORKER_PATH` | Override `parakeet-stream-worker` location |
 | `RUST_LOG` | Rust logging level |
 
 ### Common Errors
@@ -174,6 +196,7 @@ Public installers do not bundle:
 |---|---|---|
 | `whisper-cli binary not found` | Missing Whisper sidecar | Run bootstrap or set `WHISPER_BIN_PATH` |
 | `parakeet-cli binary not found` | Missing Parakeet sidecar | Run bootstrap or set `PARAKEET_BIN_PATH` |
+| `parakeet-stream-worker binary not found` | Missing Parakeet streaming sidecar | Run bootstrap/CI setup or set `PARAKEET_STREAM_WORKER_PATH`; file transcription still works |
 | `Model path does not exist` | Model deleted or download failed | Re-download from Models |
 | `.nemo runtime is not available` | Python/NeMo health check failed | Configure Python and install NeMo |
 | `sidecar failed` | Runtime/model/audio mismatch | Check model format and sidecar version |
@@ -183,6 +206,7 @@ Public installers do not bundle:
 ```bash
 src-tauri/binaries/whisper-cli-x86_64-pc-windows-msvc.exe --help
 src-tauri/binaries/parakeet-cli-x86_64-pc-windows-msvc.exe --help
+src-tauri/binaries/parakeet-stream-worker-x86_64-pc-windows-msvc.exe --health
 ```
 
 For NeMo:

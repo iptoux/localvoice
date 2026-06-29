@@ -8,6 +8,7 @@
     "health",
     "load",
     "transcribe_file",
+    "audio",
     "stream_chunk",
     "finalize",
     "cancel"

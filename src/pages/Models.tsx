@@ -4,6 +4,7 @@ import { useShallow } from "zustand/react/shallow";
 import type { ModelInfo, DownloadProgress } from "../types";
 import { useModelsStore } from "../stores/models-store";
 import { useThrottledEvent } from "../hooks/use-throttled-event";
+import { filterModels, sortModels, type ModelSortKey } from "../lib/model-sort";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -237,20 +238,6 @@ function ModelCard({ model, downloadState, onDownload, onDelete }: ModelCardProp
 
 const CATEGORIES = ["all", "standard", "quantized", "turbo", "large", "parakeet", "nemo"] as const;
 type CategoryFilter = typeof CATEGORIES[number];
-type SortKey = "default" | "speed" | "accuracy" | "size";
-
-const SPEED_ORDER: Record<string, number> = { fastest: 5, fast: 4, balanced: 3, slow: 2, slowest: 1 };
-const ACCURACY_ORDER: Record<string, number> = { best: 5, great: 4, good: 3, medium: 2, low: 1 };
-
-function sortModels(models: ModelInfo[], sort: SortKey): ModelInfo[] {
-  if (sort === "default") return models;
-  return [...models].sort((a, b) => {
-    if (sort === "speed") return (SPEED_ORDER[b.speed] ?? 0) - (SPEED_ORDER[a.speed] ?? 0);
-    if (sort === "accuracy") return (ACCURACY_ORDER[b.accuracy] ?? 0) - (ACCURACY_ORDER[a.accuracy] ?? 0);
-    if (sort === "size") return a.fileSizeBytes - b.fileSizeBytes;
-    return 0;
-  });
-}
 
 export default function Models() {
   const { models, loading, downloading, error, fetch, startDownload, removeModel, setDefault, setDownloadProgress } =
@@ -268,7 +255,7 @@ export default function Models() {
       }))
     );
   const [filter, setFilter] = useState<CategoryFilter>("all");
-  const [sort, setSort] = useState<SortKey>("default");
+  const [sort, setSort] = useState<ModelSortKey>("default");
 
   useEffect(() => { fetch(); }, [fetch]);
 
@@ -306,7 +293,7 @@ export default function Models() {
 
   // < 1ms — filter + sort visible models, memoized to prevent re-computation on every render
   const visible = useMemo(
-    () => sortModels(filter === "all" ? models : models.filter((m) => m.category === filter), sort),
+    () => sortModels(filterModels(models, filter), sort),
     [models, filter, sort]
   );
 
@@ -365,7 +352,7 @@ export default function Models() {
             </div>
             <select
               value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
+              onChange={(e) => setSort(e.target.value as ModelSortKey)}
               className="flex items-center gap-1 bg-muted border border-border text-foreground/70 text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <option value="default">↕ Default order</option>

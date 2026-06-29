@@ -105,6 +105,7 @@ jobs:
           foreach ($path in @(
             "src-tauri\binaries\whisper-cli-x86_64-pc-windows-msvc.exe",
             "src-tauri\binaries\parakeet-cli-x86_64-pc-windows-msvc.exe",
+            "src-tauri\binaries\parakeet-stream-worker-x86_64-pc-windows-msvc.exe",
             "src-tauri\resources\nemo_worker\localvoice_nemo_worker.py",
             "src-tauri\resources\nemo_worker\manifest.json"
           )) {
@@ -238,6 +239,7 @@ jobs:
           test -f src-tauri/resources/nemo_worker/manifest.json
           ls src-tauri/binaries/whisper-cli-* >/dev/null
           ls src-tauri/binaries/parakeet-cli-* >/dev/null
+          ls src-tauri/binaries/parakeet-stream-worker-* >/dev/null
 
       - name: Build Tauri app (macOS arm64)
         run: pnpm tauri build --target aarch64-apple-darwin
@@ -333,6 +335,7 @@ jobs:
           test -f src-tauri/resources/nemo_worker/manifest.json
           ls src-tauri/binaries/whisper-cli-* >/dev/null
           ls src-tauri/binaries/parakeet-cli-* >/dev/null
+          ls src-tauri/binaries/parakeet-stream-worker-* >/dev/null
 
       - name: Build Tauri app (Linux)
         run: pnpm tauri build
@@ -411,10 +414,11 @@ jobs:
 
             Windows, macOS, and Linux builds are currently unsigned — see the [security note](https://github.com/${{ github.repository }}#installation) in the README.
 
-            > **Note:** Whisper and Parakeet sidecars are bundled. Transcription
-            > models are not bundled - download them from the Models page after
-            > installation. `.nemo` models require an optional local NVIDIA NeMo
-            > Python runtime that is configured after installation.
+            > **Note:** Whisper, Parakeet CLI, and the Parakeet streaming worker
+            > sidecars are bundled. Transcription models are not bundled -
+            > download them from the Models page after installation. `.nemo`
+            > models require an optional local NVIDIA NeMo Python runtime that
+            > is configured after installation.
 
             ### What's new
             See [CHANGELOG](https://github.com/${{ github.repository }}/commits/${{ needs.build-windows.outputs.tag }}) for details.

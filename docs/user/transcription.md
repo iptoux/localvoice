@@ -8,11 +8,12 @@ After you stop a recording, LocalVoice transcribes the audio offline. The select
 - **Parakeet.cpp** for GGUF `.gguf` models.
 - **NVIDIA NeMo** for optional `.nemo` models.
 
-No audio is sent to a cloud service. Partial streaming updates may appear in the UI when the selected model/runtime supports streaming, but the final transcript still goes through the same cleanup, dictionary rules, history persistence, and clipboard or auto-insert output flow.
+No audio is sent to a cloud service. When streaming is enabled and the selected model/runtime supports it, partial text appears in the pill before you stop recording. The final transcript still goes through the same cleanup, dictionary rules, history persistence, and clipboard or auto-insert output flow.
 
 The pill transitions through:
 
 - **Transcribing...** - the selected local engine is running.
+- **Live** - a streaming-capable model is returning finalized text while you are still recording.
 - **Done** / transcript preview - transcription succeeded.
 - **Error** - something went wrong; the pill shows the user-facing error.
 
@@ -26,6 +27,18 @@ Public installers include the required Whisper and Parakeet sidecar executables.
 4. Record again.
 
 For development builds, run the bootstrap script so Tauri can find the target-triple sidecars in `src-tauri/binaries/`.
+
+## Streaming Mode
+
+Streaming is controlled in **Settings -> Transcription**:
+
+1. Enable **Streaming preview**.
+2. Choose a chunk size. `320 ms` is the default balance between latency and overhead.
+3. Keep **Streaming output** on **Preview only** unless you explicitly want LocalVoice to write finalized deltas into the focused application while you speak.
+
+Preview-only streaming never writes partial text into another app. Live insert writes only finalized deltas returned by the streaming worker. If the selected model is Whisper or another non-streaming model, LocalVoice keeps using the normal stop-to-transcribe flow.
+
+Parakeet GGUF streaming uses the bundled `parakeet-stream-worker` sidecar. If the worker is missing or the model cannot start a streaming session, LocalVoice falls back to the normal WAV transcription path after recording stops.
 
 ## Optional NeMo Runtime
 
@@ -50,7 +63,7 @@ If transcription fails:
 - Confirm the selected model is installed.
 - Confirm the runtime shown on the model card is available.
 - For `.nemo`, run the NeMo health check and verify the configured Python path.
-- For development builds, make sure `whisper-cli-*` and `parakeet-cli-*` exist in `src-tauri/binaries/`.
+- For development builds, make sure `whisper-cli-*`, `parakeet-cli-*`, and `parakeet-stream-worker-*` exist in `src-tauri/binaries/`.
 
 See the [developer debugging guide](../dev/transcription-pipeline.md#debugging-transcription-issues) for protocol-level details.
 

@@ -12,21 +12,24 @@ export function ExpandedPill() {
   const recordingState = useAppStore((s) => s.recordingState);
   const lastTranscription = useAppStore((s) => s.lastTranscription);
   const lastOutputResult = useAppStore((s) => s.lastOutputResult);
+  const streamingText = useAppStore((s) => s.streamingTranscription?.text ?? "");
   const load = useSettingsStore((s) => s.load);
   const language = useSettingsStore((s) => s.settings["transcription.default_language"] || "auto");
 
   useEffect(() => { load(); }, [load]);
   const modelId = lastTranscription?.modelId ?? "—";
   // < 0.1ms — split + filter word count, memoized to prevent re-computation on every render
-  const wordCount = useMemo(
-    () => lastTranscription?.cleanedText.split(/\s+/).filter(Boolean).length ?? 0,
-    [lastTranscription?.cleanedText]
-  );
-  const transcript = lastTranscription?.cleanedText ?? "";
-
   const isRecording = recordingState === "listening";
   const isProcessing = recordingState === "processing";
   const isIdle = recordingState === "idle";
+  const previewTranscript = isRecording && streamingText.trim()
+    ? streamingText
+    : lastTranscription?.cleanedText ?? "";
+  const transcript = lastTranscription?.cleanedText ?? "";
+  const wordCount = useMemo(
+    () => previewTranscript.split(/\s+/).filter(Boolean).length,
+    [previewTranscript]
+  );
 
   const handleToggleRecord = () => {
     if (isRecording) {
@@ -50,7 +53,7 @@ export function ExpandedPill() {
     <div className="flex flex-col gap-2 px-3 pt-1 pb-2 text-foreground text-xs select-none overflow-hidden">
       {/* Transcript preview */}
       <div className="bg-foreground/10 rounded-md px-2.5 py-2 max-h-20 overflow-y-auto text-[11px] leading-relaxed text-foreground/90 contain-layout-paint">
-        {transcript || (
+        {previewTranscript || (
           <span className="text-foreground/40 italic">No transcript yet</span>
         )}
       </div>

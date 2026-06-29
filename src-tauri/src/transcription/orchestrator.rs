@@ -20,6 +20,7 @@ use crate::transcription::engine::{
     FORMAT_GGUF, FORMAT_NEMO, RUNTIME_BUNDLED_SIDECAR, RUNTIME_EXTERNAL_PATH,
     RUNTIME_OPTIONAL_NEMO,
 };
+use crate::transcription::streaming::StreamedTranscript;
 use crate::transcription::types::{OutputResult, TranscriptionResult};
 use crate::transcription::{
     language, nemo_worker, parakeet_parser, parakeet_sidecar, parser, pipeline, whisper_sidecar,
@@ -91,6 +92,45 @@ pub fn transcribe(
     };
     let duration_ms = start.elapsed().as_millis() as u64;
 
+    build_result_from_engine_output(
+        app,
+        &settings,
+        lang_code,
+        model_runtime,
+        engine_output,
+        duration_ms,
+    )
+}
+
+pub fn transcribe_streamed(
+    app: &AppHandle,
+    streamed: StreamedTranscript,
+) -> CmdResult<TranscriptionResult> {
+    let state = app.state::<AppState>();
+    let settings = settings_repo::get_all(&state.db).unwrap_or_default();
+    build_result_from_engine_output(
+        app,
+        &settings,
+        streamed.language,
+        streamed.model_runtime,
+        EngineTranscript {
+            raw_text: streamed.raw_text,
+            segments: streamed.segments,
+            words: streamed.words,
+        },
+        streamed.duration_ms,
+    )
+}
+
+fn build_result_from_engine_output(
+    app: &AppHandle,
+    settings: &std::collections::HashMap<String, String>,
+    lang_code: String,
+    model_runtime: ModelRuntime,
+    engine_output: EngineTranscript,
+    duration_ms: u64,
+) -> CmdResult<TranscriptionResult> {
+    let state = app.state::<AppState>();
     let raw_text = engine_output.raw_text;
     let active_rules =
         dictionary_repo::list_active_rules(&state.db, Some(&lang_code)).unwrap_or_default();
@@ -256,7 +296,7 @@ fn transcribe_legacy_whisper(
     })
 }
 
-fn resolve_model_runtime(
+pub(crate) fn resolve_model_runtime(
     app: &AppHandle,
     lang_code: &str,
     model_override: Option<&str>,
@@ -440,7 +480,7 @@ fn run_nemo(
 /// 2. Emits `output-result` and `transcription-completed` events.
 /// 3. Transitions pill to Success (or Error on failure) then auto-resets to
 ///    Idle after 2 s (success) / 3 s (error).
-pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
+pub fn transcribe_and_emit(app: AppHandle, wav_path: String, streamed: Option<StreamedTranscript>) {
     // ── Pre-flight: verify a model is explicitly set for the selected language ─
     {
         let state = app.state::<AppState>();
@@ -530,15 +570,36 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
         }
     }
 
-    match transcribe(&app, &wav_path, None, None) {
+    let streamed_live_inserted = streamed
+        .as_ref()
+        .map(|result| result.live_inserted)
+        .unwrap_or(false);
+    let transcription = match streamed {
+        Some(streamed) if !streamed.raw_text.trim().is_empty() => {
+            transcribe_streamed(&app, streamed).or_else(|e| {
+                log::warn!(
+                    "Streamed transcription post-processing failed: {e}; falling back to WAV transcription"
+                );
+                transcribe(&app, &wav_path, None, None)
+            })
+        }
+        _ => transcribe(&app, &wav_path, None, None),
+    };
+
+    match transcription {
         Ok(mut result) => {
             // ── Output step ──────────────────────────────────────────────────
             let state = app.state::<AppState>();
             let settings = settings_repo::get_all(&state.db).unwrap_or_default();
-            let output_mode = settings
+            let configured_output_mode = settings
                 .get("output.mode")
                 .cloned()
                 .unwrap_or_else(|| "clipboard".to_string());
+            let output_mode = if streamed_live_inserted && configured_output_mode == "insert" {
+                "clipboard".to_string()
+            } else {
+                configured_output_mode.clone()
+            };
 
             let insert_delay_ms: u64 = settings
                 .get("output.insert_delay_ms")
@@ -546,7 +607,7 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                 .unwrap_or(100);
 
             // Detect the foreground window before pasting into it.
-            let target_app = if output_mode == "insert" {
+            let target_app = if configured_output_mode == "insert" {
                 foreground_window::get_foreground_window_title()
             } else {
                 None
@@ -628,7 +689,11 @@ pub fn transcribe_and_emit(app: AppHandle, wav_path: String) {
                 char_count,
                 avg_confidence,
                 estimated_wpm,
-                output_mode: output_mode.clone(),
+                output_mode: if streamed_live_inserted {
+                    "live-insert".to_string()
+                } else {
+                    configured_output_mode.clone()
+                },
                 output_target_app: target_app,
                 inserted_successfully: output_result.success,
                 error_message: output_result.error.clone(),

@@ -9,6 +9,7 @@ import { useThrottledEvent, useTauriEvent } from "./hooks/use-throttled-event";
 import type {
   OutputResultPayload,
   RecordingStatePayload,
+  TranscriptionStreamUpdate,
   TranscriptionResult,
 } from "./types";
 
@@ -18,6 +19,8 @@ export function PillApp() {
   const setRecordingError = useAppStore((s) => s.setRecordingError);
   const setLastTranscription = useAppStore((s) => s.setLastTranscription);
   const setLastOutputResult = useAppStore((s) => s.setLastOutputResult);
+  const setStreamingTranscription = useAppStore((s) => s.setStreamingTranscription);
+  const resetStreamingTranscription = useAppStore((s) => s.resetStreamingTranscription);
 
   // Apply persisted theme on mount and react to theme changes from main window.
   useEffect(() => {
@@ -49,10 +52,18 @@ export function PillApp() {
   useTauriEvent<RecordingStatePayload>("recording-state-changed", (event) => {
     setRecordingState(event.payload.state);
     setRecordingError(event.payload.error ?? null);
+    if (event.payload.state === "listening" || event.payload.state === "idle" || event.payload.state === "error") {
+      resetStreamingTranscription();
+    }
   });
 
   useTauriEvent<TranscriptionResult>("transcription-completed", (event) => {
     setLastTranscription(event.payload);
+    resetStreamingTranscription();
+  });
+
+  useTauriEvent<TranscriptionStreamUpdate>("transcription-stream-update", (event) => {
+    setStreamingTranscription(event.payload);
   });
 
   useTauriEvent<OutputResultPayload>("output-result", (event) => {

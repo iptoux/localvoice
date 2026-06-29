@@ -1,5 +1,6 @@
 use crate::db::DbConn;
 use crate::state::recording_state::{ActiveRecording, RecordingState, RecordingStatePayload};
+use crate::transcription::streaming::StreamingSessionManager;
 use crate::transcription::types::TranscriptionResult;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
@@ -22,6 +23,9 @@ pub struct AppState {
     /// Dropping the inner value stops the cpal stream automatically.
     pub active_recording: Mutex<Option<ActiveRecording>>,
 
+    /// Active low-latency transcription worker session, if the selected runtime supports it.
+    pub streaming_session: Mutex<StreamingSessionManager>,
+
     /// Path of the last WAV file written; set after stop_recording for transcription.
     pub last_wav_path: Mutex<Option<String>>,
 
@@ -39,6 +43,7 @@ impl AppState {
             active_session_id: Mutex::new(None),
             recording_state: Mutex::new(RecordingState::Idle),
             active_recording: Mutex::new(None),
+            streaming_session: Mutex::new(StreamingSessionManager::new()),
             last_wav_path: Mutex::new(None),
             last_transcription: Mutex::new(None),
             recording_started_at: Mutex::new(None),

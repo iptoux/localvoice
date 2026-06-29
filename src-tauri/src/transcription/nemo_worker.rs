@@ -259,7 +259,7 @@ fn response_to_transcript(resp: WorkerResponse) -> NemoTranscript {
     }
 }
 
-fn resolve_worker_script(app: &AppHandle) -> CmdResult<PathBuf> {
+pub(crate) fn resolve_worker_script(app: &AppHandle) -> CmdResult<PathBuf> {
     let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("resources")
         .join("nemo_worker")
@@ -286,7 +286,7 @@ fn resolve_worker_script(app: &AppHandle) -> CmdResult<PathBuf> {
     .into())
 }
 
-fn resolve_python(configured_python: Option<&str>) -> CmdResult<PathBuf> {
+pub(crate) fn resolve_python(configured_python: Option<&str>) -> CmdResult<PathBuf> {
     if let Some(path) = configured_python.filter(|p| !p.is_empty()) {
         let p = PathBuf::from(path);
         if p.exists() {

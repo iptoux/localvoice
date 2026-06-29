@@ -262,6 +262,9 @@ export default function SettingsPage() {
   const shortcut = settings["recording.shortcut"] || "CommandOrControl+Shift+Space";
   const outputMode = settings["output.mode"] || "clipboard";
   const language = settings["transcription.default_language"] || "auto";
+  const streamingEnabled = bool("transcription.streaming.enabled");
+  const streamingChunkMs = settings["transcription.streaming.chunk_ms"] || "320";
+  const streamingOutputMode = settings["transcription.streaming.output_mode"] || "preview";
   const deviceId = settings["recording.device_id"] || "";
   const silenceMs = parseInt(settings["recording.silence_timeout_ms"] || "1500");
 
@@ -345,7 +348,7 @@ export default function SettingsPage() {
       </div>
       <Separator className="bg-border mb-1" />
 
-      <SettingRow icon={Languages} iconClass="text-cyan-400" label="Language" description="Language passed to the Whisper model.">
+      <SettingRow icon={Languages} iconClass="text-cyan-400" label="Language" description="Language passed to the selected transcription engine.">
         <Select value={language} onValueChange={setVal("transcription.default_language")}>
           <SelectTrigger className="w-44 bg-card border-border text-sm">
             <SelectValue />
@@ -366,6 +369,64 @@ export default function SettingsPage() {
           </SelectContent>
         </Select>
       </SettingRow>
+
+      <SettingRow
+        icon={ScrollText}
+        iconClass="text-blue-400"
+        label="Streaming preview"
+        description="Show partial text while recording when the selected model supports streaming."
+      >
+        <Switch
+          checked={streamingEnabled}
+          onCheckedChange={(v) => set("transcription.streaming.enabled", String(v))}
+        />
+      </SettingRow>
+
+      {streamingEnabled && (
+        <>
+          <SettingRow
+            icon={Timer}
+            iconClass="text-amber-400"
+            label="Streaming chunk size"
+            description="How often LocalVoice sends captured audio to the streaming worker."
+          >
+            <Select
+              value={streamingChunkMs}
+              onValueChange={setVal("transcription.streaming.chunk_ms")}
+            >
+              <SelectTrigger className="w-32 bg-card border-border text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                <SelectItem value="160">160 ms</SelectItem>
+                <SelectItem value="320">320 ms</SelectItem>
+                <SelectItem value="500">500 ms</SelectItem>
+                <SelectItem value="1000">1 s</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+
+          <SettingRow
+            icon={ClipboardCopy}
+            iconClass="text-emerald-400"
+            label="Streaming output"
+            description="Preview only keeps target apps untouched; live insert writes finalized deltas."
+          >
+            <Select
+              value={streamingOutputMode}
+              onValueChange={setVal("transcription.streaming.output_mode")}
+            >
+              <SelectTrigger className="w-52 bg-card border-border text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                <SelectItem value="preview">Preview only</SelectItem>
+                <SelectItem value="live_insert">Live insert finalized text</SelectItem>
+              </SelectContent>
+            </Select>
+          </SettingRow>
+        </>
+      )}
 
       <SettingRow
         icon={WholeWord}

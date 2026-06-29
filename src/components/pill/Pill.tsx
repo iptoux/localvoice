@@ -21,6 +21,7 @@ export function Pill() {
   const recordingState = useAppStore((s) => s.recordingState);
   const setRecordingState = useAppStore((s) => s.setRecordingState);
   const recordingError = useAppStore((s) => s.recordingError);
+  const streamingText = useAppStore((s) => s.streamingTranscription?.text ?? "");
   const isPillExpanded = useAppStore((s) => s.isPillExpanded);
   const setIsPillExpanded = useAppStore((s) => s.setIsPillExpanded);
   const [pushToTalk, setPushToTalk] = useState(false);
@@ -110,7 +111,11 @@ export function Pill() {
               ) : recordingState === "success" ? (
                 <SuccessContent />
               ) : recordingState === "listening" ? (
-                <Waveform />
+                streamingText.trim() ? (
+                  <StreamingContent text={streamingText} />
+                ) : (
+                  <Waveform />
+                )
               ) : (
                 "Transcribing…"
               )}
@@ -230,6 +235,27 @@ function OutputBadge({
 const MemoizedOutputBadge = memo(OutputBadge, (prev, next) =>
   prev.label === next.label && prev.success === next.success
 );
+
+function StreamingContent({ text }: { text: string }) {
+  const preview = useMemo(
+    () => (text.length > 60 ? `${text.slice(0, 58)}...` : text),
+    [text]
+  );
+
+  return (
+    <span data-tauri-drag-region className="flex items-center gap-2 min-w-0 text-white">
+      <span
+        data-tauri-drag-region
+        className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-white/20 font-semibold"
+      >
+        Live
+      </span>
+      <span data-tauri-drag-region className="truncate" title={text}>
+        {preview}
+      </span>
+    </span>
+  );
+}
 
 // ── State icon ───────────────────────────────────────────────────────────────
 

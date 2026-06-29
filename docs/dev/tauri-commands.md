@@ -698,6 +698,7 @@ Hybrid transcription settings include:
 | `transcription.preferred_runtime` | Bundled sidecar or optional runtime preference |
 | `transcription.streaming.enabled` | Enables partial streaming UI updates where supported |
 | `transcription.streaming.chunk_ms` | Target streaming chunk size |
+| `transcription.streaming.output_mode` | `preview` or `live_insert` finalized streaming deltas |
 | `transcription.nemo.python_path` | Optional Python interpreter path |
 | `transcription.parakeet.device` | Reserved Parakeet device selector |
 
@@ -1057,7 +1058,8 @@ The frontend subscribes to these Tauri events (via `listen()`) to update UI stat
 | Event | Payload | Triggered by |
 |-------|---------|--------------|
 | `recording-state-changed` | `{ state: RecordingState, error?: string }` | Any recording command, silence auto-stop |
-| `transcription-complete` | `TranscriptionResult` | Transcription orchestrator on success |
+| `transcription-stream-update` | `TranscriptionStreamUpdate` | Streaming worker partial/final updates |
+| `transcription-completed` | `TranscriptionResult` | Transcription orchestrator on success |
 | `transcription-error` | `{ error: string }` | Transcription orchestrator on failure |
 | `session-reprocessed` | `sessionId: string` | `reprocess_session` command |
 | `model-download-progress` | `{ key: string, progress: number }` | Model download in progress |

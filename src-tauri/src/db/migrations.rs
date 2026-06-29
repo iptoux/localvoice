@@ -414,6 +414,13 @@ static MIGRATIONS: &[(i64, &str)] = &[(
         ('transcription.nemo.python_path',    '',                 datetime('now')),
         ('transcription.parakeet.device',     '',                 datetime('now'));
     ",
+),
+(
+    11,
+    "
+    INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES
+        ('transcription.streaming.output_mode', 'preview', datetime('now'));
+    ",
 )];
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
