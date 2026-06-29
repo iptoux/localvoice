@@ -198,9 +198,10 @@ The Parakeet streaming worker can also produce small runtime libraries during CI
 | `Release/whisper-cli.exe` | `src-tauri/binaries/whisper-cli-x86_64-pc-windows-msvc.exe` |
 | `Release/ggml.dll` | `src-tauri/ggml.dll` |
 | `Release/ggml-base.dll` | `src-tauri/ggml-base.dll` |
-| `Release/ggml-cpu.dll` | `src-tauri/ggml-cpu.dll` |
 | `Release/whisper.dll` | `src-tauri/whisper.dll` |
 | `Release/SDL2.dll` | `src-tauri/SDL2.dll` |
+
+Some whisper.cpp releases may also include `ggml-cpu.dll`; the setup action copies it when present, but the Tauri bundle does not require it because current Windows assets do not ship it.
 
 **macOS (Apple Silicon):**
 

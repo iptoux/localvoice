@@ -9,6 +9,7 @@
 - Fixed recording overlay focus handling so live insert can keep writing to the previously focused target app instead of the overlay.
 - Stripped ASR language prompt tags such as `<de-DE>` from Parakeet/Nemotron streaming and final transcript output.
 - Fixed CI and release packaging for Parakeet by pinning pnpm to a Node 20 compatible version and staging Parakeet runtime libraries for sidecar smoke tests.
+- Fixed Windows CI after whisper.cpp `v1.9.1` stopped shipping `ggml-cpu.dll` by making that DLL optional instead of a required Tauri resource.
 - Marked optional NeMo `.nemo` models as non-streaming until the Python worker exposes a compatible live streaming API.
 - Added real streaming transcription plumbing for streaming-capable Parakeet GGUF models, including Classic pill live preview, optional worker-delta live insert, and stop-time fallback to WAV transcription.
 - Added the bundled `parakeet-stream-worker` sidecar built from pinned `mudler/parakeet.cpp` `v0.3.2` source in CI and audited in release jobs.
