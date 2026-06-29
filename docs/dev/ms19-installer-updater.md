@@ -34,6 +34,8 @@ Use the PowerShell release helper for local Windows installer builds without pub
 
 `-LocalBuild` skips GitHub authentication, clean working tree checks, tag creation, and release publishing. It also disables `bundle.createUpdaterArtifacts` for that build, so no updater signing environment variable is required.
 
+Before invoking Tauri, the helper runs `scripts/setup-parakeet-cpp.ps1` so local Windows installers include `parakeet-cli`, `parakeet-stream-worker`, and required runtime DLLs under `src-tauri/parakeet-runtime/`. Direct `pnpm tauri build` uses the same setup through Tauri's `beforeBuildCommand`.
+
 To test signed updater artifacts locally, run:
 
 ```powershell

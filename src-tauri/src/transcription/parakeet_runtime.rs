@@ -1,6 +1,13 @@
 use std::collections::HashSet;
+use std::io;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Output};
+
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 pub fn configure_command_environment(command: &mut Command, binary: &Path) {
     let runtime_dirs = candidate_runtime_dirs(binary);
@@ -21,33 +28,52 @@ pub fn configure_command_environment(command: &mut Command, binary: &Path) {
     }
 }
 
-pub fn verify_runtime_dependencies(binary: &Path) -> Result<(), String> {
+pub fn verify_worker_health(binary: &Path) -> Result<(), String> {
+    let mut command = Command::new(binary);
+    configure_command_environment(&mut command, binary);
+    command
+        .arg("--health")
+        .current_dir(binary.parent().unwrap_or_else(|| Path::new(".")));
     #[cfg(target_os = "windows")]
-    {
-        let runtime_dirs = candidate_runtime_dirs(binary);
-        let required = ["ggml-cpu.dll"];
-        let missing = required
-            .iter()
-            .filter(|dll| !runtime_dirs.iter().any(|dir| dir.join(dll).is_file()))
-            .copied()
-            .collect::<Vec<_>>();
+    command.creation_flags(CREATE_NO_WINDOW);
 
-        if !missing.is_empty() {
-            let searched = runtime_dirs
-                .iter()
-                .map(|dir| format!("  - {}", dir.display()))
-                .collect::<Vec<_>>()
-                .join("\n");
-            return Err(format!(
-                "Parakeet runtime DLLs are missing for '{}'. Missing: {}. Searched:\n{}",
-                binary.display(),
-                missing.join(", "),
-                searched
-            ));
-        }
+    let output = output_with_suppressed_dialogs(&mut command)
+        .map_err(|e| format!("Failed to start Parakeet streaming worker health check: {e}"))?;
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    if output.status.success()
+        && (stdout.contains("parakeet.cpp streaming worker")
+            || stderr.contains("parakeet.cpp streaming worker"))
+    {
+        return Ok(());
     }
 
-    Ok(())
+    Err(format!(
+        "Parakeet streaming worker health check failed: {}\nstderr: {}\nstdout: {}",
+        output.status, stderr, stdout
+    ))
+}
+
+#[cfg(target_os = "windows")]
+fn output_with_suppressed_dialogs(command: &mut Command) -> io::Result<Output> {
+    use windows_sys::Win32::System::Diagnostics::Debug::{
+        SetErrorMode, SEM_FAILCRITICALERRORS, SEM_NOGPFAULTERRORBOX, SEM_NOOPENFILEERRORBOX,
+    };
+
+    unsafe {
+        let previous = SetErrorMode(SEM_FAILCRITICALERRORS);
+        let suppressed =
+            previous | SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX;
+        SetErrorMode(suppressed);
+        let result = command.output();
+        SetErrorMode(previous);
+        result
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn output_with_suppressed_dialogs(command: &mut Command) -> io::Result<Output> {
+    command.output()
 }
 
 fn candidate_runtime_dirs(binary: &Path) -> Vec<PathBuf> {

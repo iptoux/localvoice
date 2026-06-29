@@ -143,6 +143,21 @@ function Ensure-UpdaterSigningKey {
     Write-Ok "Updater signing key loaded from local key file"
 }
 
+function Ensure-ParakeetSidecars {
+    $setupScript = Join-Path $ScriptDir 'setup-parakeet-cpp.ps1'
+    if ($DryRun) {
+        Write-Dry "$setupScript"
+        return
+    }
+    if (-not (Test-Path $setupScript)) {
+        Write-Fail "Missing Parakeet setup script: $setupScript"
+    }
+    & $setupScript
+    if ($LASTEXITCODE -ne 0) {
+        Write-Fail "Parakeet sidecar setup failed."
+    }
+}
+
 function Get-TauriBuildArgs {
     param([bool]$CreateUpdaterArtifacts)
 
@@ -261,6 +276,9 @@ if ($createUpdaterArtifacts) {
 } else {
     Write-Info "Updater artifacts disabled for local build; no updater signing key is required."
 }
+
+Write-Step "Preparing Parakeet sidecars"
+Ensure-ParakeetSidecars
 
 $buildArgs = Get-TauriBuildArgs -CreateUpdaterArtifacts $createUpdaterArtifacts
 Push-Location $RootDir

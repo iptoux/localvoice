@@ -13,11 +13,6 @@ $ProgressPreference = "SilentlyContinue"
 $REPO_ROOT = Split-Path -Parent $PSScriptRoot
 $WHISPER_URL = "https://github.com/ggerganov/whisper.cpp/releases/download/v1.7.1/whisper-bin-win-x64.zip"
 $WHISPER_DIR = Join-Path $REPO_ROOT "src-tauri\binaries"
-$PARAKEET_TAG = "v0.3.2"
-$PARAKEET_ASSET = "parakeet-v0.3.2-bin-win-cpu-x64.zip"
-$PARAKEET_URL = "https://github.com/mudler/parakeet.cpp/releases/download/$PARAKEET_TAG/$PARAKEET_ASSET"
-$PARAKEET_SHA256 = "71bceab8cd2a27ada6abb1234e6b0b81dc043964345219492f0d1d8522517a2b"
-$PARAKEET_BIN = Join-Path $WHISPER_DIR "parakeet-cli-x86_64-pc-windows-msvc.exe"
 
 function Write-Step {
     param([string]$Message)
@@ -141,43 +136,20 @@ if (-not $SkipWhisper) {
     }
 }
 
-# Download parakeet.cpp sidecar
+# Download and build parakeet.cpp sidecars
 if (-not $SkipParakeet) {
-    Write-Step "Downloading parakeet.cpp sidecar..."
-    New-Item -ItemType Directory -Force -Path $WHISPER_DIR | Out-Null
-
-    if (Test-Path $PARAKEET_BIN) {
-        Write-Success "parakeet.cpp sidecar already exists"
-    } else {
-        $tempZip = Join-Path $env:TEMP $PARAKEET_ASSET
-        $extractDir = Join-Path $env:TEMP "localvoice-parakeet"
-
-        Write-Host "Downloading from $PARAKEET_URL..."
-        try {
-            Invoke-WebRequest -Uri $PARAKEET_URL -OutFile $tempZip -UseBasicParsing
-            $actual = (Get-FileHash -Algorithm SHA256 -Path $tempZip).Hash.ToLowerInvariant()
-            if ($actual -ne $PARAKEET_SHA256) {
-                throw "Checksum mismatch for $PARAKEET_ASSET"
-            }
-
-            if (Test-Path $extractDir) {
-                Remove-Item $extractDir -Recurse -Force
-            }
-            Expand-Archive -Path $tempZip -DestinationPath $extractDir -Force
-            $cli = Get-ChildItem $extractDir -Recurse -Filter "parakeet-cli.exe" | Select-Object -First 1
-            if (-not $cli) {
-                throw "parakeet-cli.exe not found in archive"
-            }
-            Move-Item $cli.FullName $PARAKEET_BIN -Force
-            Remove-Item $tempZip -Force
-            Remove-Item $extractDir -Recurse -Force
-            Write-Success "parakeet.cpp sidecar downloaded and verified"
-        } catch {
-            Write-Warn "Failed to download parakeet.cpp sidecar: $_"
-            Write-Host "  You can manually download from: $PARAKEET_URL"
-            Write-Host "  Place parakeet-cli.exe at: $PARAKEET_BIN"
-        }
+    Write-Step "Preparing parakeet.cpp sidecars..."
+    $setupParakeet = Join-Path $PSScriptRoot "setup-parakeet-cpp.ps1"
+    if (-not (Test-Path $setupParakeet)) {
+        Write-Fail "Missing setup script: $setupParakeet"
+        exit 1
     }
+    & $setupParakeet -SkipSmokeTest:$SkipVerification
+    if ($LASTEXITCODE -ne 0) {
+        Write-Fail "Failed to prepare parakeet.cpp sidecars"
+        exit 1
+    }
+    Write-Success "parakeet.cpp sidecars prepared"
 }
 
 # Verify Tauri CLI is installed

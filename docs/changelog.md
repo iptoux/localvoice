@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added Windows local Parakeet sidecar preparation for `pnpm tauri build`, bootstrap, and `create-release.ps1 -LocalBuild` so local installers include the streaming worker and runtime DLLs.
 - Fixed installed Windows Parakeet streaming startup by searching bundled `resources/parakeet-runtime` DLLs before launching `parakeet-stream-worker.exe` and falling back cleanly when they are missing.
 - Added Tauri updater support backed by GitHub Releases, with signed update artifacts, native/in-app update notifications, manual install confirmation, and restart-to-install flow.
 - Added a local build mode to the PowerShell release helper so Windows installers can be built without GitHub publishing or updater signing environment setup.

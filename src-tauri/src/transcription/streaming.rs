@@ -267,7 +267,7 @@ impl WorkerLaunch {
         match runtime.engine.as_str() {
             ENGINE_PARAKEET_CPP => {
                 let binary = crate::transcription::parakeet_stream_worker::resolve_binary(app)?;
-                crate::transcription::parakeet_runtime::verify_runtime_dependencies(&binary)?;
+                crate::transcription::parakeet_runtime::verify_worker_health(&binary)?;
                 Ok(Self::Parakeet { binary })
             }
             ENGINE_NEMO => Ok(Self::Nemo {

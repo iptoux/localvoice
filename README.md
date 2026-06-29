@@ -161,7 +161,7 @@ The script will:
 2. Check Linux system packages (Linux only)
 3. Install frontend dependencies
 4. Download or build whisper.cpp binaries for your platform (skip with `--skip-whisper`)
-5. Download and verify the pinned parakeet.cpp sidecar (skip with `--skip-parakeet`)
+5. Download and verify the pinned parakeet.cpp CLI, build the streaming worker, and stage Parakeet runtime DLLs (skip with `--skip-parakeet`)
 6. Verify the Tauri CLI is available
 7. Run a Rust compilation check (skip with `--skip-verification`)
 
@@ -178,6 +178,8 @@ pnpm tauri dev
 pnpm tauri build
 ```
 
+On Windows, `pnpm tauri build` runs `pnpm run tauri:prepare` before Tauri bundles the app. That preparation builds the frontend, downloads the pinned Parakeet CLI when missing, builds `parakeet-stream-worker.exe`, and stages required DLLs under `src-tauri/parakeet-runtime/`.
+
 `pnpm tauri build` requires `TAURI_SIGNING_PRIVATE_KEY` because updater artifacts are enabled. For a Windows installer build without publishing a GitHub release or creating updater artifacts, use the release helper's local mode:
 
 ```powershell
@@ -193,7 +195,7 @@ release build.
 
 ### Sidecar Binaries (required)
 
-The bootstrap script handles this automatically. For manual setup, you need to place platform-appropriate sidecar binaries in `src-tauri/binaries/`:
+The bootstrap script and Windows Tauri build preparation handle this automatically. For manual setup, you need to place platform-appropriate sidecar binaries in `src-tauri/binaries/`:
 
 | Sidecar | Target name example |
 |---|---|

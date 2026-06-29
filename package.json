@@ -23,6 +23,7 @@
         "build": "tsc && vite build",
         "preview": "vite preview",
         "tauri": "tauri",
+        "tauri:prepare": "node scripts/prepare-tauri-build.mjs",
         "test": "vitest run",
         "test:watch": "vitest",
         "lint": "tsc --noEmit"
