@@ -12,11 +12,17 @@ use std::os::windows::process::CommandExt;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
+use crate::db::repositories::{
+    dictionary_repo::{self, CorrectionRule},
+    filler_words_repo,
+};
+use crate::dictionary::rules as dict_rules;
 use crate::errors::{AppError, CmdResult};
 use crate::os::{clipboard, text_insertion};
-use crate::postprocess::normalize;
+use crate::postprocess::{fillers, normalize};
+use crate::state::AppState;
 use crate::transcription::engine::{ModelRuntime, ENGINE_NEMO, ENGINE_PARAKEET_CPP};
 use crate::transcription::types::{TranscriptSegment, TranscriptWord};
 use crate::transcription::{language, nemo_worker, orchestrator, parakeet_parser};
@@ -157,6 +163,12 @@ impl StreamingSessionManager {
                 .get("output.insert_delay_ms")
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(100),
+            live_insert_postprocess: LiveInsertPostProcessor::from_settings(
+                app,
+                &lang_code,
+                settings,
+                streaming_settings.output_mode,
+            ),
         };
 
         log::info!(
@@ -318,6 +330,71 @@ struct WorkerRunSettings {
     chunk_ms: u64,
     output_mode: StreamingOutputMode,
     insert_delay_ms: u64,
+    live_insert_postprocess: LiveInsertPostProcessor,
+}
+
+#[derive(Clone)]
+struct LiveInsertPostProcessor {
+    remove_fillers: bool,
+    filler_words: Vec<String>,
+    active_rules: Vec<CorrectionRule>,
+}
+
+impl LiveInsertPostProcessor {
+    fn disabled() -> Self {
+        Self {
+            remove_fillers: false,
+            filler_words: Vec::new(),
+            active_rules: Vec::new(),
+        }
+    }
+
+    fn from_settings(
+        app: &AppHandle,
+        language: &str,
+        settings: &HashMap<String, String>,
+        output_mode: StreamingOutputMode,
+    ) -> Self {
+        if output_mode != StreamingOutputMode::LiveInsert {
+            return Self::disabled();
+        }
+
+        let state = app.state::<AppState>();
+        let remove_fillers = settings
+            .get("transcription.remove_fillers")
+            .map(|value| value == "true")
+            .unwrap_or(false);
+        let filler_words = if remove_fillers {
+            filler_words_repo::list_words_for_language(&state.db, language).unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        let active_rules =
+            dictionary_repo::list_active_rules(&state.db, Some(language)).unwrap_or_default();
+
+        Self {
+            remove_fillers,
+            filler_words,
+            active_rules,
+        }
+    }
+
+    fn clean_delta(&self, delta: &str, is_first_insert: bool) -> String {
+        let mut text = normalize::remove_language_tags(delta);
+        if self.remove_fillers && !self.filler_words.is_empty() {
+            text = fillers::remove_fillers_preserving_spacing(&text, &self.filler_words);
+        }
+        if !self.active_rules.is_empty() {
+            text = dict_rules::apply_rules(&text, &self.active_rules).0;
+        }
+
+        let text = collapse_delta_whitespace(&text);
+        if is_first_insert {
+            text.trim_start().to_string()
+        } else {
+            text
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -698,16 +775,19 @@ fn apply_worker_response(
     }
 
     state.sequence = resp.sequence.unwrap_or(state.sequence + 1);
+    let insert_delta = settings
+        .live_insert_postprocess
+        .clean_delta(&delta, !state.live_inserted);
     let live_inserted = if settings.output_mode == StreamingOutputMode::LiveInsert
-        && !delta.trim().is_empty()
+        && !insert_delta.trim().is_empty()
         && !is_final
     {
         log::info!(
             "Live streaming insert delta received: sequence={}, chars={}",
             resp.sequence.unwrap_or(state.sequence + 1),
-            delta.chars().count()
+            insert_delta.chars().count()
         );
-        insert_live_delta(&delta, settings.insert_delay_ms);
+        insert_live_delta(&insert_delta, settings.insert_delay_ms);
         state.live_inserted = true;
         true
     } else {
@@ -740,6 +820,35 @@ fn insert_live_delta(delta: &str, insert_delay_ms: u64) {
             log::warn!("Live streaming clipboard fallback failed: {clipboard_error}");
         }
     }
+}
+
+fn collapse_delta_whitespace(text: &str) -> String {
+    let has_leading = text
+        .chars()
+        .next()
+        .map(|c| c.is_whitespace())
+        .unwrap_or(false);
+    let has_trailing = text
+        .chars()
+        .next_back()
+        .map(|c| c.is_whitespace())
+        .unwrap_or(false);
+    let collapsed = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if collapsed.is_empty() {
+        return String::new();
+    }
+
+    let mut output = String::with_capacity(
+        collapsed.len() + usize::from(has_leading) + usize::from(has_trailing),
+    );
+    if has_leading {
+        output.push(' ');
+    }
+    output.push_str(&collapsed);
+    if has_trailing {
+        output.push(' ');
+    }
+    output
 }
 
 fn send_worker_request(stdin: &mut impl Write, payload: Value) -> CmdResult<()> {
@@ -874,6 +983,23 @@ fn encode_base64(bytes: &[u8]) -> String {
 mod tests {
     use super::*;
 
+    fn test_rule(source: &str, target: &str) -> CorrectionRule {
+        CorrectionRule {
+            id: "rule-1".to_string(),
+            source_phrase: source.to_string(),
+            normalized_source_phrase: source.to_lowercase(),
+            target_phrase: target.to_string(),
+            language: None,
+            rule_mode: "manual".to_string(),
+            is_active: true,
+            auto_apply: true,
+            usage_count: 0,
+            last_used_at: None,
+            created_at: String::new(),
+            updated_at: String::new(),
+        }
+    }
+
     #[test]
     fn clamps_streaming_chunk_setting() {
         let mut settings = HashMap::new();
@@ -920,5 +1046,45 @@ mod tests {
     fn base64_encodes_pcm16_little_endian() {
         let encoded = encode_pcm16_base64(&[0, 1, -1]);
         assert_eq!(encoded, "AAABAP//");
+    }
+
+    #[test]
+    fn live_insert_cleanup_removes_fillers_before_first_insert() {
+        let filler = "\u{00e4}hm".to_string();
+        let processor = LiveInsertPostProcessor {
+            remove_fillers: true,
+            filler_words: vec!["ja".to_string(), filler.clone()],
+            active_rules: Vec::new(),
+        };
+        let delta = format!("Ja {filler} Nvidia streaming");
+
+        assert_eq!(processor.clean_delta(&delta, true), "Nvidia streaming");
+    }
+
+    #[test]
+    fn live_insert_cleanup_preserves_single_leading_separator_after_previous_insert() {
+        let filler = "\u{00e4}hm".to_string();
+        let processor = LiveInsertPostProcessor {
+            remove_fillers: true,
+            filler_words: vec![filler.clone()],
+            active_rules: Vec::new(),
+        };
+        let delta = format!(" {filler} weiter");
+
+        assert_eq!(processor.clean_delta(&delta, false), " weiter");
+    }
+
+    #[test]
+    fn live_insert_cleanup_applies_dictionary_rules_to_delta() {
+        let processor = LiveInsertPostProcessor {
+            remove_fillers: false,
+            filler_words: Vec::new(),
+            active_rules: vec![test_rule("nvi dia", "Nvidia")],
+        };
+
+        assert_eq!(
+            processor.clean_delta(" nvi dia streaming", false),
+            " Nvidia streaming"
+        );
     }
 }

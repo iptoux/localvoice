@@ -18,7 +18,7 @@ After an engine returns raw text, segments, and optional words, the existing pos
 4. Dictionary and correction rules.
 5. History persistence, output, and UI events.
 
-Partial streaming updates are emitted before stop where supported. The final text still goes through the shared post-processing, persistence, and output path.
+Partial streaming updates are emitted before stop where supported. Optional live insert applies streaming-safe cleanup to pasted deltas: language tag stripping, configured filler-word removal, and dictionary correction rules. The final text still goes through the shared post-processing, persistence, and output path.
 
 ## Engine Selection
 
@@ -114,7 +114,7 @@ Parakeet live streaming uses `parakeet-stream-worker`, a LocalVoice sidecar buil
 | `cancel` | Rust -> worker | Stop the active stream without producing output |
 | `error` | worker -> Rust | Signal load, protocol, model, or runtime failure |
 
-`StreamingSessionManager` emits `transcription-stream-update` to the frontend for each partial/final response. If finalization fails or the final text is empty, the normal WAV transcription path runs.
+`StreamingSessionManager` emits `transcription-stream-update` to the frontend for each partial/final response. When live insert is enabled, pasted deltas are cleaned before insertion while the emitted preview text remains the worker's current stable transcript. If finalization fails or the final text is empty, the normal WAV transcription path runs.
 
 ## NeMo Worker Protocol
 
@@ -149,7 +149,7 @@ Migration 10 seeds:
 | `transcription.preferred_runtime` | `bundled-sidecar` | Runtime preference |
 | `transcription.streaming.enabled` | `false` | Enables partial streaming UI updates |
 | `transcription.streaming.chunk_ms` | `320` | Target chunk size for streaming engines |
-| `transcription.streaming.output_mode` | `preview` | `preview` or `live_insert` worker-emitted deltas |
+| `transcription.streaming.output_mode` | `preview` | `preview` or cleanup-filtered `live_insert` worker deltas |
 | `transcription.nemo.python_path` | empty | Optional Python interpreter path |
 | `transcription.parakeet.device` | empty | Reserved Parakeet device selection |
 

@@ -38,7 +38,7 @@ Streaming is controlled in **Settings -> Transcription**:
 2. Choose a chunk size. `320 ms` is the default balance between latency and overhead.
 3. Keep **Streaming output** on **No live insert** unless you explicitly want LocalVoice to write streaming deltas into the focused application while you speak.
 
-No-live-insert streaming never writes partial text into another app. Live insert writes only deltas returned by the streaming worker; if the worker emits no text before finalization, LocalVoice keeps the normal final output on stop. If the selected model is Whisper, `.nemo`, or another non-streaming model, LocalVoice uses the normal stop-to-transcribe flow.
+No-live-insert streaming never writes partial text into another app. Live insert applies streaming-safe cleanup to each worker delta before pasting it, including language tag stripping, configured filler-word removal, and dictionary correction rules. Whole-transcript normalization still runs after stop, so punctuation and capitalization remain finalized in history and clipboard output. If the worker emits no text before finalization, LocalVoice keeps the normal final output on stop. If the selected model is Whisper, `.nemo`, or another non-streaming model, LocalVoice uses the normal stop-to-transcribe flow.
 
 Parakeet GGUF streaming uses the bundled `parakeet-stream-worker` sidecar. If the worker is missing or the model cannot start a streaming session, LocalVoice falls back to the normal WAV transcription path after recording stops.
 

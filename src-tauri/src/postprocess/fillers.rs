@@ -10,6 +10,17 @@ pub fn remove_fillers(text: &str, words: &[String]) -> String {
     r.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// Removes filler words while preserving surrounding spacing.
+pub(crate) fn remove_fillers_preserving_spacing(text: &str, words: &[String]) -> String {
+    let mut sorted: Vec<&String> = words.iter().collect();
+    sorted.sort_by(|a, b| b.len().cmp(&a.len()));
+    let mut result = text.to_string();
+    for filler in &sorted {
+        result = remove_filler_occurrences(&result, filler);
+    }
+    result
+}
+
 /// Like `remove_fillers` but also returns the list of words that were actually removed.
 pub fn remove_fillers_tracked(text: &str, words: &[String]) -> (String, Vec<String>) {
     let mut sorted: Vec<&String> = words.iter().collect();

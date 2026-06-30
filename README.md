@@ -295,7 +295,7 @@ LocalVoice stores all settings in a local SQLite database — no config files to
 | Default transcription engine | Preferred engine (`whisper-cpp`, `parakeet-cpp`, or optional `nemo`) |
 | Preferred transcription runtime | Bundled sidecar or optional local NeMo runtime |
 | Active model | Per-language model selection |
-| Streaming transcription | Enables low-latency streaming for capable Parakeet GGUF models; optional live insert writes worker-emitted deltas |
+| Streaming transcription | Enables low-latency streaming for capable Parakeet GGUF models; optional live insert writes cleanup-filtered worker deltas |
 | Pill mode | Recording overlay (default) or Classic pill |
 | Theme | System, light, or dark |
 | Filler words | Language-specific list of words to strip |

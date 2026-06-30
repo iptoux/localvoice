@@ -454,7 +454,7 @@ export default function SettingsPage() {
             icon={ClipboardCopy}
             iconClass="text-emerald-400"
             label="Streaming output"
-            description="No live insert keeps target apps untouched; live insert writes streaming deltas when the worker emits them."
+            description="No live insert keeps target apps untouched; live insert writes cleanup-filtered streaming deltas when the worker emits them."
           >
             <Select
               value={streamingOutputMode}
