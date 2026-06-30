@@ -65,30 +65,138 @@ fn remove_filler_occurrences(text: &str, filler: &str) -> String {
     let lower_filler = filler.to_lowercase();
     let text_chars: Vec<char> = text.chars().collect();
     let lower_chars: Vec<char> = lower_text.chars().collect();
+    let filler_chars: Vec<char> = lower_filler.chars().collect();
 
-    let mut result = String::with_capacity(text.len());
+    if filler_chars.is_empty() {
+        return text.to_string();
+    }
+
+    let mut ranges: Vec<(usize, usize)> = Vec::new();
     let mut i = 0;
 
     while i < lower_chars.len() {
-        let remaining: String = lower_chars[i..].iter().collect();
-        if remaining.starts_with(&lower_filler) {
+        if matches_at(&lower_chars, i, &filler_chars) {
             let before_ok = i == 0 || !lower_chars[i - 1].is_alphanumeric();
-            let end_idx = i + lower_filler.chars().count();
+            let end_idx = i + filler_chars.len();
             let after_ok = end_idx >= lower_chars.len() || !lower_chars[end_idx].is_alphanumeric();
 
             if before_ok && after_ok {
+                let (remove_start, remove_end) =
+                    expand_filler_removal_range(&text_chars, i, end_idx);
+                push_removal_range(&mut ranges, remove_start, remove_end);
                 i = end_idx;
-                if !result.ends_with(' ') && i < lower_chars.len() {
-                    result.push(' ');
-                }
                 continue;
             }
         }
-        result.push(text_chars[i]);
         i += 1;
     }
 
+    if ranges.is_empty() {
+        return text.to_string();
+    }
+
+    remove_ranges(text, &text_chars, &ranges)
+}
+
+fn matches_at(chars: &[char], start: usize, needle: &[char]) -> bool {
+    start + needle.len() <= chars.len() && chars[start..start + needle.len()] == *needle
+}
+
+fn expand_filler_removal_range(
+    chars: &[char],
+    filler_start: usize,
+    filler_end: usize,
+) -> (usize, usize) {
+    let mut start = filler_start;
+    let mut before = filler_start;
+    while before > 0 && chars[before - 1].is_whitespace() {
+        before -= 1;
+    }
+    if before > 0 && is_leading_filler_separator(chars[before - 1]) {
+        start = before - 1;
+    }
+
+    (start, expand_trailing_filler_punctuation(chars, filler_end))
+}
+
+fn expand_trailing_filler_punctuation(chars: &[char], filler_end: usize) -> usize {
+    let mut end = filler_end;
+    let mut scan = filler_end;
+
+    loop {
+        while scan < chars.len() && chars[scan].is_whitespace() {
+            scan += 1;
+        }
+        if scan >= chars.len() || !is_trailing_filler_punctuation(chars[scan]) {
+            break;
+        }
+
+        scan += 1;
+        while scan < chars.len() && is_trailing_filler_punctuation(chars[scan]) {
+            scan += 1;
+        }
+        end = scan;
+    }
+
+    end
+}
+
+fn is_leading_filler_separator(c: char) -> bool {
+    matches!(c, ',' | ';' | ':')
+}
+
+fn is_trailing_filler_punctuation(c: char) -> bool {
+    matches!(c, ',' | '.' | ';' | ':' | '!' | '?')
+}
+
+fn push_removal_range(ranges: &mut Vec<(usize, usize)>, start: usize, end: usize) {
+    if start >= end {
+        return;
+    }
+
+    if let Some(last) = ranges.last_mut() {
+        if start <= last.1 {
+            last.1 = last.1.max(end);
+            return;
+        }
+    }
+
+    ranges.push((start, end));
+}
+
+fn remove_ranges(text: &str, chars: &[char], ranges: &[(usize, usize)]) -> String {
+    let mut result = String::with_capacity(text.len());
+    let mut cursor = 0;
+
+    for &(start, end) in ranges {
+        let start = start.max(cursor);
+        if start > cursor {
+            result.extend(chars[cursor..start].iter());
+        }
+        if needs_boundary_separator(chars, start, end)
+            && !result
+                .chars()
+                .next_back()
+                .map(|c| c.is_whitespace())
+                .unwrap_or(false)
+        {
+            result.push(' ');
+        }
+        cursor = cursor.max(end);
+    }
+
+    if cursor < chars.len() {
+        result.extend(chars[cursor..].iter());
+    }
+
     result
+}
+
+fn needs_boundary_separator(chars: &[char], start: usize, end: usize) -> bool {
+    start > 0
+        && end < chars.len()
+        && chars[start - 1].is_alphanumeric()
+        && chars[end].is_alphanumeric()
 }
 
 #[cfg(test)]
@@ -169,6 +277,18 @@ mod tests {
         let output = remove_fillers("I think you know that sort of works", &en());
         assert!(!output.contains("you know"));
         assert!(!output.contains("sort of"));
+    }
+
+    #[test]
+    fn removes_sentence_ending_filler_punctuation() {
+        let output = remove_fillers("immer mit der Ruhe Kenn stress, ne. .", &de());
+        assert_eq!(output, "immer mit der Ruhe Kenn stress");
+    }
+
+    #[test]
+    fn removes_inline_filler_punctuation() {
+        let output = remove_fillers("Hello, um, world", &en());
+        assert_eq!(output, "Hello world");
     }
 
     #[test]

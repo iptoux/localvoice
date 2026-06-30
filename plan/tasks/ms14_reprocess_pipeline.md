@@ -23,6 +23,7 @@
 - [x] TASK-209: Audio file cleanup job — on app startup, delete audio files older than configurable retention period (`recording.audio_retention_days`, default: 7); add setting in migration 5
 - [x] TASK-210: DB migration 5 — add settings: `recording.keep_audio` (false), `recording.audio_retention_days` (7), `recording.max_audio_storage_mb` (500)
   <!-- Combined with TASK-203 into a single migration 5 -->
+- [x] TASK-333: Bugfix filler-word cleanup so removing a sentence-ending filler also removes orphaned adjacent punctuation.
 
 ## QA / Acceptance
 

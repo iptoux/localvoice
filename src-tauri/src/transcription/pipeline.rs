@@ -176,6 +176,24 @@ mod tests {
     }
 
     #[test]
+    fn pipeline_removes_orphaned_punctuation_after_sentence_ending_filler() {
+        let mut settings = default_settings();
+        settings.insert("transcription.remove_fillers".into(), "true".into());
+        let filler_words = vec!["ne".to_string()];
+        let (cleaned, _, _, removed) = run(
+            "immer mit der Ruhe Kenn stress, ne. .",
+            vec![seg("immer mit der Ruhe Kenn stress, ne. .")],
+            &settings,
+            &[],
+            "de",
+            &filler_words,
+        );
+
+        assert_eq!(cleaned, "Immer mit der Ruhe Kenn stress.");
+        assert_eq!(removed, vec!["ne".to_string()]);
+    }
+
+    #[test]
     fn pipeline_keeps_fillers_when_disabled() {
         let settings = default_settings();
         let filler_words = vec!["uh".to_string()];
