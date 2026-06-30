@@ -1,6 +1,6 @@
 [package]
 name = "localvoice"
-version = "1.0.0"
+version = "1.0.1"
 description = "LocalVoice â€” offline-first desktop voice dictation"
 authors = []
 edition = "2021"
