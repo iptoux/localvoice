@@ -42,6 +42,7 @@ pub fn run() {
 
             // Read persisted settings before moving the DB into AppState.
             let persisted = settings_repo::get_all(&db).unwrap_or_default();
+            let open_main_after_update = cmd_updater::should_open_main_after_update(&persisted);
 
             // Initialise SQLite-backed logger, respecting the persisted setting (TASK-247).
             let logging_enabled = persisted
@@ -150,7 +151,22 @@ pub fn run() {
             };
             let show_main_on_startup = !start_hidden && (needs_onboarding || !has_default);
 
-            if start_hidden {
+            if open_main_after_update {
+                if let Err(e) = window::show_main_window(app.handle(), "startup after update") {
+                    log::error!("Post-update main window open failed: {e}");
+                }
+                if let Some(pill) = app.get_webview_window("pill") {
+                    let _ = pill.hide();
+                }
+                if let Err(e) = settings_repo::upsert(
+                    &state.db,
+                    cmd_updater::OPEN_MAIN_AFTER_UPDATE_SETTING,
+                    "false",
+                ) {
+                    log::warn!("Failed to clear post-update main window startup flag: {e}");
+                }
+                log::info!("Starting in main window mode after update");
+            } else if start_hidden {
                 // Tray-only mode: hide everything on startup.
                 if let Some(pill) = app.get_webview_window("pill") {
                     let _ = pill.hide();

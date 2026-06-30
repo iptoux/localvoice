@@ -14,6 +14,7 @@ use crate::state::AppState;
 const UPDATE_AVAILABLE_EVENT: &str = "update-available";
 const UPDATE_PROGRESS_EVENT: &str = "update-download-progress";
 const UPDATE_ERROR_EVENT: &str = "update-error";
+pub const OPEN_MAIN_AFTER_UPDATE_SETTING: &str = "app.open_main_after_update";
 
 #[derive(Clone, Default)]
 pub struct PendingUpdate {
@@ -198,12 +199,20 @@ pub async fn install_pending_update(
         })?;
 
     pending_update.set_phase("installing");
+    persist_open_main_after_update(&app);
     push_log(
         "info",
         "updater::install",
         "Update installed; restarting LocalVoice.",
     );
     app.restart();
+}
+
+pub fn should_open_main_after_update(settings: &std::collections::HashMap<String, String>) -> bool {
+    settings
+        .get(OPEN_MAIN_AFTER_UPDATE_SETTING)
+        .map(|value| value == "true")
+        .unwrap_or(false)
 }
 
 pub fn spawn_startup_check(app: AppHandle) {
@@ -309,9 +318,17 @@ fn update_last_check(app: &AppHandle) {
     }
 }
 
+fn persist_open_main_after_update(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    if let Err(e) = settings_repo::upsert(&state.db, OPEN_MAIN_AFTER_UPDATE_SETTING, "true") {
+        log::warn!("Failed to persist post-update main window startup flag: {e}");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn default_status_has_no_pending_update() {
@@ -343,5 +360,23 @@ mod tests {
         assert_eq!(pending.status().phase, "error");
         assert_eq!(pending.status().last_error, Some("failed".to_string()));
         assert_eq!(pending.status().progress, None);
+    }
+
+    #[test]
+    fn should_open_main_after_update_only_for_true_flag() {
+        let mut settings = HashMap::new();
+        assert!(!should_open_main_after_update(&settings));
+
+        settings.insert(
+            OPEN_MAIN_AFTER_UPDATE_SETTING.to_string(),
+            "false".to_string(),
+        );
+        assert!(!should_open_main_after_update(&settings));
+
+        settings.insert(
+            OPEN_MAIN_AFTER_UPDATE_SETTING.to_string(),
+            "true".to_string(),
+        );
+        assert!(should_open_main_after_update(&settings));
     }
 }

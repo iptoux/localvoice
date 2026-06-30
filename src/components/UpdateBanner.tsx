@@ -20,7 +20,10 @@ export function UpdateBanner() {
   const progress = status.progress?.percent;
 
   return (
-    <div className="border-b border-border bg-card text-card-foreground">
+    <div
+      data-testid="update-banner"
+      className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur border-border text-card-foreground"
+    >
       <div className="flex min-h-14 items-center justify-between gap-4 px-5 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary/15 text-secondary">

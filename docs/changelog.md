@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Open the main window once after a successful updater restart so users can see LocalVoice is running after installation.
+- Kept the update banner sticky in the main content area so the Update Now action remains visible while scrolling.
 - Fixed streaming live insert so pasted worker deltas apply configured filler-word removal and dictionary corrections before reaching the target app.
 - Added Windows local Parakeet sidecar preparation for `pnpm tauri build`, bootstrap, and `create-release.ps1 -LocalBuild` so local installers include the streaming worker and runtime DLLs.
 - Fixed installed Windows Parakeet streaming startup by searching bundled `resources/parakeet-runtime` DLLs before launching `parakeet-stream-worker.exe` and falling back cleanly when they are missing.
@@ -26,7 +28,7 @@
 - Bundled the Parakeet CPU/portable sidecar in CI and release builds while keeping all model weights and Python/NeMo/CUDA stacks out of base installers.
 - Added model/runtime metadata, word-level timestamp persistence, runtime health checks, and release artifact audits for transcription sidecars.
 - Temporarily disabled the SignPath release job until OSS signing support is available; Windows release artifacts are published unsigned for now.
-- Bumped the app version to 0.2.5.
+- Bumped the app version to final 1.0.0.
 - Added a square 256x256 Linux bundle icon and removed non-square PNGs from the Tauri icon list to fix AppImage packaging.
 - Updated frontend dependencies to resolve npm/pnpm security advisories while keeping the Vite toolchain on the latest compatible 7.x line.
 - Added a plain-text `localvoice.log` file in the app data directory so crash reports can include logs even when the in-app viewer is unavailable.

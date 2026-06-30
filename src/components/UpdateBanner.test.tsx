@@ -38,7 +38,20 @@ describe("UpdateBanner", () => {
     render(<UpdateBanner />);
 
     expect(screen.getByText("LocalVoice 0.3.0 is available")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Update Now/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Update Now/i })).toBeEnabled();
+  });
+
+  it("keeps the banner sticky at the top of the content area", () => {
+    render(<UpdateBanner />);
+
+    expect(screen.getByTestId("update-banner")).toHaveClass(
+      "sticky",
+      "top-0",
+      "z-50",
+      "border-b",
+      "bg-card/95",
+      "backdrop-blur",
+    );
   });
 
   it("hides after dismissing until another update event changes state", async () => {
